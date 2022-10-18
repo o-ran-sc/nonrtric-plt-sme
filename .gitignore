@@ -1,0 +1,7 @@
+.idea
+specs
+commoncollector
+enumfixer
+specificationfixer
+*.gen.go
+sme
