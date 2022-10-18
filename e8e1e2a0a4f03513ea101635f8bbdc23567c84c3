@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ab9d8d42_99057d93",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2022-10-18T15:33:45Z",
+      "side": 1,
+      "message": "Any chance of the go-verification jenkins job to verify?  ",
+      "revId": "e8e1e2a0a4f03513ea101635f8bbdc23567c84c3",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
