@@ -26,13 +26,13 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN go build -o /capifcore
+RUN go build -o /sme
 ##
 ## Deploy
 ##
 FROM gcr.io/distroless/base-debian11
 WORKDIR /
 ## Copy from "build" stage
-COPY --from=build /capifcore .
+COPY --from=build /sme .
 USER nonroot:nonroot
-ENTRYPOINT ["/capif"]
+ENTRYPOINT ["/sme"]
