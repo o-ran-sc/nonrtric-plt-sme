@@ -1,0 +1,7 @@
+.vscode
+.idea/
+.tox
+docs/_build/
+.project
+.settings
+.pydevproject

@@ -19,10 +19,12 @@
 set -eux
 
 echo "--> build-capifcore-ubuntu.sh"
+
 # go installs tools like go-acc to $HOME/go/bin
 # ubuntu minion path lacks go
 export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
 go version
+cd capifcore/
 
 # install the go coverage tool helper
 go get -v github.com/ory/go-acc
