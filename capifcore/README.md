@@ -24,9 +24,33 @@
 
 This product is a Go implementation of the CAPIF Core function, based on the 3GPP CAPIF interfaces.
 
-## Run
+## Generation of API code
 
-To run the Core Function run the following commands from the top of the repo:
+The CAPIF APIs are generated from the OpenAPI specification provided by 3GPP. The `generate.sh` script downloads the
+specifications from 3GPP, fixes them and then generates the APIs. It also generates the mocks needed for unit testing.
+
+To fix the specifications there are three tools:
+- `commoncollector`, collects type definitions from peripheral specifications to keep down the number of dependencies to
+  other specifications. The types to collect are listed in the `definitions.txt`file.
+- `enumfixer`, fixes enumeration definitions so they can be properly generated.
+- `specificationfixer`, fixes flaws in the specifications so they can be properly generated. All fixes are hard coded.
+
+## Build and test
+
+To build the application, run the following command:
 
     go build
+
+To generate mocks, run the following command:
+
+    go generate ./...
+
+To run the unit tests for the application, run the following command:
+
+    go test ./...
+
+## Run
+
+To run the Core Function run the following commands from this folder.
+
     ./capifcore [-port <port (default 8080)>]
