@@ -3,6 +3,5 @@ specs
 commoncollector
 enumfixer
 specificationfixer
-*.gen.go
 sme
 coverage.txt
