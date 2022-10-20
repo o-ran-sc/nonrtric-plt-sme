@@ -165,3 +165,6 @@ oapi-codegen --config gogeneratorspecs/aefsecurityapi/generator_settings_server.
 
 echo "Cleanup"
 rm -rf specs
+
+echo "Generating mocks."
+go generate ./...

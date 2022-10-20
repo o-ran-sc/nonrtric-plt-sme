@@ -19,6 +19,8 @@
 set -eux
 
 echo "--> build-capifcore-ubuntu.sh"
+cd capifcore
+
 # go installs tools like go-acc to $HOME/go/bin
 # ubuntu minion path lacks go
 export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
