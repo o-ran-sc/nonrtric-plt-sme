@@ -32,10 +32,6 @@ go install github.com/ory/go-acc
 
 go get github.com/stretchr/testify/mock@v1.7.1
 
-
-whoami
-which go-acc
-
 go-acc ./... --ignore gentools,mocks,common,accesscontrolpolicyapi,aefsecurityapi,auditingapi,discoverserviceapi,eventsapi,invokermanagementapi,loggingapi,securityapi,publishserviceapi,routinginfoapi
 
 sed -i -e 's/oransc\.org\/nonrtric\/capifcore/capifcore/' coverage.txt

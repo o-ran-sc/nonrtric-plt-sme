@@ -40,7 +40,7 @@ import (
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
 	"oransc.org/nonrtric/capifcore/internal/publishservice"
 	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
-	"oransc.org/nonrtric/capifcore/internal/security"
+	security "oransc.org/nonrtric/capifcore/internal/securityservice"
 )
 
 var url string
