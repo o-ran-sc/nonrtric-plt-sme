@@ -26,6 +26,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"helm.sh/helm/v3/pkg/cli"
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/providermanagementapi"
@@ -60,7 +61,7 @@ func main() {
 
 	// Add repo
 	fmt.Printf("Adding %s to Helm Repo\n", url)
-	helmManager = helmmanagement.NewHelmManager()
+	helmManager = helmmanagement.NewHelmManager(cli.New())
 	err := helmManager.AddToRepo(repoName, url)
 	if err != nil {
 		log.Fatal(err.Error())

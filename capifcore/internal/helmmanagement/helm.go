@@ -22,7 +22,7 @@ package helmmanagement
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -50,9 +50,9 @@ type helmManagerImpl struct {
 	settings *cli.EnvSettings
 }
 
-func NewHelmManager() *helmManagerImpl {
+func NewHelmManager(s *cli.EnvSettings) *helmManagerImpl {
 	return &helmManagerImpl{
-		settings: cli.New(),
+		settings: s,
 	}
 }
 
@@ -61,12 +61,12 @@ func (hm *helmManagerImpl) AddToRepo(repoName, url string) error {
 
 	//Ensure the file directory exists as it is required for file locking
 	err := os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
-	if err != nil && !os.IsExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 
-	b, err := ioutil.ReadFile(repoFile)
-	if err != nil && !os.IsNotExist(err) {
+	b, err := os.ReadFile(repoFile)
+	if err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ func (hm *helmManagerImpl) AddToRepo(repoName, url string) error {
 	}
 
 	if f.Has(repoName) {
-		fmt.Printf("repository name (%s) already exists\n", repoName)
+		log.Debugf("repository name (%s) already exists\n", repoName)
 		return nil
 	}
 
@@ -100,7 +100,7 @@ func (hm *helmManagerImpl) AddToRepo(repoName, url string) error {
 	if err := f.WriteFile(repoFile, 0644); err != nil {
 		return err
 	}
-	fmt.Printf("%q has been added to your repositories\n", repoName)
+	log.Debugf("%q has been added to your repositories\n", repoName)
 	return nil
 }
 
@@ -138,14 +138,16 @@ func (hm *helmManagerImpl) InstallHelmChart(namespace, repoName, chartName, rele
 func (hm *helmManagerImpl) UninstallHelmChart(namespace, chartName string) {
 	actionConfig, err := getActionConfig(namespace)
 	if err != nil {
-		fmt.Println(err)
+		log.Error("unable to get action config: ", err)
+		return
 	}
 
 	iCli := action.NewUninstall(actionConfig)
 
 	resp, err := iCli.Run(chartName)
 	if err != nil {
-		fmt.Println(err)
+		log.Error("Unable to uninstall chart ", chartName, err)
+		return
 	}
 	log.Debug("Successfully uninstalled chart: ", resp.Release.Name)
 }
@@ -164,11 +166,8 @@ func getActionConfig(namespace string) (*action.Configuration, error) {
 		if envvar := os.Getenv("KUBECONFIG"); len(envvar) > 0 {
 			kubeconfigPath = envvar
 		}
-		if err := actionConfig.Init(kube.GetConfig(kubeconfigPath, "", namespace), namespace, os.Getenv("HELM_DRIVER"),
-			func(format string, v ...interface{}) {
-				fmt.Sprintf(format, v)
-			}); err != nil {
-			fmt.Println(err)
+		if err := actionConfig.Init(kube.GetConfig(kubeconfigPath, "", namespace), namespace, os.Getenv("HELM_DRIVER"), log.Debugf); err != nil {
+			log.Error(err)
 		}
 	} else {
 		// Create the ConfigFlags struct instance with initialized values from ServiceAccount
@@ -177,10 +176,8 @@ func getActionConfig(namespace string) (*action.Configuration, error) {
 		kubeConfig.BearerToken = &config.BearerToken
 		kubeConfig.CAFile = &config.CAFile
 		kubeConfig.Namespace = &namespace
-		if err := actionConfig.Init(kubeConfig, namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
-			fmt.Sprintf(format, v)
-		}); err != nil {
-			fmt.Println(err)
+		if err := actionConfig.Init(kubeConfig, namespace, os.Getenv("HELM_DRIVER"), log.Debugf); err != nil {
+			log.Error(err)
 		}
 	}
 	return actionConfig, err
