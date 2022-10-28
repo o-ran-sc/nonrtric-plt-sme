@@ -9,20 +9,6 @@ type HelmManager struct {
 	mock.Mock
 }
 
-// AddToRepo provides a mock function with given fields: repoName, url
-func (_m *HelmManager) AddToRepo(repoName string, url string) error {
-	ret := _m.Called(repoName, url)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(repoName, url)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // InstallHelmChart provides a mock function with given fields: namespace, repoName, chartName, releaseName
 func (_m *HelmManager) InstallHelmChart(namespace string, repoName string, chartName string, releaseName string) error {
 	ret := _m.Called(namespace, repoName, chartName, releaseName)
@@ -30,6 +16,20 @@ func (_m *HelmManager) InstallHelmChart(namespace string, repoName string, chart
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, string, string, string) error); ok {
 		r0 = rf(namespace, repoName, chartName, releaseName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetUpRepo provides a mock function with given fields: repoName, url
+func (_m *HelmManager) SetUpRepo(repoName string, url string) error {
+	ret := _m.Called(repoName, url)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(repoName, url)
 	} else {
 		r0 = ret.Error(0)
 	}

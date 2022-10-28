@@ -41,13 +41,14 @@ import (
 
 //go:generate mockery --name HelmManager
 type HelmManager interface {
-	AddToRepo(repoName, url string) error
+	SetUpRepo(repoName, url string) error
 	InstallHelmChart(namespace, repoName, chartName, releaseName string) error
 	UninstallHelmChart(namespace, chartName string)
 }
 
 type helmManagerImpl struct {
 	settings *cli.EnvSettings
+	repo     *repo.ChartRepository
 }
 
 func NewHelmManager(s *cli.EnvSettings) *helmManagerImpl {
@@ -56,7 +57,7 @@ func NewHelmManager(s *cli.EnvSettings) *helmManagerImpl {
 	}
 }
 
-func (hm *helmManagerImpl) AddToRepo(repoName, url string) error {
+func (hm *helmManagerImpl) SetUpRepo(repoName, url string) error {
 	repoFile := hm.settings.RepositoryConfig
 
 	//Ensure the file directory exists as it is required for file locking
@@ -85,9 +86,12 @@ func (hm *helmManagerImpl) AddToRepo(repoName, url string) error {
 		URL:  url,
 	}
 
-	r, err := repo.NewChartRepository(&c, getter.All(hm.settings))
-	if err != nil {
-		return err
+	r := hm.repo
+	if r == nil {
+		r, err = repo.NewChartRepository(&c, getter.All(hm.settings))
+		if err != nil {
+			return err
+		}
 	}
 
 	if _, err := r.DownloadIndexFile(); err != nil {
