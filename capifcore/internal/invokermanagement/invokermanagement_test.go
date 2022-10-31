@@ -120,7 +120,7 @@ func TestOnboardInvoker(t *testing.T) {
 	var problemDetails common29122.ProblemDetails
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := 400
+	badRequest := http.StatusBadRequest
 	assert.Equal(t, &badRequest, problemDetails.Status)
 	errMsg := "Invoker missing required NotificationDestination"
 	assert.Equal(t, &errMsg, problemDetails.Cause)
@@ -205,7 +205,7 @@ func TestUpdateInvoker(t *testing.T) {
 	var problemDetails common29122.ProblemDetails
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := 400
+	badRequest := http.StatusBadRequest
 	assert.Equal(t, &badRequest, problemDetails.Status)
 	errMsg := "Invoker missing required NotificationDestination"
 	assert.Equal(t, &errMsg, problemDetails.Cause)
@@ -243,7 +243,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	notFound := 404
+	notFound := http.StatusNotFound
 	assert.Equal(t, &notFound, problemDetails.Status)
 	errMsg = "The invoker to update has not been onboarded"
 	assert.Equal(t, &errMsg, problemDetails.Cause)

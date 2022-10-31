@@ -121,7 +121,7 @@ func TestProviderHandlingValidation(t *testing.T) {
 	var problemDetails common29122.ProblemDetails
 	err := result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := 400
+	badRequest := http.StatusBadRequest
 	assert.Equal(t, &badRequest, problemDetails.Status)
 	errMsg := "Provider missing required ApiProvDomInfo"
 	assert.Equal(t, &errMsg, problemDetails.Cause)

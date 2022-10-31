@@ -26,6 +26,7 @@ import (
 	"os"
 	"testing"
 
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
 
 	"github.com/labstack/echo/v4"
@@ -60,32 +61,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	domainName := "domain"
 	var protocol publishapi.Protocol = "HTTP_1_1"
 	description := "Description,namespace,repoName,chartName,releaseName"
-	newServiceDescription := publishapi.ServiceAPIDescription{
-		AefProfiles: &[]publishapi.AefProfile{
-			{
-				AefId:      aefId,
-				DomainName: &domainName,
-				Protocol:   &protocol,
-				Versions: []publishapi.Version{
-					{
-						ApiVersion: "v1",
-						Resources: &[]publishapi.Resource{
-							{
-								CommType: "REQUEST_RESPONSE",
-								Operations: &[]publishapi.Operation{
-									"POST",
-								},
-								ResourceName: "app",
-								Uri:          "app",
-							},
-						},
-					},
-				},
-			},
-		},
-		ApiName:     "app-management",
-		Description: &description,
-	}
+	newServiceDescription := getServiceAPIDescription(aefId, domainName, description, protocol)
 
 	// Publish a service
 	result = testutil.NewRequest().Post("/aefId/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
@@ -126,6 +102,30 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, result.Code())
 }
 
+func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
+	aefId := "aefId"
+	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("IsFunctionRegistered", aefId).Return(false)
+	_, requestHandler := getEcho(&serviceRegisterMock, nil)
+
+	domainName := "domain"
+	var protocol publishapi.Protocol = "HTTP_1_1"
+	description := "Description"
+	newServiceDescription := getServiceAPIDescription(aefId, domainName, description, protocol)
+
+	// Publish a service
+	result := testutil.NewRequest().Post("/aefId/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNotFound, result.Code())
+	var resultError common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&resultError)
+	assert.NoError(t, err, "error unmarshaling response")
+	errMsg := "Function not registered, aefId"
+	assert.Equal(t, &errMsg, resultError.Cause)
+	notFound := http.StatusNotFound
+	assert.Equal(t, &notFound, resultError.Status)
+}
+
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, *echo.Echo) {
 	swagger, err := publishapi.GetSwagger()
 	if err != nil {
@@ -143,4 +143,33 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager hel
 
 	publishapi.RegisterHandlers(e, ps)
 	return ps, e
+}
+
+func getServiceAPIDescription(aefId, domainName, description string, protocol publishapi.Protocol) publishapi.ServiceAPIDescription {
+	return publishapi.ServiceAPIDescription{
+		AefProfiles: &[]publishapi.AefProfile{
+			{
+				AefId:      aefId,
+				DomainName: &domainName,
+				Protocol:   &protocol,
+				Versions: []publishapi.Version{
+					{
+						ApiVersion: "v1",
+						Resources: &[]publishapi.Resource{
+							{
+								CommType: "REQUEST_RESPONSE",
+								Operations: &[]publishapi.Operation{
+									"POST",
+								},
+								ResourceName: "app",
+								Uri:          "app",
+							},
+						},
+					},
+				},
+			},
+		},
+		ApiName:     "app-management",
+		Description: &description,
+	}
 }
