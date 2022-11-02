@@ -1,9 +1,13 @@
 TS29508_Nsmf_EventExposure.yaml#/components/schemas/NotificationMethod
 TS29510_Nnrf_NFManagement.yaml#/components/schemas/Ipv4AddressRange
 TS29512_Npcf_SMPolicyControl.yaml#/components/schemas/FlowDirection
+TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/AfAppId
+TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/CodecData
 TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/ContentVersion
 TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/EthFlowDescription
 TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/FlowDescription
+TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/MediaType
+TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/ReservPriority
 TS29514_Npcf_PolicyAuthorization.yaml#/components/schemas/TscaiInputContainer
 TS29517_Naf_EventExposure.yaml#/components/schemas/AddrFqdn
 TS29518_Namf_EventExposure.yaml#/components/schemas/CommunicationFailure

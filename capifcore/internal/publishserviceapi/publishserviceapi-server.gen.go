@@ -25,22 +25,22 @@ import (
 type ServerInterface interface {
 
 	// (GET /{apfId}/service-apis)
-	GetApfIdServiceApis(ctx echo.Context, apfId ApfId) error
+	GetApfIdServiceApis(ctx echo.Context, apfId string) error
 
 	// (POST /{apfId}/service-apis)
-	PostApfIdServiceApis(ctx echo.Context, apfId ApfId) error
+	PostApfIdServiceApis(ctx echo.Context, apfId string) error
 
 	// (DELETE /{apfId}/service-apis/{serviceApiId})
-	DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId ApfId, serviceApiId ServiceApiId) error
+	DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error
 
 	// (GET /{apfId}/service-apis/{serviceApiId})
-	GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId ApfId, serviceApiId ServiceApiId) error
+	GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error
 
 	// (PATCH /{apfId}/service-apis/{serviceApiId})
-	ModifyIndAPFPubAPI(ctx echo.Context, apfId ApfId, serviceApiId ServiceApiId) error
+	ModifyIndAPFPubAPI(ctx echo.Context, apfId string, serviceApiId string) error
 
 	// (PUT /{apfId}/service-apis/{serviceApiId})
-	PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId ApfId, serviceApiId ServiceApiId) error
+	PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -52,7 +52,7 @@ type ServerInterfaceWrapper struct {
 func (w *ServerInterfaceWrapper) GetApfIdServiceApis(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "apfId" -------------
-	var apfId ApfId
+	var apfId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "apfId", runtime.ParamLocationPath, ctx.Param("apfId"), &apfId)
 	if err != nil {
@@ -68,7 +68,7 @@ func (w *ServerInterfaceWrapper) GetApfIdServiceApis(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PostApfIdServiceApis(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "apfId" -------------
-	var apfId ApfId
+	var apfId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "apfId", runtime.ParamLocationPath, ctx.Param("apfId"), &apfId)
 	if err != nil {
@@ -84,7 +84,7 @@ func (w *ServerInterfaceWrapper) PostApfIdServiceApis(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) DeleteApfIdServiceApisServiceApiId(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "apfId" -------------
-	var apfId ApfId
+	var apfId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "apfId", runtime.ParamLocationPath, ctx.Param("apfId"), &apfId)
 	if err != nil {
@@ -92,7 +92,7 @@ func (w *ServerInterfaceWrapper) DeleteApfIdServiceApisServiceApiId(ctx echo.Con
 	}
 
 	// ------------- Path parameter "serviceApiId" -------------
-	var serviceApiId ServiceApiId
+	var serviceApiId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "serviceApiId", runtime.ParamLocationPath, ctx.Param("serviceApiId"), &serviceApiId)
 	if err != nil {
@@ -108,7 +108,7 @@ func (w *ServerInterfaceWrapper) DeleteApfIdServiceApisServiceApiId(ctx echo.Con
 func (w *ServerInterfaceWrapper) GetApfIdServiceApisServiceApiId(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "apfId" -------------
-	var apfId ApfId
+	var apfId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "apfId", runtime.ParamLocationPath, ctx.Param("apfId"), &apfId)
 	if err != nil {
@@ -116,7 +116,7 @@ func (w *ServerInterfaceWrapper) GetApfIdServiceApisServiceApiId(ctx echo.Contex
 	}
 
 	// ------------- Path parameter "serviceApiId" -------------
-	var serviceApiId ServiceApiId
+	var serviceApiId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "serviceApiId", runtime.ParamLocationPath, ctx.Param("serviceApiId"), &serviceApiId)
 	if err != nil {
@@ -132,7 +132,7 @@ func (w *ServerInterfaceWrapper) GetApfIdServiceApisServiceApiId(ctx echo.Contex
 func (w *ServerInterfaceWrapper) ModifyIndAPFPubAPI(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "apfId" -------------
-	var apfId ApfId
+	var apfId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "apfId", runtime.ParamLocationPath, ctx.Param("apfId"), &apfId)
 	if err != nil {
@@ -140,7 +140,7 @@ func (w *ServerInterfaceWrapper) ModifyIndAPFPubAPI(ctx echo.Context) error {
 	}
 
 	// ------------- Path parameter "serviceApiId" -------------
-	var serviceApiId ServiceApiId
+	var serviceApiId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "serviceApiId", runtime.ParamLocationPath, ctx.Param("serviceApiId"), &serviceApiId)
 	if err != nil {
@@ -156,7 +156,7 @@ func (w *ServerInterfaceWrapper) ModifyIndAPFPubAPI(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PutApfIdServiceApisServiceApiId(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "apfId" -------------
-	var apfId ApfId
+	var apfId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "apfId", runtime.ParamLocationPath, ctx.Param("apfId"), &apfId)
 	if err != nil {
@@ -164,7 +164,7 @@ func (w *ServerInterfaceWrapper) PutApfIdServiceApisServiceApiId(ctx echo.Contex
 	}
 
 	// ------------- Path parameter "serviceApiId" -------------
-	var serviceApiId ServiceApiId
+	var serviceApiId string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "serviceApiId", runtime.ParamLocationPath, ctx.Param("serviceApiId"), &serviceApiId)
 	if err != nil {
@@ -216,56 +216,55 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"3nih3el0PMXzx8V/AgAA///zJgSKrkQAAA==",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

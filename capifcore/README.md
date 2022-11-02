@@ -27,11 +27,11 @@ This product is a Go implementation of the CAPIF Core function, based on the 3GP
 ## Generation of API code
 
 The CAPIF APIs are generated from the OpenAPI specification provided by 3GPP. The `generate.sh` script downloads the
-specifications from 3GPP, fixes them and then generates the APIs. It also generates the mocks needed for unit testing.
+specifications from 3GPP, fixes them and then generates the APIs. It also generates the mocks needed for unit testing. The specifications are downloaded from the following site; https://www.3gpp.org/ftp/Specs/archive/29_series. To see the APIs in swagger format, see the following link; https://github.com/jdegre/5GC_APIs/tree/Rel-16#common-api-framework-capif. **NOTE!** The documentation in this link is for release 16 of CAPIF, the downloaded specifications are for release 17.
 
 To fix the specifications there are three tools:
 - `commoncollector`, collects type definitions from peripheral specifications to keep down the number of dependencies to
-  other specifications. The types to collect are listed in the `definitions.txt`file.
+  other specifications. The types to collect are listed in the `definitions.txt`file. Some fixes are hard coded.
 - `enumfixer`, fixes enumeration definitions so they can be properly generated.
 - `specificationfixer`, fixes flaws in the specifications so they can be properly generated. All fixes are hard coded.
 

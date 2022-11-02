@@ -25,3 +25,6 @@ generate:
   - types
   - skip-prune
   - spec
+
+import-mapping:
+  CommonData.yaml: oransc.org/nonrtric/capifcore/internal/common

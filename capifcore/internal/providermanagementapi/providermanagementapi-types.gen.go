@@ -54,14 +54,20 @@ type APIProviderFunctionDetails struct {
 	// Generic information related to the API provider domain function such as details of the API provider applications.
 	ApiProvFuncInfo *string `json:"apiProvFuncInfo,omitempty"`
 
-	// Possible values are - AEF: API provider function is API Exposing Function. - APF: API provider function is API Publishing Function. - AMF: API Provider function is API Management Function.
+	// Possible values are:
+	// - AEF: API provider function is API Exposing Function.
+	// - APF: API provider function is API Publishing Function.
+	// - AMF: API Provider function is API Management Function.
 	ApiProvFuncRole ApiProviderFuncRole `json:"apiProvFuncRole"`
 
 	// Represents registration information of an individual API provider domain function.
 	RegInfo RegistrationInformation `json:"regInfo"`
 }
 
-// Possible values are - AEF: API provider function is API Exposing Function. - APF: API provider function is API Publishing Function. - AMF: API Provider function is API Management Function.
+// Possible values are:
+// - AEF: API provider function is API Exposing Function.
+// - APF: API provider function is API Publishing Function.
+// - AMF: API Provider function is API Management Function.
 type ApiProviderFuncRole string
 
 // Represents registration information of an individual API provider domain function.

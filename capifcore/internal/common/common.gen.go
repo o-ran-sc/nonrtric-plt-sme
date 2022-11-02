@@ -38,6 +38,25 @@ const (
 	FlowDirectionUPLINK FlowDirection = "UPLINK"
 )
 
+// Defines values for MediaType.
+const (
+	MediaTypeAPPLICATION MediaType = "APPLICATION"
+
+	MediaTypeAUDIO MediaType = "AUDIO"
+
+	MediaTypeCONTROL MediaType = "CONTROL"
+
+	MediaTypeDATA MediaType = "DATA"
+
+	MediaTypeMESSAGE MediaType = "MESSAGE"
+
+	MediaTypeOTHER MediaType = "OTHER"
+
+	MediaTypeTEXT MediaType = "TEXT"
+
+	MediaTypeVIDEO MediaType = "VIDEO"
+)
+
 // Defines values for NotificationMethod.
 const (
 	NotificationMethodONETIME NotificationMethod = "ONE_TIME"
@@ -45,6 +64,41 @@ const (
 	NotificationMethodONEVENTDETECTION NotificationMethod = "ON_EVENT_DETECTION"
 
 	NotificationMethodPERIODIC NotificationMethod = "PERIODIC"
+)
+
+// Defines values for ReservPriority.
+const (
+	ReservPriorityPRIO1 ReservPriority = "PRIO_1"
+
+	ReservPriorityPRIO10 ReservPriority = "PRIO_10"
+
+	ReservPriorityPRIO11 ReservPriority = "PRIO_11"
+
+	ReservPriorityPRIO12 ReservPriority = "PRIO_12"
+
+	ReservPriorityPRIO13 ReservPriority = "PRIO_13"
+
+	ReservPriorityPRIO14 ReservPriority = "PRIO_14"
+
+	ReservPriorityPRIO15 ReservPriority = "PRIO_15"
+
+	ReservPriorityPRIO16 ReservPriority = "PRIO_16"
+
+	ReservPriorityPRIO2 ReservPriority = "PRIO_2"
+
+	ReservPriorityPRIO3 ReservPriority = "PRIO_3"
+
+	ReservPriorityPRIO4 ReservPriority = "PRIO_4"
+
+	ReservPriorityPRIO5 ReservPriority = "PRIO_5"
+
+	ReservPriorityPRIO6 ReservPriority = "PRIO_6"
+
+	ReservPriorityPRIO7 ReservPriority = "PRIO_7"
+
+	ReservPriorityPRIO8 ReservPriority = "PRIO_8"
+
+	ReservPriorityPRIO9 ReservPriority = "PRIO_9"
 )
 
 // Defines values for SupportedGADShapes.
@@ -77,6 +131,9 @@ type AddrFqdn struct {
 	IpAddr *externalRef0.IpAddr `json:"ipAddr,omitempty"`
 }
 
+// Contains an AF application identifier.
+type AfAppId string
+
 // Identifies the result of application layer handling.
 type AfResultInfo struct {
 	// Possible values are:
@@ -89,7 +146,7 @@ type AfResultInfo struct {
 	// Contains EAS IP replacement information.
 	EasIpReplaceInfos *[]externalRef0.EasIpReplacementInfo `json:"easIpReplaceInfos,omitempty"`
 
-	// Either the "routeInfo" attribute or the "routeProfId" attribute shall be included in the "RouteToLocation" data type.
+	// At least one of the "routeInfo" attribute and the "routeProfId" attribute shall be included in the "RouteToLocation" data type.
 	TrafficRoute *externalRef0.RouteToLocation `json:"trafficRoute"`
 
 	// If present and set to "true" it indicates that buffering of uplink traffic to the target DNAI is needed.
@@ -147,6 +204,9 @@ type CivicAddress struct {
 	UsageRules *string `json:"usageRules,omitempty"`
 }
 
+// Contains codec related information.
+type CodecData string
+
 // Describes a communication failure detected by AMF
 type CommunicationFailure struct {
 	NasReleaseCode *string `json:"nasReleaseCode,omitempty"`
@@ -187,10 +247,10 @@ type EllipsoidArc struct {
 
 // Identifies an Ethernet flow.
 type EthFlowDescription struct {
-	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042
+	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042.
 	DestMacAddr *externalRef0.MacAddr48 `json:"destMacAddr,omitempty"`
 
-	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042
+	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042.
 	DestMacAddrEnd *externalRef0.MacAddr48 `json:"destMacAddrEnd,omitempty"`
 	EthType        string                  `json:"ethType"`
 
@@ -204,10 +264,10 @@ type EthFlowDescription struct {
 	// - UNSPECIFIED: The corresponding filter applies for traffic to the UE (downlink), but has no specific direction declared. The service data flow detection shall apply the filter for uplink traffic as if the filter was bidirectional. The PCF shall not use the value UNSPECIFIED in filters created by the network in NW-initiated procedures. The PCF shall only include the value UNSPECIFIED in filters in UE-initiated procedures if the same value is received from the SMF.
 	FDir *FlowDirection `json:"fDir,omitempty"`
 
-	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042
+	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042.
 	SourceMacAddr *externalRef0.MacAddr48 `json:"sourceMacAddr,omitempty"`
 
-	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042
+	// String identifying a MAC address formatted in the hexadecimal notation according to clause 1.1 and clause 2.1 of RFC 7042.
 	SrcMacAddrEnd *externalRef0.MacAddr48 `json:"srcMacAddrEnd,omitempty"`
 	VlanTags      *[]string               `json:"vlanTags,omitempty"`
 }
@@ -293,6 +353,9 @@ type LocalOrigin struct {
 	Point *GeographicalCoordinates `json:"point,omitempty"`
 }
 
+// Indicates the media type of a media component.
+type MediaType string
+
 // Describes a network area information in which the NF service consumer requests the number of UEs.
 type NetworkAreaInfo struct {
 	// Contains a list of E-UTRA cell identities.
@@ -308,7 +371,10 @@ type NetworkAreaInfo struct {
 	Tais *[]externalRef0.Tai `json:"tais,omitempty"`
 }
 
-// Possible values are - PERIODIC - ONE_TIME - ON_EVENT_DETECTION
+// Possible values are:
+// - PERIODIC
+// - ONE_TIME
+// - ON_EVENT_DETECTION
 type NotificationMethod string
 
 // Indicates value of orientation angle.
@@ -418,11 +484,16 @@ type ReportingInformation struct {
 
 	// Possible values are:
 	// - ACTIVATE: The event notification is activated.
-	// - DEACTIVATE: The event notification is deactivated and shall be muted. The available event(s) shall be stored.
-	// - RETRIEVAL: The event notification shall be sent to the NF service consumer(s), after that, is muted again.
+	// - DEACTIVATE: The event notification is deactivated and shall be muted. The available
+	//    event(s) shall be stored.
+	// - RETRIEVAL: The event notification shall be sent to the NF service consumer(s),
+	//   after that, is muted again.
 	NotifFlag *externalRef0.NotificationFlag `json:"notifFlag,omitempty"`
 
-	// Possible values are - PERIODIC - ONE_TIME - ON_EVENT_DETECTION
+	// Possible values are:
+	// - PERIODIC
+	// - ONE_TIME
+	// - ON_EVENT_DETECTION
 	NotifMethod *NotificationMethod `json:"notifMethod,omitempty"`
 
 	// Criteria for partitioning the UEs before applying the sampling ratio.
@@ -434,6 +505,9 @@ type ReportingInformation struct {
 	// Unsigned integer indicating Sampling Ratio (see clauses 4.15.1 of 3GPP TS 23.502), expressed in percent.
 	SampRatio *externalRef0.SamplingRatio `json:"sampRatio,omitempty"`
 }
+
+// Indicates the reservation priority.
+type ReservPriority string
 
 // Indicates supported GAD shapes.
 type SupportedGADShapes string
@@ -486,56 +560,59 @@ type UncertaintyEllipsoid struct {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

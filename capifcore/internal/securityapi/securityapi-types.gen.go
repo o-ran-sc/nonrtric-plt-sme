@@ -75,7 +75,9 @@ type AccessTokenRsp struct {
 // AccessTokenRspTokenType defines model for AccessTokenRsp.TokenType.
 type AccessTokenRspTokenType string
 
-// Possible values are - OVERLIMIT_USAGE: The revocation of the authorization of the API invoker is due to the overlimit usage of the service API - UNEXPECTED_REASON: The revocation of the authorization of the API invoker is due to unexpected reason.
+// Possible values are:
+// - OVERLIMIT_USAGE: The revocation of the authorization of the API invoker is due to the overlimit usage of the service API
+// - UNEXPECTED_REASON: The revocation of the authorization of the API invoker is due to unexpected reason.
 type Cause string
 
 // Represents the interface details and the security method.
@@ -92,7 +94,9 @@ type SecurityNotification struct {
 	// String identifying the API invoker assigned by the CAPIF core function.
 	ApiInvokerId string `json:"apiInvokerId"`
 
-	// Possible values are - OVERLIMIT_USAGE: The revocation of the authorization of the API invoker is due to the overlimit usage of the service API - UNEXPECTED_REASON: The revocation of the authorization of the API invoker is due to unexpected reason.
+	// Possible values are:
+	// - OVERLIMIT_USAGE: The revocation of the authorization of the API invoker is due to the overlimit usage of the service API
+	// - UNEXPECTED_REASON: The revocation of the authorization of the API invoker is due to unexpected reason.
 	Cause Cause `json:"cause"`
 }
 
@@ -101,7 +105,7 @@ type ServiceSecurity struct {
 	// string providing an URI formatted according to IETF RFC 3986.
 	NotificationDestination externalRef0.Uri `json:"notificationDestination"`
 
-	// Set to true by API invoker to request the CAPIF core function to send a test notification as defined in in subclause 7.6. Set to false or omitted otherwise.
+	// Set to true by API invoker to request the CAPIF core function to send a test notification as defined in in clause 7.6. Set to false or omitted otherwise.
 	RequestTestNotification *bool                 `json:"requestTestNotification,omitempty"`
 	SecurityInfo            []SecurityInformation `json:"securityInfo"`
 
