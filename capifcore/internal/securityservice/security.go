@@ -51,7 +51,6 @@ func NewSecurity(serviceRegister providermanagement.ServiceRegister, apiRegister
 func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId string) error {
 	clientId := ctx.FormValue("client_id")
 	clientSecret := ctx.FormValue("client_secret")
-	// grantType := ctx.FormValue("grant_type")
 	scope := ctx.FormValue("scope")
 
 	if !s.invokerRegister.IsInvokerRegistered(clientId) {

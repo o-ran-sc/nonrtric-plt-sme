@@ -32,7 +32,7 @@ type Log struct {
 	// String identifying the API invoked.
 	ApiId string `json:"apiId"`
 
-	// Name of the API which was invoked, it is set as {apiName} part of the URI structure as defined in subclause 4.4 of 3GPP TS 29.501.
+	// Name of the API which was invoked, it is set as {apiName} part of the URI structure as defined in clause 5.2.4 of 3GPP TS 29.122.
 	ApiName string `json:"apiName"`
 
 	// Version of the API which was invoked
@@ -53,13 +53,20 @@ type Log struct {
 	// string with format "date-time" as defined in OpenAPI.
 	InvocationTime *externalRef0.DateTime `json:"invocationTime,omitempty"`
 
-	// Possible values are - GET: HTTP GET method - POST: HTTP POST method - PUT: HTTP PUT method - PATCH: HTTP PATCH method - DELETE: HTTP DELETE method
+	// Possible values are:
+	// - GET: HTTP GET method
+	// - POST: HTTP POST method
+	// - PUT: HTTP PUT method
+	// - PATCH: HTTP PATCH method
+	// - DELETE: HTTP DELETE method
 	Operation *externalRef2.Operation `json:"operation,omitempty"`
 
 	// List of output parameters. Can be any value - string, number, boolean, array or object.
 	OutputParameters *interface{} `json:"outputParameters,omitempty"`
 
-	// Possible values are - HTTP_1_1: HTTP version 1.1 - HTTP_2: HTTP version 2
+	// Possible values are:
+	// - HTTP_1_1: HTTP version 1.1
+	// - HTTP_2: HTTP version 2
 	Protocol externalRef2.Protocol `json:"protocol"`
 
 	// Name of the specific resource invoked
