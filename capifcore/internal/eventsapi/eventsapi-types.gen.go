@@ -50,7 +50,20 @@ type AccessControlPolicyListExt struct {
 	ApiId *string `json:"apiId,omitempty"`
 }
 
-// Possible values are - SERVICE_API_AVAILABLE: Events related to the availability of service APIs after the service APIs are published. - SERVICE_API_UNAVAILABLE: Events related to the unavailability of service APIs after the service APIs are unpublished. - SERVICE_API_UPDATE: Events related to change in service API information. - API_INVOKER_ONBOARDED: Events related to API invoker onboarded to CAPIF. - API_INVOKER_OFFBOARDED: Events related to API invoker offboarded from CAPIF. - SERVICE_API_INVOCATION_SUCCESS: Events related to the successful invocation of service APIs. - SERVICE_API_INVOCATION_FAILURE: Events related to the failed invocation of service APIs. - ACCESS_CONTROL_POLICY_UPDATE: Events related to the update for the access control policy related to the service APIs. - ACCESS_CONTROL_POLICY_UNAVAILABLE: Events related to the unavailability of the access control policy related to the service APIs. - API_INVOKER_AUTHORIZATION_REVOKED: Events related to the revocation of the authorization of API invokers to access the service APIs. - API_INVOKER_UPDATED: Events related to API invoker profile updated to CAPIF. - API_TOPOLOGY_HIDING_CREATED: Events related to the creation or update of the API topology hiding information of the service APIs after the service APIs are published. - API_TOPOLOGY_HIDING_REVOKED: Events related to the revocation of the API topology hiding information of the service APIs after the service APIs are unpublished.
+// Possible values are:
+// - SERVICE_API_AVAILABLE: Events related to the availability of service APIs after the service APIs are published.
+// - SERVICE_API_UNAVAILABLE: Events related to the unavailability of service APIs after the service APIs are unpublished.
+// - SERVICE_API_UPDATE: Events related to change in service API information.
+// - API_INVOKER_ONBOARDED: Events related to API invoker onboarded to CAPIF.
+// - API_INVOKER_OFFBOARDED: Events related to API invoker offboarded from CAPIF.
+// - SERVICE_API_INVOCATION_SUCCESS: Events related to the successful invocation of service APIs.
+// - SERVICE_API_INVOCATION_FAILURE: Events related to the failed invocation of service APIs.
+// - ACCESS_CONTROL_POLICY_UPDATE: Events related to the update for the access control policy related to the service APIs.
+// - ACCESS_CONTROL_POLICY_UNAVAILABLE: Events related to the unavailability of the access control policy related to the service APIs.
+// - API_INVOKER_AUTHORIZATION_REVOKED: Events related to the revocation of the authorization of API invokers to access the service APIs.
+// - API_INVOKER_UPDATED: Events related to API invoker profile updated to CAPIF.
+// - API_TOPOLOGY_HIDING_CREATED: Events related to the creation or update of the API topology hiding information of the service APIs after the service APIs are published.
+// - API_TOPOLOGY_HIDING_REVOKED: Events related to the revocation of the API topology hiding information of the service APIs after the service APIs are unpublished.
 type CAPIFEvent string
 
 // Represents a CAPIF event details.
@@ -91,7 +104,20 @@ type EventNotification struct {
 	// Represents a CAPIF event details.
 	EventDetail *CAPIFEventDetail `json:"eventDetail,omitempty"`
 
-	// Possible values are - SERVICE_API_AVAILABLE: Events related to the availability of service APIs after the service APIs are published. - SERVICE_API_UNAVAILABLE: Events related to the unavailability of service APIs after the service APIs are unpublished. - SERVICE_API_UPDATE: Events related to change in service API information. - API_INVOKER_ONBOARDED: Events related to API invoker onboarded to CAPIF. - API_INVOKER_OFFBOARDED: Events related to API invoker offboarded from CAPIF. - SERVICE_API_INVOCATION_SUCCESS: Events related to the successful invocation of service APIs. - SERVICE_API_INVOCATION_FAILURE: Events related to the failed invocation of service APIs. - ACCESS_CONTROL_POLICY_UPDATE: Events related to the update for the access control policy related to the service APIs. - ACCESS_CONTROL_POLICY_UNAVAILABLE: Events related to the unavailability of the access control policy related to the service APIs. - API_INVOKER_AUTHORIZATION_REVOKED: Events related to the revocation of the authorization of API invokers to access the service APIs. - API_INVOKER_UPDATED: Events related to API invoker profile updated to CAPIF. - API_TOPOLOGY_HIDING_CREATED: Events related to the creation or update of the API topology hiding information of the service APIs after the service APIs are published. - API_TOPOLOGY_HIDING_REVOKED: Events related to the revocation of the API topology hiding information of the service APIs after the service APIs are unpublished.
+	// Possible values are:
+	// - SERVICE_API_AVAILABLE: Events related to the availability of service APIs after the service APIs are published.
+	// - SERVICE_API_UNAVAILABLE: Events related to the unavailability of service APIs after the service APIs are unpublished.
+	// - SERVICE_API_UPDATE: Events related to change in service API information.
+	// - API_INVOKER_ONBOARDED: Events related to API invoker onboarded to CAPIF.
+	// - API_INVOKER_OFFBOARDED: Events related to API invoker offboarded from CAPIF.
+	// - SERVICE_API_INVOCATION_SUCCESS: Events related to the successful invocation of service APIs.
+	// - SERVICE_API_INVOCATION_FAILURE: Events related to the failed invocation of service APIs.
+	// - ACCESS_CONTROL_POLICY_UPDATE: Events related to the update for the access control policy related to the service APIs.
+	// - ACCESS_CONTROL_POLICY_UNAVAILABLE: Events related to the unavailability of the access control policy related to the service APIs.
+	// - API_INVOKER_AUTHORIZATION_REVOKED: Events related to the revocation of the authorization of API invokers to access the service APIs.
+	// - API_INVOKER_UPDATED: Events related to API invoker profile updated to CAPIF.
+	// - API_TOPOLOGY_HIDING_CREATED: Events related to the creation or update of the API topology hiding information of the service APIs after the service APIs are published.
+	// - API_TOPOLOGY_HIDING_REVOKED: Events related to the revocation of the API topology hiding information of the service APIs after the service APIs are unpublished.
 	Events CAPIFEvent `json:"events"`
 
 	// Identifier of the subscription resource to which the notification is related – CAPIF resource identifier
@@ -112,7 +138,7 @@ type EventSubscription struct {
 	// string providing an URI formatted according to IETF RFC 3986.
 	NotificationDestination externalRef2.Uri `json:"notificationDestination"`
 
-	// Set to true by Subscriber to request the CAPIF core function to send a test notification as defined in in subclause 7.6. Set to false or omitted otherwise.
+	// Set to true by Subscriber to request the CAPIF core function to send a test notification as defined in in clause 7.6. Set to false or omitted otherwise.
 	RequestTestNotification *bool `json:"requestTestNotification,omitempty"`
 
 	// A string used to indicate the features supported by an API that is used as defined in clause  6.6 in 3GPP TS 29.500. The string shall contain a bitmask indicating supported features in  hexadecimal representation Each character in the string shall take a value of "0" to "9",  "a" to "f" or "A" to "F" and shall represent the support of 4 features as described in  table 5.2.2-3. The most significant character representing the highest-numbered features shall  appear first in the string, and the character representing features 1 to 4 shall appear last  in the string. The list of features and their numbering (starting with 1) are defined  separately for each API. If the string contains a lower number of characters than there are  defined features for an API, all features that would be represented by characters that are not  present in the string are not supported.

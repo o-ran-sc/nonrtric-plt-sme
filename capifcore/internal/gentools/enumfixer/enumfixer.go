@@ -63,51 +63,53 @@ func fixEnums(path string, info os.FileInfo, _ error) error {
 		components := m["components"]
 		if components != nil {
 			cMap := components.(map[interface{}]interface{})
-			schemas := cMap["schemas"].(map[interface{}]interface{})
-			for typeName, typeDef := range schemas {
-				tDMap := typeDef.(map[interface{}]interface{})
-				anyOf, ok := tDMap["anyOf"]
-				if ok {
-					aOSlice := anyOf.([]interface{})
-					correctEnum := Enum{}
-					mapInterface := aOSlice[0].(map[interface{}]interface{})
-					enumInterface := mapInterface["enum"]
-					if enumInterface != nil {
-						is := enumInterface.([]interface{})
-						var enumVals []string
-						for i := 0; i < len(is); i++ {
-							if reflect.TypeOf(is[i]).Kind() == reflect.String {
-								enumVals = append(enumVals, is[i].(string))
+			if _, ok := cMap["schemas"].(map[interface{}]interface{}); ok {
+				schemas := cMap["schemas"].(map[interface{}]interface{})
+				for typeName, typeDef := range schemas {
+					tDMap := typeDef.(map[interface{}]interface{})
+					anyOf, ok := tDMap["anyOf"]
+					if ok {
+						aOSlice := anyOf.([]interface{})
+						correctEnum := Enum{}
+						mapInterface := aOSlice[0].(map[interface{}]interface{})
+						enumInterface := mapInterface["enum"]
+						if enumInterface != nil {
+							is := enumInterface.([]interface{})
+							var enumVals []string
+							for i := 0; i < len(is); i++ {
+								if reflect.TypeOf(is[i]).Kind() == reflect.String {
+									enumVals = append(enumVals, is[i].(string))
 
-							} else if reflect.TypeOf(is[1]).Kind() == reflect.Int {
-								enumVals = append(enumVals, strconv.Itoa(is[i].(int)))
-							}
-						}
-						correctEnum.Enum = enumVals
-						correctEnum.Type = "string"
-						description := tDMap["description"]
-						if description != nil {
-							correctEnum.Description = description.(string)
-						} else {
-							if aOSlice[1] != nil {
-								mapInterface = aOSlice[1].(map[interface{}]interface{})
-								description := mapInterface["description"]
-								if description != nil {
-									correctEnum.Description = description.(string)
+								} else if reflect.TypeOf(is[1]).Kind() == reflect.Int {
+									enumVals = append(enumVals, strconv.Itoa(is[i].(int)))
 								}
 							}
+							correctEnum.Enum = enumVals
+							correctEnum.Type = "string"
+							description := tDMap["description"]
+							if description != nil {
+								correctEnum.Description = description.(string)
+							} else {
+								if aOSlice[1] != nil {
+									mapInterface = aOSlice[1].(map[interface{}]interface{})
+									description := mapInterface["description"]
+									if description != nil {
+										correctEnum.Description = description.(string)
+									}
+								}
+							}
+							schemas[typeName] = correctEnum
 						}
-						schemas[typeName] = correctEnum
 					}
 				}
-			}
-			modM, err := yaml.Marshal(m)
-			if err != nil {
-				log.Printf("yamlFile. Get err   #%v ", err)
-			}
-			err = ioutil.WriteFile(path, modM, 0644)
-			if err != nil {
-				log.Printf("yamlFile. Get err   #%v ", err)
+				modM, err := yaml.Marshal(m)
+				if err != nil {
+					log.Printf("yamlFile. Get err   #%v ", err)
+				}
+				err = ioutil.WriteFile(path, modM, 0644)
+				if err != nil {
+					log.Printf("yamlFile. Get err   #%v ", err)
+				}
 			}
 		}
 	}

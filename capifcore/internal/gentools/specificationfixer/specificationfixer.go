@@ -44,6 +44,15 @@ func main() {
 	delete(wildcardSdData, "enum")
 
 	writeFile("TS29571_CommonData.yaml", m)
+
+	m = getData("TS29222_CAPIF_Security_API.yaml")
+	components = m["components"]
+	cMap = components.(map[interface{}]interface{})
+	schemas = cMap["schemas"].(map[interface{}]interface{})
+	accessTokenReq := schemas["AccessTokenReq"].(map[interface{}]interface{})
+	accessTokenReq["type"] = "object"
+
+	writeFile("TS29222_CAPIF_Security_API.yaml", m)
 }
 
 func getData(filename string) map[string]interface{} {

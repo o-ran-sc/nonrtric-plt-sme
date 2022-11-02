@@ -131,11 +131,11 @@ out:
 	return registered
 }
 
-func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId publishserviceapi.ApfId) error {
+func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId publishserviceapi.ApfId) error {
+func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) error {
 	var newServiceAPIDescription publishserviceapi.ServiceAPIDescription
 	err := ctx.Bind(&newServiceAPIDescription)
 	if err != nil {
@@ -174,7 +174,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId publishse
 	return nil
 }
 
-func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId publishserviceapi.ApfId, serviceApiId publishserviceapi.ServiceApiId) error {
+func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	serviceDescription, ok := ps.publishedServices[string(serviceApiId)]
 	if ok {
 		info := strings.Split(*serviceDescription.Description, ",")
@@ -187,7 +187,7 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId publishserviceapi.ApfId, serviceApiId publishserviceapi.ServiceApiId) error {
+func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	serviceDescription, ok := ps.publishedServices[string(serviceApiId)]
 	if ok {
 		err := ctx.JSON(http.StatusOK, serviceDescription)
@@ -201,11 +201,11 @@ func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	return ctx.NoContent(http.StatusNotFound)
 }
 
-func (ps *PublishService) ModifyIndAPFPubAPI(ctx echo.Context, apfId publishserviceapi.ApfId, serviceApiId publishserviceapi.ServiceApiId) error {
+func (ps *PublishService) ModifyIndAPFPubAPI(ctx echo.Context, apfId string, serviceApiId string) error {
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId publishserviceapi.ApfId, serviceApiId publishserviceapi.ServiceApiId) error {
+func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 

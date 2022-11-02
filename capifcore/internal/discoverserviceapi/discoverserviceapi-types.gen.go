@@ -19,7 +19,7 @@ type GetAllServiceAPIsParams struct {
 	// String identifying the API invoker assigned by the CAPIF core function. It also represents the CCF identifier in the CAPIF-6/6e interface.
 	ApiInvokerId string `json:"api-invoker-id"`
 
-	// API name, it is set as {apiName} part of the URI structure as defined in subclause 4.4 of 3GPP TS 29.501.
+	// API name, it is set as {apiName} part of the URI structure as defined in clause 5.2.4 of 3GPP TS 29.122.
 	ApiName *string `json:"api-name,omitempty"`
 
 	// API major version the URI (e.g. v1).
@@ -35,10 +35,10 @@ type GetAllServiceAPIsParams struct {
 	AefId *string `json:"aef-id,omitempty"`
 
 	// Data formats used by the API (e.g. serialization protocol JSON used).
-	DataFormat *externalRef2.DataFormat `json:"data-format,omitempty"`
+	DataFormat *string `json:"data-format,omitempty"`
 
-	// The service API category to which the service API belongs to.
-	ApiCat *string `json:"api-cat,omitempty"`
+	// The preferred AEF location.
+	PreferredAefLoc *externalRef2.AefLocation `json:"preferred-aef-loc,omitempty"`
 
 	// Features supported by the NF consumer for the CAPIF Discover Service API.
 	SupportedFeatures *externalRef1.SupportedFeatures `json:"supported-features,omitempty"`

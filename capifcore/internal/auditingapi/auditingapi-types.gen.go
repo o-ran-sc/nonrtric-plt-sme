@@ -26,7 +26,7 @@ type GetApiInvocationLogsParams struct {
 	// String identifying the API invoked.
 	ApiId *string `json:"api-id,omitempty"`
 
-	// API name, it is set as {apiName} part of the URI structure as defined in subclause 4.4 of 3GPP TS 29.501.
+	// API name, it is set as {apiName} part of the URI structure as defined in clause 5.2.4 of 3GPP TS 29.122.
 	ApiName *string `json:"api-name,omitempty"`
 
 	// Version of the API which was invoked.
