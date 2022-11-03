@@ -26,8 +26,11 @@ This product is a Go implementation of the CAPIF Core function, based on the 3GP
 
 ## Generation of API code
 
-The CAPIF APIs are generated from the OpenAPI specification provided by 3GPP. The `generate.sh` script downloads the
-specifications from 3GPP, fixes them and then generates the APIs. It also generates the mocks needed for unit testing. The specifications are downloaded from the following site; https://www.3gpp.org/ftp/Specs/archive/29_series. To see the APIs in swagger format, see the following link; https://github.com/jdegre/5GC_APIs/tree/Rel-16#common-api-framework-capif. **NOTE!** The documentation in this link is for release 16 of CAPIF, the downloaded specifications are for release 17.
+The CAPIF APIs are generated from the OpenAPI specifications provided by 3GPP. The `generate.sh` script downloads the
+specifications from 3GPP, fixes them and then generates the APIs. It also generates the mocks needed for unit testing.
+The specifications are downloaded from the following site; https://www.3gpp.org/ftp/Specs/archive/29_series. To see
+the APIs in swagger format, see the following link; https://github.com/jdegre/5GC_APIs/tree/Rel-16#common-api-framework-capif.
+**NOTE!** The documentation in this link is for release 16 of CAPIF, the downloaded specifications are for release 17.
 
 To fix the specifications there are three tools:
 - `commoncollector`, collects type definitions from peripheral specifications to keep down the number of dependencies to
@@ -35,11 +38,28 @@ To fix the specifications there are three tools:
 - `enumfixer`, fixes enumeration definitions so they can be properly generated.
 - `specificationfixer`, fixes flaws in the specifications so they can be properly generated. All fixes are hard coded.
 
+### Steps to add a new dependency to the commoncollector
+
+When a dependency to a new specification is introduced in any of the CAPIF specifications, see example below, the following steps should be performed:
+
+For the CAPIF specification "TS29222_CAPIF_Discover_Service_API" a new dependency like the following has been introduced.  
+websockNotifConfig:  
+&nbsp;&nbsp;&nbsp;&nbsp;$ref: '**TS29122_CommonData.yaml#/components/schemas/WebsockNotifConfig**'
+
+1. Copy the bold part of the reference and add it to the `definitions.txt` file. This step is not needed if the type is already defined in the file.
+2. Look in the `generate.sh` script, between the "<replacements_start>" and "<new_replacement>" tags, to see if "TS29122_CommonData"
+   has already been replaced in "TS29222_CAPIF_Discover_Service_API".
+3. If it has not been replaced, add a replacement above the "<new_replacement>" tag by copying and adapting the two rows above the tag.
+
 ## Build and test
 
 To generate mocks manually, run the following command:
 
     go generate ./...
+
+**NOTE!** The `helmmanagement` package contains two mocks from the `helm.sh/helm/v3` product. If they need to be
+regenerated, their interfaces must be copied into the `helm.go` file and a generation annotation added before running
+the generation script.
 
 To build the application, run the following command:
 

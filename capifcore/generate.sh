@@ -52,6 +52,7 @@ jar xvf common29554apidef.zip
 jar xvf common29571apidef.zip
 jar xvf common29572apidef.zip
 
+# Remove types that are not used by CAPIF that have dependencies to other specifications.
 sed -e 'H;x;/^\(  *\)\n\1/{s/\n.*//;x;d;}' -e 's/.*//;x;/\CivicAddress/{s/^\( *\).*/ \1/;x;d;}' TS29571_CommonData.yaml >temp.yaml
 mv temp.yaml TS29571_CommonData.yaml
 sed -e 'H;x;/^\(  *\)\n\1/{s/\n.*//;x;d;}' -e 's/.*//;x;/\ExternalMbsServiceArea/{s/^\( *\).*/ \1/;x;d;}' TS29571_CommonData.yaml >temp.yaml
@@ -72,6 +73,8 @@ sed -e 'H;x;/^\(  *\)\n\1/{s/\n.*//;x;d;}' -e 's/.*//;x;/\MbsSession/{s/^\( *\).
 mv temp.yaml TS29571_CommonData.yaml
 sed -e 'H;x;/^\(  *\)\n\1/{s/\n.*//;x;d;}' -e 's/.*//;x;/\SpatialValidityCond/{s/^\( *\).*/ \1/;x;d;}' TS29571_CommonData.yaml >temp.yaml
 mv temp.yaml TS29571_CommonData.yaml
+
+# Remove attributes that can not be generated easily.
 sed '/accessTokenError.*/,+3d' TS29571_CommonData.yaml >temp.yaml
 mv temp.yaml TS29571_CommonData.yaml
 sed '/accessTokenRequest.*/,+3d' TS29571_CommonData.yaml >temp.yaml
@@ -83,6 +86,8 @@ mv temp.yaml TS29222_CAPIF_Publish_Service_API.yaml
 sed '64,68d' TS29222_CAPIF_Discover_Service_API.yaml >temp.yaml # Remove parameter preferred-aef-loc since it doesn't follow the OpenApi specification, "The behavior for nested objects and arrays is undefined."
 mv temp.yaml TS29222_CAPIF_Discover_Service_API.yaml
 
+# Replace references to external specs that are collected to the common spec by the commoncollector
+# <replacements_start>
 cat TS29122_CommonData.yaml | sed 's/TS29572_Nlmf_Location/CommonData/g' > temp.yaml
 mv temp.yaml TS29122_CommonData.yaml
 cat TS29122_CommonData.yaml | sed 's/TS29554_Npcf_BDTPolicyControl/CommonData/g' > temp.yaml
@@ -93,8 +98,6 @@ cat TS29571_CommonData.yaml | sed 's/TS29514_Npcf_PolicyAuthorization/CommonData
 mv temp.yaml TS29571_CommonData.yaml
 cat TS29571_CommonData.yaml | sed 's/TS29572_Nlmf_Location/CommonData/g' > temp.yaml
 mv temp.yaml TS29571_CommonData.yaml
-cat TS29571_CommonData.yaml | sed 's/TS29571_CommonData.yaml//g' > temp.yaml # This spec has references to itself that need to be removed
-mv temp.yaml TS29571_CommonData.yaml
 cat TS29222_CAPIF_Publish_Service_API.yaml | sed 's/TS29572_Nlmf_Location/CommonData/g' > temp.yaml
 mv temp.yaml TS29222_CAPIF_Publish_Service_API.yaml
 cat TS29222_CAPIF_Routing_Info_API.yaml | sed 's/TS29520_Nnwdaf_EventsSubscription/CommonData/g' > temp.yaml
@@ -103,9 +106,11 @@ cat TS29222_CAPIF_Routing_Info_API.yaml | sed 's/TS29510_Nnrf_NFManagement/Commo
 mv temp.yaml TS29222_CAPIF_Routing_Info_API.yaml
 cat TS29222_CAPIF_Events_API.yaml | sed 's/TS29523_Npcf_EventExposure/CommonData/g' > temp.yaml
 mv temp.yaml TS29222_CAPIF_Events_API.yaml
+# <new_replacement>
 
-go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.10.1
-PATH=$PATH:~/go/bin
+# This spec has references to itself that need to be removed
+cat TS29571_CommonData.yaml | sed 's/TS29571_CommonData.yaml//g' > temp.yaml
+mv temp.yaml TS29571_CommonData.yaml
 
 cd $cwd
 
@@ -127,6 +132,9 @@ go build .
 ./specificationfixer -apidir=../../../specs
 
 cd $cwd
+
+go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.10.1
+PATH=$PATH:~/go/bin
 
 echo "Generating TS29122_CommonData"
 mkdir -p internal/common29122
