@@ -48,7 +48,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestPostSecurityIdToken(t *testing.T) {
+func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	invokerRegisterMock := invokermocks.InvokerRegister{}
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
 	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
@@ -80,6 +80,115 @@ func TestPostSecurityIdToken(t *testing.T) {
 	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", "id", "secret")
 	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", "aefId")
 	apiRegisterMock.AssertCalled(t, "IsAPIRegistered", "aefId", "path")
+}
+
+func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(false)
+
+	requestHandler := getEcho(nil, nil, &invokerRegisterMock)
+
+	data := url.Values{}
+	data.Set("client_id", "id")
+	data.Add("client_secret", "secret")
+	data.Add("grant_type", "client_credentials")
+	data.Add("scope", "scope#aefId:path")
+	encodedData := data.Encode()
+
+	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	errMsg := "Invoker not registered"
+	assert.Equal(t, &errMsg, problemDetails.Cause)
+}
+
+func TestPostSecurityIdTokenInvokerSecretNotValid(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
+
+	requestHandler := getEcho(nil, nil, &invokerRegisterMock)
+
+	data := url.Values{}
+	data.Set("client_id", "id")
+	data.Add("client_secret", "secret")
+	data.Add("grant_type", "client_credentials")
+	data.Add("scope", "scope#aefId:path")
+	encodedData := data.Encode()
+
+	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	errMsg := "Invoker secret not valid"
+	assert.Equal(t, &errMsg, problemDetails.Cause)
+}
+
+func TestPostSecurityIdTokenFunctionNotRegistered(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
+	serviceRegisterMock := servicemocks.ServiceRegister{}
+	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(false)
+
+	requestHandler := getEcho(&serviceRegisterMock, nil, &invokerRegisterMock)
+
+	data := url.Values{}
+	data.Set("client_id", "id")
+	data.Add("client_secret", "secret")
+	data.Add("grant_type", "client_credentials")
+	data.Add("scope", "scope#aefId:path")
+	encodedData := data.Encode()
+
+	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	errMsg := "Function not registered"
+	assert.Equal(t, &errMsg, problemDetails.Cause)
+}
+
+func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
+	serviceRegisterMock := servicemocks.ServiceRegister{}
+	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(true)
+	apiRegisterMock := publishmocks.APIRegister{}
+	apiRegisterMock.On("IsAPIRegistered", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
+
+	requestHandler := getEcho(&serviceRegisterMock, &apiRegisterMock, &invokerRegisterMock)
+
+	data := url.Values{}
+	data.Set("client_id", "id")
+	data.Add("client_secret", "secret")
+	data.Add("grant_type", "client_credentials")
+	data.Add("scope", "scope#aefId:path")
+	encodedData := data.Encode()
+
+	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	errMsg := "API not published"
+	assert.Equal(t, &errMsg, problemDetails.Cause)
 }
 
 func getEcho(serviceRegister providermanagement.ServiceRegister, apiRegister publishservice.APIRegister, invokerRegister invokermanagement.InvokerRegister) *echo.Echo {
