@@ -83,9 +83,6 @@ mv temp.yaml TS29571_CommonData.yaml
 sed '/oneOf.*/,+2d' TS29222_CAPIF_Publish_Service_API.yaml >temp.yaml
 mv temp.yaml TS29222_CAPIF_Publish_Service_API.yaml
 
-sed '64,68d' TS29222_CAPIF_Discover_Service_API.yaml >temp.yaml # Remove parameter preferred-aef-loc since it doesn't follow the OpenApi specification, "The behavior for nested objects and arrays is undefined."
-mv temp.yaml TS29222_CAPIF_Discover_Service_API.yaml
-
 # Replace references to external specs that are collected to the common spec by the commoncollector
 # <replacements_start>
 cat TS29122_CommonData.yaml | sed 's/TS29572_Nlmf_Location/CommonData/g' > temp.yaml

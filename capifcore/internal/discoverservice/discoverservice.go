@@ -73,18 +73,76 @@ func matchesFilter(api publishapi.ServiceAPIDescription, filter discoverapi.GetA
 	if filter.ApiName != nil && *filter.ApiName != api.ApiName {
 		return false
 	}
+	if filter.ApiCat != nil && (api.ServiceAPICategory == nil || *filter.ApiCat != *api.ServiceAPICategory) {
+		return false
+	}
 	profiles := *api.AefProfiles
-	match := false
+	aefIdMatch := true
+	protocolMatch := true
+	dataFormatMatch := true
+	versionMatch := true
 	for _, profile := range profiles {
-		if filter.ApiVersion != nil {
-			for _, version := range profile.Versions {
-				if *filter.ApiVersion == version.ApiVersion {
-					match = true
-				}
+		if filter.AefId != nil {
+			aefIdMatch = *filter.AefId == profile.AefId
+		}
+		if filter.ApiVersion != nil || filter.CommType != nil {
+			versionMatch = checkVersionAndCommType(profile, filter.ApiVersion, filter.CommType)
+		}
+		if filter.Protocol != nil {
+			protocolMatch = profile.Protocol != nil && *filter.Protocol == *profile.Protocol
+		}
+		if filter.DataFormat != nil {
+			dataFormatMatch = profile.DataFormat != nil && *filter.DataFormat == *profile.DataFormat
+		}
+		if aefIdMatch && versionMatch && protocolMatch && dataFormatMatch {
+			return true
+		}
+	}
+	return false
+}
+
+func checkVersionAndCommType(profile publishapi.AefProfile, wantedVersion *string, commType *publishapi.CommunicationType) bool {
+	match := false
+	if wantedVersion != nil {
+		for _, version := range profile.Versions {
+			match = checkVersion(version, wantedVersion, commType)
+			if match {
+				break
 			}
+		}
+	} else if commType != nil {
+		for _, version := range profile.Versions {
+			match = checkCommType(version.Resources, commType)
+		}
+	} else {
+		match = true
+	}
+	return match
+}
+
+func checkVersion(version publishapi.Version, wantedVersion *string, commType *publishapi.CommunicationType) bool {
+	match := false
+	if *wantedVersion == version.ApiVersion {
+		if commType != nil {
+			match = checkCommType(version.Resources, commType)
 		} else {
 			match = true
 		}
+	}
+	return match
+}
+
+func checkCommType(resources *[]publishapi.Resource, commType *publishapi.CommunicationType) bool {
+	match := false
+	if commType != nil {
+		for _, resource := range *resources {
+			if resource.CommType == *commType {
+				match = true
+				break
+			}
+		}
+	} else {
+		match = true
 	}
 	return match
 }

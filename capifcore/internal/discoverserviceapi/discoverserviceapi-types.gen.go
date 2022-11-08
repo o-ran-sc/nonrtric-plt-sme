@@ -35,7 +35,10 @@ type GetAllServiceAPIsParams struct {
 	AefId *string `json:"aef-id,omitempty"`
 
 	// Data formats used by the API (e.g. serialization protocol JSON used).
-	DataFormat *string `json:"data-format,omitempty"`
+	DataFormat *externalRef2.DataFormat `json:"data-format,omitempty"`
+
+	// The service API category to which the service API belongs to.
+	ApiCat *string `json:"api-cat,omitempty"`
 
 	// The preferred AEF location.
 	PreferredAefLoc *externalRef2.AefLocation `json:"preferred-aef-loc,omitempty"`
