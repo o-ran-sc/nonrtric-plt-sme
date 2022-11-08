@@ -121,6 +121,9 @@ func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, regi
 		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for provider")
 	}
 
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+
 	for _, function := range *updatedProvider.ApiProvFuncs {
 		if function.ApiProvFuncId == nil {
 			function.ApiProvFuncId = pm.getFuncId(function.ApiProvFuncRole, function.ApiProvFuncInfo)

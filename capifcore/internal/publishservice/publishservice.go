@@ -182,6 +182,8 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 			ps.helmManager.UninstallHelmChart(info[1], info[3])
 			log.Info("Deleted service: ", serviceApiId)
 		}
+		ps.lock.Lock()
+		defer ps.lock.Unlock()
 		delete(ps.publishedServices, string(serviceApiId))
 	}
 	return ctx.NoContent(http.StatusNoContent)
