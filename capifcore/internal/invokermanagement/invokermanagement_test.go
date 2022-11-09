@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"testing"
 
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
@@ -43,61 +44,28 @@ import (
 )
 
 func TestOnboardInvoker(t *testing.T) {
-	var err error
-	apiId := "apiId"
-	aefId := "aefId"
 	apiRegisterMock := publishmocks.APIRegister{}
 	apiRegisterMock.On("AreAPIsRegistered", mock.Anything).Return(true)
 	invokerUnderTest, requestHandler := getEcho(&apiRegisterMock)
 
-	description := "description"
-	domainName := "domain"
-	var protocol publishserviceapi.Protocol = "HTTP_1_1"
+	aefProfiles := []publishserviceapi.AefProfile{
+		getAefProfile("aefId"),
+	}
+	apiId := "apiId"
 	var apiList invokermanagementapi.APIList = []publishserviceapi.ServiceAPIDescription{
 		{
 			ApiId:       &apiId,
-			ApiName:     "api",
-			Description: &description,
-			AefProfiles: &[]publishserviceapi.AefProfile{
-				{
-					AefId:      aefId,
-					DomainName: &domainName,
-					Protocol:   &protocol,
-					Versions: []publishserviceapi.Version{
-						{
-							ApiVersion: "v1",
-							Resources: &[]publishserviceapi.Resource{
-								{
-									ResourceName: "app",
-									CommType:     "REQUEST_RESPONSE",
-									Uri:          "uri",
-									Operations: &[]publishserviceapi.Operation{
-										"POST",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			AefProfiles: &aefProfiles,
 		},
 	}
-	invokerInfo := "invoker a"
-	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
-		ApiInvokerInformation:   &invokerInfo,
-		NotificationDestination: "url",
-		OnboardingInformation: invokermanagementapi.OnboardingInformation{
-			ApiInvokerPublicKey: "key",
-		},
-		ApiList: &apiList,
-	}
+	newInvoker := getInvoker("invoker a", apiList)
 
 	// Onboard a valid invoker
 	result := testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusCreated, result.Code())
 	var resultInvoker invokermanagementapi.APIInvokerEnrolmentDetails
-	err = result.UnmarshalBodyToObject(&resultInvoker)
+	err := result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, "api_invoker_id_invoker_a", *resultInvoker.ApiInvokerId)
 	assert.Equal(t, newInvoker.NotificationDestination, resultInvoker.NotificationDestination)
@@ -141,7 +109,7 @@ func TestOnboardInvoker(t *testing.T) {
 }
 
 func TestDeleteInvoker(t *testing.T) {
-	_, requestHandler := getEcho(nil)
+	invokerUnderTest, requestHandler := getEcho(nil)
 
 	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		NotificationDestination: "url",
@@ -152,15 +120,15 @@ func TestDeleteInvoker(t *testing.T) {
 
 	// Onboard an invoker
 	result := testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
-	var resultInvoker invokermanagementapi.APIInvokerEnrolmentDetails
-	result.UnmarshalBodyToObject(&resultInvoker)
 
 	invokerUrl := result.Recorder.Header().Get(echo.HeaderLocation)
+	assert.True(t, invokerUnderTest.IsInvokerRegistered(path.Base(invokerUrl)))
 
 	// Delete the invoker
 	result = testutil.NewRequest().Delete(invokerUrl).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
+	assert.False(t, invokerUnderTest.IsInvokerRegistered(path.Base(invokerUrl)))
 }
 
 func TestUpdateInvoker(t *testing.T) {
@@ -247,7 +215,42 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, &notFound, problemDetails.Status)
 	errMsg = "The invoker to update has not been onboarded"
 	assert.Equal(t, &errMsg, problemDetails.Cause)
+}
 
+func TestGetInvokerApiList(t *testing.T) {
+	apiRegisterMock := publishmocks.APIRegister{}
+	apiRegisterMock.On("AreAPIsRegistered", mock.Anything).Return(true)
+	invokerUnderTest, requestHandler := getEcho(&apiRegisterMock)
+
+	// Onboard two invokers
+	aefProfiles := []publishserviceapi.AefProfile{
+		getAefProfile("aefId"),
+	}
+	apiId := "apiId"
+	var apiList invokermanagementapi.APIList = []publishserviceapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId,
+			AefProfiles: &aefProfiles,
+		},
+	}
+	newInvoker := getInvoker("invoker a", apiList)
+	testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+	aefProfiles = []publishserviceapi.AefProfile{
+		getAefProfile("aefId2"),
+	}
+	apiId2 := "apiId2"
+	apiList = []publishserviceapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId2,
+			AefProfiles: &aefProfiles,
+		},
+	}
+	newInvoker = getInvoker("invoker b", apiList)
+	testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+
+	wantedApiList := invokerUnderTest.GetInvokerApiList("api_invoker_id_invoker_a")
+	assert.NotNil(t, wantedApiList)
+	assert.Equal(t, apiId, *(*wantedApiList)[0].ApiId)
 }
 
 func getEcho(apiRegister publishservice.APIRegister) (*InvokerManager, *echo.Echo) {
@@ -267,4 +270,31 @@ func getEcho(apiRegister publishservice.APIRegister) (*InvokerManager, *echo.Ech
 
 	invokermanagementapi.RegisterHandlers(e, im)
 	return im, e
+}
+
+func getAefProfile(aefId string) publishserviceapi.AefProfile {
+	return publishserviceapi.AefProfile{
+		AefId: aefId,
+		Versions: []publishserviceapi.Version{
+			{
+				Resources: &[]publishserviceapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+					},
+				},
+			},
+		},
+	}
+}
+
+func getInvoker(invokerInfo string, apiList invokermanagementapi.APIList) invokermanagementapi.APIInvokerEnrolmentDetails {
+	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
+		ApiInvokerInformation:   &invokerInfo,
+		NotificationDestination: "url",
+		OnboardingInformation: invokermanagementapi.OnboardingInformation{
+			ApiInvokerPublicKey: "key",
+		},
+		ApiList: &apiList,
+	}
+	return newInvoker
 }

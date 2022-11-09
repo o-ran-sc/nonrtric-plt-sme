@@ -41,6 +41,7 @@ import (
 type InvokerRegister interface {
 	IsInvokerRegistered(invokerId string) bool
 	VerifyInvokerSecret(invokerId, secret string) bool
+	GetInvokerApiList(invokerId string) *invokerapi.APIList
 }
 
 type InvokerManager struct {
@@ -77,6 +78,14 @@ func (im *InvokerManager) VerifyInvokerSecret(invokerId, secret string) bool {
 	return verified
 }
 
+func (im *InvokerManager) GetInvokerApiList(invokerId string) *invokerapi.APIList {
+	invoker, ok := im.onboardedInvokers[invokerId]
+	if ok {
+		return invoker.ApiList
+	}
+	return nil
+}
+
 func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	var newInvoker invokerapi.APIInvokerEnrolmentDetails
 	err := ctx.Bind(&newInvoker)
@@ -84,8 +93,8 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for invoker")
 	}
 
-	shouldReturn, coreError := im.validateInvoker(newInvoker, ctx)
-	if shouldReturn {
+	coreError := im.validateInvoker(newInvoker, ctx)
+	if coreError != nil {
 		return coreError
 	}
 
@@ -134,8 +143,8 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 		return sendCoreError(ctx, http.StatusBadRequest, "Invoker ApiInvokerId not matching")
 	}
 
-	shouldReturn, coreError := im.validateInvoker(invoker, ctx)
-	if shouldReturn {
+	coreError := im.validateInvoker(invoker, ctx)
+	if coreError != nil {
 		return coreError
 	}
 
@@ -161,20 +170,20 @@ func (im *InvokerManager) ModifyIndApiInvokeEnrolment(ctx echo.Context, onboardi
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) (bool, error) {
+func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) error {
 	if invoker.NotificationDestination == "" {
-		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required NotificationDestination")
+		return sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required NotificationDestination")
 	}
 
 	if invoker.OnboardingInformation.ApiInvokerPublicKey == "" {
-		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required OnboardingInformation.ApiInvokerPublicKey")
+		return sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required OnboardingInformation.ApiInvokerPublicKey")
 	}
 
 	if !im.areAPIsRegistered(invoker.ApiList) {
-		return true, sendCoreError(ctx, http.StatusBadRequest, "Some APIs needed by invoker are not registered")
+		return sendCoreError(ctx, http.StatusBadRequest, "Some APIs needed by invoker are not registered")
 	}
 
-	return false, nil
+	return nil
 }
 
 func (im *InvokerManager) areAPIsRegistered(apis *invokerapi.APIList) bool {
