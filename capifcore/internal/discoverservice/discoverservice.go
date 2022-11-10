@@ -23,9 +23,9 @@ package discoverservice
 import (
 	"net/http"
 
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	discoverapi "oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
-
-	"oransc.org/nonrtric/capifcore/internal/publishservice"
+	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
 
 	"github.com/labstack/echo/v4"
 
@@ -33,20 +33,23 @@ import (
 )
 
 type DiscoverService struct {
-	apiRegister publishservice.APIRegister
+	invokerRegister invokermanagement.InvokerRegister
 }
 
-func NewDiscoverService(apiRegister publishservice.APIRegister) *DiscoverService {
+func NewDiscoverService(invokerRegister invokermanagement.InvokerRegister) *DiscoverService {
 	return &DiscoverService{
-		apiRegister: apiRegister,
+		invokerRegister: invokerRegister,
 	}
 }
 
 func (ds *DiscoverService) GetAllServiceAPIs(ctx echo.Context, params discoverapi.GetAllServiceAPIsParams) error {
-	allApis := *ds.apiRegister.GetAPIs()
+	allApis := ds.invokerRegister.GetInvokerApiList(params.ApiInvokerId)
+	if allApis == nil {
+		return sendCoreError(ctx, http.StatusNotFound, "Invoker not registered")
+	}
 	filteredApis := []publishapi.ServiceAPIDescription{}
 	gatewayDomain := "r1-expo-func-aef"
-	for _, api := range allApis {
+	for _, api := range *allApis {
 		if !matchesFilter(api, params) {
 			continue
 		}
@@ -77,47 +80,52 @@ func matchesFilter(api publishapi.ServiceAPIDescription, filter discoverapi.GetA
 		return false
 	}
 	profiles := *api.AefProfiles
-	aefIdMatch := true
-	protocolMatch := true
-	dataFormatMatch := true
-	versionMatch := true
 	for _, profile := range profiles {
-		if filter.AefId != nil {
-			aefIdMatch = *filter.AefId == profile.AefId
-		}
-		if filter.ApiVersion != nil || filter.CommType != nil {
-			versionMatch = checkVersionAndCommType(profile, filter.ApiVersion, filter.CommType)
-		}
-		if filter.Protocol != nil {
-			protocolMatch = profile.Protocol != nil && *filter.Protocol == *profile.Protocol
-		}
-		if filter.DataFormat != nil {
-			dataFormatMatch = profile.DataFormat != nil && *filter.DataFormat == *profile.DataFormat
-		}
-		if aefIdMatch && versionMatch && protocolMatch && dataFormatMatch {
+		if checkAefId(filter, profile) && checkVersionAndCommType(profile, filter) && checkProtocol(filter, profile) && checkDataFormat(filter, profile) {
 			return true
 		}
 	}
 	return false
 }
 
-func checkVersionAndCommType(profile publishapi.AefProfile, wantedVersion *string, commType *publishapi.CommunicationType) bool {
+func checkAefId(filter discoverapi.GetAllServiceAPIsParams, profile publishapi.AefProfile) bool {
+	if filter.AefId != nil {
+		return *filter.AefId == profile.AefId
+	}
+	return true
+}
+
+func checkVersionAndCommType(profile publishapi.AefProfile, filter discoverapi.GetAllServiceAPIsParams) bool {
 	match := false
-	if wantedVersion != nil {
+	if filter.ApiVersion != nil {
 		for _, version := range profile.Versions {
-			match = checkVersion(version, wantedVersion, commType)
+			match = checkVersion(version, filter.ApiVersion, filter.CommType)
 			if match {
 				break
 			}
 		}
-	} else if commType != nil {
+	} else if filter.CommType != nil {
 		for _, version := range profile.Versions {
-			match = checkCommType(version.Resources, commType)
+			match = checkCommType(version.Resources, filter.CommType)
 		}
 	} else {
 		match = true
 	}
 	return match
+}
+
+func checkProtocol(filter discoverapi.GetAllServiceAPIsParams, profile publishapi.AefProfile) bool {
+	if filter.Protocol != nil {
+		return profile.Protocol != nil && *filter.Protocol == *profile.Protocol
+	}
+	return true
+}
+
+func checkDataFormat(filter discoverapi.GetAllServiceAPIsParams, profile publishapi.AefProfile) bool {
+	if filter.DataFormat != nil {
+		return profile.DataFormat != nil && *filter.DataFormat == *profile.DataFormat
+	}
+	return true
 }
 
 func checkVersion(version publishapi.Version, wantedVersion *string, commType *publishapi.CommunicationType) bool {
@@ -145,4 +153,15 @@ func checkCommType(resources *[]publishapi.Resource, commType *publishapi.Commun
 		match = true
 	}
 	return match
+}
+
+// This function wraps sending of an error in the Error format, and
+// handling the failure to marshal that.
+func sendCoreError(ctx echo.Context, code int, message string) error {
+	pd := common29122.ProblemDetails{
+		Cause:  &message,
+		Status: &code,
+	}
+	err := ctx.JSON(code, pd)
+	return err
 }

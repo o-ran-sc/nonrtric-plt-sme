@@ -71,7 +71,7 @@ func Test_routing(t *testing.T) {
 			name: "Discover path",
 			args: args{
 				url:          "/service-apis/v1/allServiceAPIs?api-invoker-id=api_invoker_id",
-				returnStatus: http.StatusOK,
+				returnStatus: http.StatusNotFound,
 				method:       "GET",
 			},
 		},
