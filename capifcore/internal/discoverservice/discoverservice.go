@@ -23,9 +23,9 @@ package discoverservice
 import (
 	"net/http"
 
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	discoverapi "oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
-
-	"oransc.org/nonrtric/capifcore/internal/publishservice"
+	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
 
 	"github.com/labstack/echo/v4"
 
@@ -33,20 +33,23 @@ import (
 )
 
 type DiscoverService struct {
-	apiRegister publishservice.APIRegister
+	invokerRegister invokermanagement.InvokerRegister
 }
 
-func NewDiscoverService(apiRegister publishservice.APIRegister) *DiscoverService {
+func NewDiscoverService(invokerRegister invokermanagement.InvokerRegister) *DiscoverService {
 	return &DiscoverService{
-		apiRegister: apiRegister,
+		invokerRegister: invokerRegister,
 	}
 }
 
 func (ds *DiscoverService) GetAllServiceAPIs(ctx echo.Context, params discoverapi.GetAllServiceAPIsParams) error {
-	allApis := *ds.apiRegister.GetAPIs()
+	allApis := ds.invokerRegister.GetInvokerApiList(params.ApiInvokerId)
+	if allApis == nil {
+		return sendCoreError(ctx, http.StatusNotFound, "Invoker not registered")
+	}
 	filteredApis := []publishapi.ServiceAPIDescription{}
 	gatewayDomain := "r1-expo-func-aef"
-	for _, api := range allApis {
+	for _, api := range *allApis {
 		if !matchesFilter(api, params) {
 			continue
 		}
@@ -145,4 +148,15 @@ func checkCommType(resources *[]publishapi.Resource, commType *publishapi.Commun
 		match = true
 	}
 	return match
+}
+
+// This function wraps sending of an error in the Error format, and
+// handling the failure to marshal that.
+func sendCoreError(ctx echo.Context, code int, message string) error {
+	pd := common29122.ProblemDetails{
+		Cause:  &message,
+		Status: &code,
+	}
+	err := ctx.JSON(code, pd)
+	return err
 }

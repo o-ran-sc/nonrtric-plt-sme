@@ -103,17 +103,6 @@ func getEcho() *echo.Echo {
 	group.Use(middleware.OapiRequestValidator(publishServiceSwagger))
 	publishserviceapi.RegisterHandlersWithBaseURL(e, publishService, "/published-apis/v1")
 
-	// Register DiscoverService
-	discoverServiceSwagger, err := discoverserviceapi.GetSwagger()
-	if err != nil {
-		log.Fatalf("Error loading DiscoverService swagger spec\n: %s", err)
-	}
-	discoverServiceSwagger.Servers = nil
-	discoverService := discoverservice.NewDiscoverService(publishService)
-	group = e.Group("/service-apis/v1")
-	group.Use(middleware.OapiRequestValidator(discoverServiceSwagger))
-	discoverserviceapi.RegisterHandlersWithBaseURL(e, discoverService, "/service-apis/v1")
-
 	// Register InvokerManagement
 	invokerManagerSwagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
@@ -124,6 +113,17 @@ func getEcho() *echo.Echo {
 	group = e.Group("/api-invoker-management/v1")
 	group.Use(middleware.OapiRequestValidator(invokerManagerSwagger))
 	invokermanagementapi.RegisterHandlersWithBaseURL(e, invokerManager, "/api-invoker-management/v1")
+
+	// Register DiscoverService
+	discoverServiceSwagger, err := discoverserviceapi.GetSwagger()
+	if err != nil {
+		log.Fatalf("Error loading DiscoverService swagger spec\n: %s", err)
+	}
+	discoverServiceSwagger.Servers = nil
+	discoverService := discoverservice.NewDiscoverService(*invokerManager)
+	group = e.Group("/service-apis/v1")
+	group.Use(middleware.OapiRequestValidator(discoverServiceSwagger))
+	discoverserviceapi.RegisterHandlersWithBaseURL(e, discoverService, "/service-apis/v1")
 
 	// Register Security
 	securitySwagger, err := publishserviceapi.GetSwagger()

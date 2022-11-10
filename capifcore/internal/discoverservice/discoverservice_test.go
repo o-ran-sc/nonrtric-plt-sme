@@ -26,15 +26,16 @@ import (
 	"os"
 	"testing"
 
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
-
-	"oransc.org/nonrtric/capifcore/internal/publishservice"
+	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
+	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
 
 	"github.com/labstack/echo/v4"
 
 	publishapi "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 
-	"oransc.org/nonrtric/capifcore/internal/publishservice/mocks"
+	"oransc.org/nonrtric/capifcore/internal/invokermanagement/mocks"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/deepmap/oapi-codegen/pkg/testutil"
@@ -52,12 +53,12 @@ func TestGetAllServiceAPIs(t *testing.T) {
 		getAPI("apiName1", "aefId", "apiCategory", "v1", nil, nil, ""),
 		getAPI("apiName2", "aefId", "apiCategory", "v1", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get all APIs, without any filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -66,23 +67,42 @@ func TestGetAllServiceAPIs(t *testing.T) {
 	assert.Equal(t, 2, len(*resultInvoker.ServiceAPIDescriptions))
 	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 	assert.Equal(t, "apiName2", (*resultInvoker.ServiceAPIDescriptions)[1].ApiName)
-	apiRegisterMock.AssertCalled(t, "GetAPIs")
 	assert.Equal(t, 2, len(*resultInvoker.ServiceAPIDescriptions))
+}
+
+func TestGetAllServiceAPIsWhenMissingProvider(t *testing.T) {
+	invokerId := "unregistered"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, nil)
+
+	requestHandler := getEcho(invokerRegisterrMock)
+
+	// Get all APIs, without any filter
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNotFound, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	notFound := http.StatusNotFound
+	assert.Equal(t, &notFound, problemDetails.Status)
+	errMsg := "Invoker not registered"
+	assert.Equal(t, &errMsg, problemDetails.Cause)
 }
 
 func TestFilterApiName(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "", nil, nil, ""),
+		getAPI(apiName, "", "", "", nil, nil, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-name=apiName1&api-invoker-id=api_invoker_id").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&api-name="+apiName).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -95,16 +115,17 @@ func TestFilterApiName(t *testing.T) {
 func TestFilterAefId(t *testing.T) {
 	var err error
 
+	aefId := "aefId"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "aefId", "", "", nil, nil, ""),
+		getAPI("apiName1", aefId, "", "", nil, nil, ""),
 		getAPI("apiName2", "otherAefId", "", "", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id&aef-id=aefId").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&aef-id="+aefId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -117,16 +138,17 @@ func TestFilterAefId(t *testing.T) {
 func TestFilterVersion(t *testing.T) {
 	var err error
 
+	version := "v1"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "v1", nil, nil, ""),
+		getAPI("apiName1", "", "", version, nil, nil, ""),
 		getAPI("apiName2", "", "", "v2", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-version=v1&api-invoker-id=api_invoker_id").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&api-version="+version).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -139,16 +161,17 @@ func TestFilterVersion(t *testing.T) {
 func TestFilterCommType(t *testing.T) {
 	var err error
 
+	commType := publishapi.CommunicationTypeREQUESTRESPONSE
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "", nil, nil, publishapi.CommunicationTypeREQUESTRESPONSE),
+		getAPI("apiName1", "", "", "", nil, nil, commType),
 		getAPI("apiName2", "", "", "", nil, nil, publishapi.CommunicationTypeSUBSCRIBENOTIFY),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id&comm-type=REQUEST_RESPONSE").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&comm-type="+string(commType)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -161,17 +184,19 @@ func TestFilterCommType(t *testing.T) {
 func TestFilterVersionAndCommType(t *testing.T) {
 	var err error
 
+	version := "v1"
+	commType := publishapi.CommunicationTypeSUBSCRIBENOTIFY
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "v1", nil, nil, publishapi.CommunicationTypeREQUESTRESPONSE),
-		getAPI("apiName2", "", "", "v1", nil, nil, publishapi.CommunicationTypeSUBSCRIBENOTIFY),
-		getAPI("apiName3", "", "", "v2", nil, nil, publishapi.CommunicationTypeSUBSCRIBENOTIFY),
+		getAPI("apiName1", "", "", version, nil, nil, publishapi.CommunicationTypeREQUESTRESPONSE),
+		getAPI("apiName2", "", "", version, nil, nil, commType),
+		getAPI("apiName3", "", "", "v2", nil, nil, commType),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id&api-version=v1&comm-type=SUBSCRIBE_NOTIFY").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&api-version="+version+"&comm-type="+string(commType)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -184,16 +209,17 @@ func TestFilterVersionAndCommType(t *testing.T) {
 func TestFilterAPICategory(t *testing.T) {
 	var err error
 
+	apiCategory := "apiCategory"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "apiCategory", "", nil, nil, ""),
+		getAPI("apiName1", "", apiCategory, "", nil, nil, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id&api-cat=apiCategory").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&api-cat="+apiCategory).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -210,12 +236,12 @@ func TestFilterProtocol(t *testing.T) {
 		getAPI("apiName1", "", "", "", &protocolHTTP11, nil, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id&protocol=HTTP_1_1").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&protocol="+string(protocolHTTP11)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -234,12 +260,12 @@ func TestFilterDataFormat(t *testing.T) {
 		getAPI("apiName1", "", "", "", nil, &dataFormatJSON, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
-	apiRegisterMock := mocks.APIRegister{}
-	apiRegisterMock.On("GetAPIs").Return(&apiList)
-	requestHandler := getEcho(&apiRegisterMock)
+	invokerId := "api_invoker_id"
+	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
+	requestHandler := getEcho(invokerRegisterrMock)
 
 	// Get APIs with filter
-	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id=api_invoker_id&data-format=JSON").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/allServiceAPIs?api-invoker-id="+invokerId+"&data-format="+string(dataFormatJSON)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	var resultInvoker discoverserviceapi.DiscoveredAPIs
@@ -249,7 +275,7 @@ func TestFilterDataFormat(t *testing.T) {
 	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
-func getEcho(apiRegister publishservice.APIRegister) *echo.Echo {
+func getEcho(invokerManager invokermanagement.InvokerRegister) *echo.Echo {
 	swagger, err := discoverserviceapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -258,7 +284,7 @@ func getEcho(apiRegister publishservice.APIRegister) *echo.Echo {
 
 	swagger.Servers = nil
 
-	ds := NewDiscoverService(apiRegister)
+	ds := NewDiscoverService(invokerManager)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())
@@ -266,6 +292,17 @@ func getEcho(apiRegister publishservice.APIRegister) *echo.Echo {
 
 	discoverserviceapi.RegisterHandlers(e, ds)
 	return e
+}
+
+func getInvokerRegisterMock(invokerId string, apisToReturn []publishapi.ServiceAPIDescription) *mocks.InvokerRegister {
+	apiList := invokermanagementapi.APIList(apisToReturn)
+	invokerRegisterrMock := mocks.InvokerRegister{}
+	if apisToReturn != nil {
+		invokerRegisterrMock.On("GetInvokerApiList", invokerId).Return(&apiList)
+	} else {
+		invokerRegisterrMock.On("GetInvokerApiList", invokerId).Return(nil)
+	}
+	return &invokerRegisterrMock
 }
 
 func getAPI(apiName, aefId, apiCategory, apiVersion string, protocol *publishapi.Protocol, dataFormat *publishapi.DataFormat, commType publishapi.CommunicationType) publishapi.ServiceAPIDescription {
