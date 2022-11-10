@@ -93,8 +93,8 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for invoker")
 	}
 
-	coreError := im.validateInvoker(newInvoker, ctx)
-	if coreError != nil {
+	shouldReturn, coreError := im.validateInvoker(newInvoker, ctx)
+	if shouldReturn {
 		return coreError
 	}
 
@@ -143,8 +143,8 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 		return sendCoreError(ctx, http.StatusBadRequest, "Invoker ApiInvokerId not matching")
 	}
 
-	coreError := im.validateInvoker(invoker, ctx)
-	if coreError != nil {
+	shouldReturn, coreError := im.validateInvoker(invoker, ctx)
+	if shouldReturn {
 		return coreError
 	}
 
@@ -170,20 +170,20 @@ func (im *InvokerManager) ModifyIndApiInvokeEnrolment(ctx echo.Context, onboardi
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) error {
+func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) (bool, error) {
 	if invoker.NotificationDestination == "" {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required NotificationDestination")
+		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required NotificationDestination")
 	}
 
 	if invoker.OnboardingInformation.ApiInvokerPublicKey == "" {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required OnboardingInformation.ApiInvokerPublicKey")
+		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required OnboardingInformation.ApiInvokerPublicKey")
 	}
 
 	if !im.areAPIsRegistered(invoker.ApiList) {
-		return sendCoreError(ctx, http.StatusBadRequest, "Some APIs needed by invoker are not registered")
+		return true, sendCoreError(ctx, http.StatusBadRequest, "Some APIs needed by invoker are not registered")
 	}
 
-	return nil
+	return false, nil
 }
 
 func (im *InvokerManager) areAPIsRegistered(apis *invokerapi.APIList) bool {

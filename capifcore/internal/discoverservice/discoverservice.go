@@ -141,18 +141,12 @@ func checkVersion(version publishapi.Version, wantedVersion *string, commType *p
 }
 
 func checkCommType(resources *[]publishapi.Resource, commType *publishapi.CommunicationType) bool {
-	match := false
-	if commType != nil {
-		for _, resource := range *resources {
-			if resource.CommType == *commType {
-				match = true
-				break
-			}
+	for _, resource := range *resources {
+		if resource.CommType == *commType {
+			return true
 		}
-	} else {
-		match = true
 	}
-	return match
+	return false
 }
 
 // This function wraps sending of an error in the Error format, and
