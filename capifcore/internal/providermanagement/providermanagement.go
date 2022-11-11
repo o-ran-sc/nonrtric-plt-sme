@@ -36,7 +36,8 @@ import (
 
 //go:generate mockery --name ServiceRegister
 type ServiceRegister interface {
-	IsFunctionRegistered(aefId string) bool
+	IsFunctionRegistered(functionId string) bool
+	GetAefsForPublisher(apfId string) []string
 }
 
 type ProviderManager struct {
@@ -50,12 +51,12 @@ func NewProviderManager() *ProviderManager {
 	}
 }
 
-func (pm *ProviderManager) IsFunctionRegistered(aefId string) bool {
+func (pm *ProviderManager) IsFunctionRegistered(functionId string) bool {
 	registered := false
 out:
 	for _, provider := range pm.onboardedProviders {
 		for _, registeredFunc := range *provider.ApiProvFuncs {
-			if *registeredFunc.ApiProvFuncId == aefId {
+			if *registeredFunc.ApiProvFuncId == functionId {
 				registered = true
 				break out
 			}
@@ -63,6 +64,27 @@ out:
 	}
 
 	return registered
+}
+
+func (pm *ProviderManager) GetAefsForPublisher(apfId string) []string {
+	for _, provider := range pm.onboardedProviders {
+		for _, registeredFunc := range *provider.ApiProvFuncs {
+			if *registeredFunc.ApiProvFuncId == apfId && registeredFunc.ApiProvFuncRole == provapi.ApiProviderFuncRoleAPF {
+				return getExposedFuncs(provider.ApiProvFuncs)
+			}
+		}
+	}
+	return nil
+}
+
+func getExposedFuncs(providerFuncs *[]provapi.APIProviderFunctionDetails) []string {
+	exposedFuncs := []string{}
+	for _, registeredFunc := range *providerFuncs {
+		if registeredFunc.ApiProvFuncRole == provapi.ApiProviderFuncRoleAEF {
+			exposedFuncs = append(exposedFuncs, *registeredFunc.ApiProvFuncId)
+		}
+	}
+	return exposedFuncs
 }
 
 func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {

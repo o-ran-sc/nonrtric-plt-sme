@@ -37,39 +37,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	domainID      = "domain_id_rApp_domain"
+	otherDomainID = "domain_id_other_domain"
+	domainInfo    = "rApp domain"
+	funcInfoAPF   = "rApp as APF"
+	funcIdAPF     = "APF_id_rApp_as_APF"
+	funcInfoAMF   = "rApp as AMF"
+	funcIdAMF     = "AMF_id_rApp_as_AMF"
+	funcInfoAEF   = "rApp as AEF"
+	funcIdAEF     = "AEF_id_rApp_as_AEF"
+)
+
 func TestProviderHandlingSuccessfully(t *testing.T) {
 	managerUnderTest, requestHandler := getEcho()
 
-	domainInfo := "rApp domain"
-	funcInfoAPF := "rApp as APF"
-	funcInfoAMF := "rApp as AMF"
-	funcInfoAEF := "rApp as AEF"
-	testFuncs := []provapi.APIProviderFunctionDetails{
-		{
-			ApiProvFuncInfo: &funcInfoAPF,
-			ApiProvFuncRole: provapi.ApiProviderFuncRoleAPF,
-		},
-		{
-			ApiProvFuncInfo: &funcInfoAMF,
-			ApiProvFuncRole: provapi.ApiProviderFuncRoleAMF,
-		},
-		{
-			ApiProvFuncInfo: &funcInfoAEF,
-			ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
-		},
-	}
-	newProvider := provapi.APIProviderEnrolmentDetails{
-		ApiProvDomInfo: &domainInfo,
-		ApiProvFuncs:   &testFuncs,
-	}
+	newProvider := getProvider()
 
 	// Register a valid provider
 	result := testutil.NewRequest().Post("/registrations").WithJsonBody(newProvider).Go(t, requestHandler)
 
-	domainID := "domain_id_rApp_domain"
-	funcIdAPF := "APF_id_rApp_as_APF"
-	funcIdAMF := "AMF_id_rApp_as_AMF"
-	funcIdAEF := "AEF_id_rApp_as_AEF"
 	assert.Equal(t, http.StatusCreated, result.Code())
 	var resultProvider provapi.APIProviderEnrolmentDetails
 	err := result.UnmarshalBodyToObject(&resultProvider)
@@ -88,10 +75,12 @@ func TestProviderHandlingSuccessfully(t *testing.T) {
 	(*newProvider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
 	(*newProvider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
 	newFuncInfoAEF := "new func as AEF"
+	testFuncs := *newProvider.ApiProvFuncs
 	testFuncs = append(testFuncs, provapi.APIProviderFunctionDetails{
 		ApiProvFuncInfo: &newFuncInfoAEF,
 		ApiProvFuncRole: "AEF",
 	})
+	newProvider.ApiProvFuncs = &testFuncs
 
 	result = testutil.NewRequest().Put("/registrations/"+domainID).WithJsonBody(newProvider).Go(t, requestHandler)
 
@@ -125,6 +114,76 @@ func TestProviderHandlingValidation(t *testing.T) {
 	assert.Equal(t, &badRequest, problemDetails.Status)
 	errMsg := "Provider missing required ApiProvDomInfo"
 	assert.Equal(t, &errMsg, problemDetails.Cause)
+}
+
+func TestGetExposedFunctionsForPublishingFunction(t *testing.T) {
+	managerUnderTest := NewProviderManager()
+
+	managerUnderTest.onboardedProviders[domainID] = getProvider()
+	managerUnderTest.onboardedProviders[otherDomainID] = getOtherProvider()
+
+	exposedFuncs := managerUnderTest.GetAefsForPublisher(funcIdAPF)
+	assert.Equal(t, 1, len(exposedFuncs))
+	assert.Equal(t, funcIdAEF, exposedFuncs[0])
+}
+
+func getProvider() provapi.APIProviderEnrolmentDetails {
+	testFuncs := []provapi.APIProviderFunctionDetails{
+		{
+			ApiProvFuncId:   &funcIdAPF,
+			ApiProvFuncInfo: &funcInfoAPF,
+			ApiProvFuncRole: provapi.ApiProviderFuncRoleAPF,
+		},
+		{
+			ApiProvFuncId:   &funcIdAMF,
+			ApiProvFuncInfo: &funcInfoAMF,
+			ApiProvFuncRole: provapi.ApiProviderFuncRoleAMF,
+		},
+		{
+			ApiProvFuncId:   &funcIdAEF,
+			ApiProvFuncInfo: &funcInfoAEF,
+			ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
+		},
+	}
+	return provapi.APIProviderEnrolmentDetails{
+		ApiProvDomId:   &domainID,
+		ApiProvDomInfo: &domainInfo,
+		ApiProvFuncs:   &testFuncs,
+	}
+
+}
+
+func getOtherProvider() provapi.APIProviderEnrolmentDetails {
+	otherDomainInfo := "other domain"
+	otherFuncInfoAPF := "other as APF"
+	otherApfId := "APF_id_other_as_APF"
+	otherFuncInfoAMF := "other as AMF"
+	otherAmfId := "AMF_id_other_as_AMF"
+	otherFuncInfoAEF := "other as AEF"
+	otherAefId := "AEF_id_other_as_AEF"
+	testFuncs := []provapi.APIProviderFunctionDetails{
+		{
+			ApiProvFuncId:   &otherApfId,
+			ApiProvFuncInfo: &otherFuncInfoAPF,
+			ApiProvFuncRole: provapi.ApiProviderFuncRoleAPF,
+		},
+		{
+			ApiProvFuncId:   &otherAmfId,
+			ApiProvFuncInfo: &otherFuncInfoAMF,
+			ApiProvFuncRole: provapi.ApiProviderFuncRoleAMF,
+		},
+		{
+			ApiProvFuncId:   &otherAefId,
+			ApiProvFuncInfo: &otherFuncInfoAEF,
+			ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
+		},
+	}
+	return provapi.APIProviderEnrolmentDetails{
+		ApiProvDomId:   &otherDomainID,
+		ApiProvDomInfo: &otherDomainInfo,
+		ApiProvFuncs:   &testFuncs,
+	}
+
 }
 
 func getEcho() (*ProviderManager, *echo.Echo) {

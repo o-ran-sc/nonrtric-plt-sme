@@ -4,4 +4,4 @@ commoncollector
 enumfixer
 specificationfixer
 capifcore
-coverage.txt
+coverage.*

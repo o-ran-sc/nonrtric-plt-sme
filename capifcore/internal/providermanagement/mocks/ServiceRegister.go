@@ -9,13 +9,29 @@ type ServiceRegister struct {
 	mock.Mock
 }
 
-// IsFunctionRegistered provides a mock function with given fields: aefId
-func (_m *ServiceRegister) IsFunctionRegistered(aefId string) bool {
-	ret := _m.Called(aefId)
+// GetAefsForPublisher provides a mock function with given fields: apfId
+func (_m *ServiceRegister) GetAefsForPublisher(apfId string) []string {
+	ret := _m.Called(apfId)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(apfId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	return r0
+}
+
+// IsFunctionRegistered provides a mock function with given fields: functionId
+func (_m *ServiceRegister) IsFunctionRegistered(functionId string) bool {
+	ret := _m.Called(functionId)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(aefId)
+		r0 = rf(functionId)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
