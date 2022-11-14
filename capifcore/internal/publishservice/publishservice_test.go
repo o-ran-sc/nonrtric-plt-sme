@@ -45,10 +45,11 @@ import (
 )
 
 func TestPublishUnpublishService(t *testing.T) {
+	apfId := "apfId"
 	aefId := "aefId"
 	newApiId := "api_id_app-management"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
-	serviceRegisterMock.On("IsFunctionRegistered", aefId).Return(true)
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	serviceUnderTest, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
@@ -64,24 +65,24 @@ func TestPublishUnpublishService(t *testing.T) {
 	newServiceDescription := getServiceAPIDescription(aefId, domainName, description, protocol)
 
 	// Publish a service
-	result = testutil.NewRequest().Post("/aefId/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+	result = testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusCreated, result.Code())
 	var resultService publishapi.ServiceAPIDescription
 	err := result.UnmarshalBodyToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, *resultService.ApiId, newApiId)
-	assert.Equal(t, "http://example.com/"+aefId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
+	assert.Equal(t, "http://example.com/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 	newServiceDescription.ApiId = &newApiId
 	wantedAPILIst := []publishapi.ServiceAPIDescription{newServiceDescription}
 	assert.True(t, serviceUnderTest.AreAPIsRegistered(&wantedAPILIst))
 	assert.True(t, serviceUnderTest.IsAPIRegistered("aefId", "app-management"))
-	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
+	serviceRegisterMock.AssertCalled(t, "GetAefsForPublisher", apfId)
 	helmManagerMock.AssertCalled(t, "InstallHelmChart", "namespace", "repoName", "chartName", "releaseName")
-	assert.ElementsMatch(t, wantedAPILIst, *serviceUnderTest.GetAPIs())
+	assert.ElementsMatch(t, []string{aefId}, serviceUnderTest.getAllAefIds())
 
 	// Check that service is published
-	result = testutil.NewRequest().Get("/aefId/service-apis/"+newApiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Get("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
 	err = result.UnmarshalBodyToObject(&resultService)
@@ -90,22 +91,23 @@ func TestPublishUnpublishService(t *testing.T) {
 
 	// Delete a service
 	helmManagerMock.On("UninstallHelmChart", mock.Anything, mock.Anything).Return(nil)
-	result = testutil.NewRequest().Delete("/aefId/service-apis/"+newApiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Delete("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
 	helmManagerMock.AssertCalled(t, "UninstallHelmChart", "namespace", "chartName")
-	assert.Empty(t, *serviceUnderTest.GetAPIs())
+	assert.Empty(t, serviceUnderTest.getAllAefIds())
 
 	// Check no services published
-	result = testutil.NewRequest().Get("/aefId/service-apis/"+newApiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Get("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNotFound, result.Code())
 }
 
 func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
+	apfId := "apfId"
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
-	serviceRegisterMock.On("IsFunctionRegistered", aefId).Return(false)
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{"otherAefId"})
 	_, requestHandler := getEcho(&serviceRegisterMock, nil)
 
 	domainName := "domain"
@@ -114,7 +116,7 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	newServiceDescription := getServiceAPIDescription(aefId, domainName, description, protocol)
 
 	// Publish a service
-	result := testutil.NewRequest().Post("/aefId/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+	result := testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNotFound, result.Code())
 	var resultError common29122.ProblemDetails

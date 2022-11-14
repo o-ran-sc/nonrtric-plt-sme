@@ -27,22 +27,6 @@ func (_m *APIRegister) AreAPIsRegistered(serviceDescriptions *[]publishserviceap
 	return r0
 }
 
-// GetAPIs provides a mock function with given fields:
-func (_m *APIRegister) GetAPIs() *[]publishserviceapi.ServiceAPIDescription {
-	ret := _m.Called()
-
-	var r0 *[]publishserviceapi.ServiceAPIDescription
-	if rf, ok := ret.Get(0).(func() *[]publishserviceapi.ServiceAPIDescription); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*[]publishserviceapi.ServiceAPIDescription)
-		}
-	}
-
-	return r0
-}
-
 // IsAPIRegistered provides a mock function with given fields: aefId, path
 func (_m *APIRegister) IsAPIRegistered(aefId string, path string) bool {
 	ret := _m.Called(aefId, path)

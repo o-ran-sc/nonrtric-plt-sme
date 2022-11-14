@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"github.com/labstack/echo/v4"
+	"k8s.io/utils/strings/slices"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
@@ -40,12 +41,11 @@ import (
 //go:generate mockery --name APIRegister
 type APIRegister interface {
 	AreAPIsRegistered(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool
-	GetAPIs() *[]publishserviceapi.ServiceAPIDescription
 	IsAPIRegistered(aefId, path string) bool
 }
 
 type PublishService struct {
-	publishedServices map[string]publishserviceapi.ServiceAPIDescription
+	publishedServices map[string][]*publishserviceapi.ServiceAPIDescription
 	serviceRegister   providermanagement.ServiceRegister
 	helmManager       helmmanagement.HelmManager
 	lock              sync.Mutex
@@ -54,81 +54,69 @@ type PublishService struct {
 func NewPublishService(serviceRegister providermanagement.ServiceRegister, hm helmmanagement.HelmManager) *PublishService {
 	return &PublishService{
 		helmManager:       hm,
-		publishedServices: make(map[string]publishserviceapi.ServiceAPIDescription),
+		publishedServices: make(map[string][]*publishserviceapi.ServiceAPIDescription),
 		serviceRegister:   serviceRegister,
 	}
 }
 
 func (ps *PublishService) AreAPIsRegistered(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool {
-	ps.lock.Lock()
-	defer ps.lock.Unlock()
 
-	allRegistered := true
 	if serviceDescriptions != nil {
-	out:
-		for _, newApi := range *serviceDescriptions {
-			registeredApi, ok := ps.publishedServices[*newApi.ApiId]
-			if ok {
-				if !ps.areProfilesRegistered(newApi.AefProfiles, registeredApi.AefProfiles) {
-					allRegistered = false
-					break out
-				}
-			} else {
-				allRegistered = false
-				break out
-			}
-		}
+		registeredApis := ps.getAllAefIds()
+		return checkNewDescriptions(*serviceDescriptions, registeredApis)
 	}
-	return allRegistered
+	return true
 }
 
-func (ps *PublishService) areProfilesRegistered(newProfiles *[]publishserviceapi.AefProfile, registeredProfiles *[]publishserviceapi.AefProfile) bool {
-	allRegistered := true
-	if newProfiles != nil && registeredProfiles != nil {
-	out:
-		for _, newProfile := range *newProfiles {
-			for _, registeredProfile := range *registeredProfiles {
-				if newProfile.AefId == registeredProfile.AefId {
-					break
-				}
-				allRegistered = false
-				break out
-			}
-		}
-	} else if registeredProfiles == nil {
-		allRegistered = false
-	}
-	return allRegistered
-}
-
-func (ps *PublishService) GetAPIs() *[]publishserviceapi.ServiceAPIDescription {
+func (ps *PublishService) getAllAefIds() []string {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
 
-	apis := []publishserviceapi.ServiceAPIDescription{}
-	for _, service := range ps.publishedServices {
-		apis = append(apis, service)
+	allIds := []string{}
+	for _, descriptions := range ps.publishedServices {
+		for _, description := range descriptions {
+			allIds = append(allIds, getIdsFromDescription(*description)...)
+		}
 	}
-	return &apis
+	return allIds
 }
 
-func (ps *PublishService) IsAPIRegistered(aefId, path string) bool {
-	ps.lock.Lock()
-	defer ps.lock.Unlock()
+func getIdsFromDescription(description publishserviceapi.ServiceAPIDescription) []string {
+	allIds := []string{}
+	if description.AefProfiles != nil {
+		for _, aefProfile := range *description.AefProfiles {
+			allIds = append(allIds, aefProfile.AefId)
+		}
+	}
+	return allIds
+}
 
-	registered := false
-out:
-	for _, service := range ps.publishedServices {
-		if service.ApiName == path {
-			for _, profile := range *service.AefProfiles {
-				if profile.AefId == aefId {
-					registered = true
-					break out
-				}
-			}
+func checkNewDescriptions(newDescriptions []publishserviceapi.ServiceAPIDescription, registeredAefIds []string) bool {
+	registered := true
+	for _, newApi := range newDescriptions {
+		if !checkProfiles(newApi.AefProfiles, registeredAefIds) {
+			registered = false
+			break
 		}
 	}
 	return registered
+}
+
+func checkProfiles(newProfiles *[]publishserviceapi.AefProfile, registeredAefIds []string) bool {
+	allRegistered := true
+	if newProfiles != nil {
+		for _, profile := range *newProfiles {
+			if !slices.Contains(registeredAefIds, profile.AefId) {
+				allRegistered = false
+				break
+			}
+		}
+	}
+	return allRegistered
+}
+
+func (ps *PublishService) IsAPIRegistered(aefId, path string) bool {
+	return slices.Contains(ps.getAllAefIds(), aefId)
 }
 
 func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
@@ -145,8 +133,9 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
 
+	registeredFuncs := ps.serviceRegister.GetAefsForPublisher(apfId)
 	for _, profile := range *newServiceAPIDescription.AefProfiles {
-		if !ps.serviceRegister.IsFunctionRegistered(profile.AefId) {
+		if !slices.Contains(registeredFuncs, profile.AefId) {
 			return sendCoreError(ctx, http.StatusNotFound, "Function not registered, "+profile.AefId)
 		}
 	}
@@ -161,7 +150,12 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 		}
 		log.Info("Installed service: ", newId)
 	}
-	ps.publishedServices[*newServiceAPIDescription.ApiId] = newServiceAPIDescription
+	_, ok := ps.publishedServices[apfId]
+	if ok {
+		ps.publishedServices[apfId] = append(ps.publishedServices[apfId], &newServiceAPIDescription)
+	} else {
+		ps.publishedServices[apfId] = append([]*publishserviceapi.ServiceAPIDescription{}, &newServiceAPIDescription)
+	}
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, *newServiceAPIDescription.ApiId))
@@ -175,23 +169,33 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 }
 
 func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
-	serviceDescription, ok := ps.publishedServices[string(serviceApiId)]
+	serviceDescriptions, ok := ps.publishedServices[string(apfId)]
 	if ok {
-		info := strings.Split(*serviceDescription.Description, ",")
-		if len(info) == 5 {
-			ps.helmManager.UninstallHelmChart(info[1], info[3])
-			log.Info("Deleted service: ", serviceApiId)
+		pos, description := getServiceDescription(serviceApiId, serviceDescriptions)
+		if description != nil {
+			info := strings.Split(*description.Description, ",")
+			if len(info) == 5 {
+				ps.helmManager.UninstallHelmChart(info[1], info[3])
+				log.Info("Deleted service: ", serviceApiId)
+			}
+			ps.lock.Lock()
+			defer ps.lock.Unlock()
+			ps.publishedServices[string(apfId)] = removeServiceDescription(pos, serviceDescriptions)
 		}
-		ps.lock.Lock()
-		defer ps.lock.Unlock()
-		delete(ps.publishedServices, string(serviceApiId))
 	}
 	return ctx.NoContent(http.StatusNoContent)
 }
 
 func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
-	serviceDescription, ok := ps.publishedServices[string(serviceApiId)]
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+
+	serviceDescriptions, ok := ps.publishedServices[apfId]
 	if ok {
+		_, serviceDescription := getServiceDescription(serviceApiId, serviceDescriptions)
+		if serviceDescription == nil {
+			return ctx.NoContent(http.StatusNotFound)
+		}
 		err := ctx.JSON(http.StatusOK, serviceDescription)
 		if err != nil {
 			// Something really bad happened, tell Echo that our handler failed
@@ -201,6 +205,22 @@ func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 		return nil
 	}
 	return ctx.NoContent(http.StatusNotFound)
+}
+
+func getServiceDescription(serviceApiId string, descriptions []*publishserviceapi.ServiceAPIDescription) (int, *publishserviceapi.ServiceAPIDescription) {
+	for pos, description := range descriptions {
+		if serviceApiId == *description.ApiId {
+			return pos, description
+		}
+	}
+	return -1, nil
+}
+
+func removeServiceDescription(i int, a []*publishserviceapi.ServiceAPIDescription) []*publishserviceapi.ServiceAPIDescription {
+	a[i] = a[len(a)-1] // Copy last element to index i.
+	a[len(a)-1] = nil  // Erase last element (write zero value).
+	a = a[:len(a)-1]   // Truncate slice.
+	return a
 }
 
 func (ps *PublishService) ModifyIndAPFPubAPI(ctx echo.Context, apfId string, serviceApiId string) error {
