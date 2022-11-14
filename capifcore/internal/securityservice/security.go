@@ -36,14 +36,14 @@ import (
 
 type Security struct {
 	serviceRegister providermanagement.ServiceRegister
-	apiRegister     publishservice.APIRegister
+	publishRegister publishservice.PublishRegister
 	invokerRegister invokermanagement.InvokerRegister
 }
 
-func NewSecurity(serviceRegister providermanagement.ServiceRegister, apiRegister publishservice.APIRegister, invokerRegister invokermanagement.InvokerRegister) *Security {
+func NewSecurity(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister) *Security {
 	return &Security{
 		serviceRegister: serviceRegister,
-		apiRegister:     apiRegister,
+		publishRegister: publishRegister,
 		invokerRegister: invokerRegister,
 	}
 }
@@ -64,7 +64,7 @@ func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId st
 		if !s.serviceRegister.IsFunctionRegistered(scopeData[0]) {
 			return sendCoreError(ctx, http.StatusBadRequest, "Function not registered")
 		}
-		if !s.apiRegister.IsAPIRegistered(scopeData[0], scopeData[1]) {
+		if !s.publishRegister.IsAPIPublished(scopeData[0], scopeData[1]) {
 			return sendCoreError(ctx, http.StatusBadRequest, "API not published")
 		}
 	}

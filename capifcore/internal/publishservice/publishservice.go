@@ -38,10 +38,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//go:generate mockery --name APIRegister
-type APIRegister interface {
-	AreAPIsRegistered(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool
-	IsAPIRegistered(aefId, path string) bool
+//go:generate mockery --name PublishRegister
+type PublishRegister interface {
+	AreAPIsPublished(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool
+	IsAPIPublished(aefId, path string) bool
 }
 
 type PublishService struct {
@@ -59,7 +59,7 @@ func NewPublishService(serviceRegister providermanagement.ServiceRegister, hm he
 	}
 }
 
-func (ps *PublishService) AreAPIsRegistered(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool {
+func (ps *PublishService) AreAPIsPublished(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool {
 
 	if serviceDescriptions != nil {
 		registeredApis := ps.getAllAefIds()
@@ -115,7 +115,7 @@ func checkProfiles(newProfiles *[]publishserviceapi.AefProfile, registeredAefIds
 	return allRegistered
 }
 
-func (ps *PublishService) IsAPIRegistered(aefId, path string) bool {
+func (ps *PublishService) IsAPIPublished(aefId, path string) bool {
 	return slices.Contains(ps.getAllAefIds(), aefId)
 }
 

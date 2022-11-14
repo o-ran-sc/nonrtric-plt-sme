@@ -46,15 +46,15 @@ type InvokerRegister interface {
 
 type InvokerManager struct {
 	onboardedInvokers map[string]invokerapi.APIInvokerEnrolmentDetails
-	apiRegister       publishservice.APIRegister
+	publishRegister   publishservice.PublishRegister
 	nextId            int64
 	lock              sync.Mutex
 }
 
-func NewInvokerManager(apiRegister publishservice.APIRegister) *InvokerManager {
+func NewInvokerManager(publishRegister publishservice.PublishRegister) *InvokerManager {
 	return &InvokerManager{
 		onboardedInvokers: make(map[string]invokerapi.APIInvokerEnrolmentDetails),
-		apiRegister:       apiRegister,
+		publishRegister:   publishRegister,
 		nextId:            1000,
 	}
 }
@@ -179,18 +179,18 @@ func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolment
 		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required OnboardingInformation.ApiInvokerPublicKey")
 	}
 
-	if !im.areAPIsRegistered(invoker.ApiList) {
+	if !im.areAPIsPublished(invoker.ApiList) {
 		return true, sendCoreError(ctx, http.StatusBadRequest, "Some APIs needed by invoker are not registered")
 	}
 
 	return false, nil
 }
 
-func (im *InvokerManager) areAPIsRegistered(apis *invokerapi.APIList) bool {
+func (im *InvokerManager) areAPIsPublished(apis *invokerapi.APIList) bool {
 	if apis == nil {
 		return true
 	}
-	return im.apiRegister.AreAPIsRegistered((*[]publishapi.ServiceAPIDescription)(apis))
+	return im.publishRegister.AreAPIsPublished((*[]publishapi.ServiceAPIDescription)(apis))
 }
 
 func (im *InvokerManager) getId(invokerInfo *string) *string {

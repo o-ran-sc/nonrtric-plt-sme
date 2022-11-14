@@ -44,9 +44,9 @@ import (
 )
 
 func TestOnboardInvoker(t *testing.T) {
-	apiRegisterMock := publishmocks.APIRegister{}
-	apiRegisterMock.On("AreAPIsRegistered", mock.Anything).Return(true)
-	invokerUnderTest, requestHandler := getEcho(&apiRegisterMock)
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("AreAPIsPublished", mock.Anything).Return(true)
+	invokerUnderTest, requestHandler := getEcho(&publishRegisterMock)
 
 	aefProfiles := []publishserviceapi.AefProfile{
 		getAefProfile("aefId"),
@@ -74,7 +74,7 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.Equal(t, "http://example.com/onboardedInvokers/"+*resultInvoker.ApiInvokerId, result.Recorder.Header().Get(echo.HeaderLocation))
 	assert.True(t, invokerUnderTest.IsInvokerRegistered("api_invoker_id_invoker_a"))
 	assert.True(t, invokerUnderTest.VerifyInvokerSecret("api_invoker_id_invoker_a", "onboarding_secret_invoker_a"))
-	apiRegisterMock.AssertCalled(t, "AreAPIsRegistered", mock.Anything)
+	publishRegisterMock.AssertCalled(t, "AreAPIsPublished", mock.Anything)
 
 	// Onboard an invoker missing required NotificationDestination, should get 400 with problem details
 	invalidInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
@@ -218,9 +218,9 @@ func TestUpdateInvoker(t *testing.T) {
 }
 
 func TestGetInvokerApiList(t *testing.T) {
-	apiRegisterMock := publishmocks.APIRegister{}
-	apiRegisterMock.On("AreAPIsRegistered", mock.Anything).Return(true)
-	invokerUnderTest, requestHandler := getEcho(&apiRegisterMock)
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("AreAPIsPublished", mock.Anything).Return(true)
+	invokerUnderTest, requestHandler := getEcho(&publishRegisterMock)
 
 	// Onboard two invokers
 	aefProfiles := []publishserviceapi.AefProfile{
@@ -253,7 +253,7 @@ func TestGetInvokerApiList(t *testing.T) {
 	assert.Equal(t, apiId, *(*wantedApiList)[0].ApiId)
 }
 
-func getEcho(apiRegister publishservice.APIRegister) (*InvokerManager, *echo.Echo) {
+func getEcho(publishRegister publishservice.PublishRegister) (*InvokerManager, *echo.Echo) {
 	swagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -262,7 +262,7 @@ func getEcho(apiRegister publishservice.APIRegister) (*InvokerManager, *echo.Ech
 
 	swagger.Servers = nil
 
-	im := NewInvokerManager(apiRegister)
+	im := NewInvokerManager(publishRegister)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())

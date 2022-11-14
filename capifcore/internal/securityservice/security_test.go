@@ -54,10 +54,10 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
 	serviceRegisterMock := servicemocks.ServiceRegister{}
 	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(true)
-	apiRegisterMock := publishmocks.APIRegister{}
-	apiRegisterMock.On("IsAPIRegistered", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("IsAPIPublished", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
 
-	requestHandler := getEcho(&serviceRegisterMock, &apiRegisterMock, &invokerRegisterMock)
+	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -79,7 +79,7 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", "id")
 	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", "id", "secret")
 	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", "aefId")
-	apiRegisterMock.AssertCalled(t, "IsAPIRegistered", "aefId", "path")
+	publishRegisterMock.AssertCalled(t, "IsAPIPublished", "aefId", "path")
 }
 
 func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {
@@ -167,10 +167,10 @@ func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
 	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
 	serviceRegisterMock := servicemocks.ServiceRegister{}
 	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(true)
-	apiRegisterMock := publishmocks.APIRegister{}
-	apiRegisterMock.On("IsAPIRegistered", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("IsAPIPublished", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(&serviceRegisterMock, &apiRegisterMock, &invokerRegisterMock)
+	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -191,7 +191,7 @@ func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
 	assert.Equal(t, &errMsg, problemDetails.Cause)
 }
 
-func getEcho(serviceRegister providermanagement.ServiceRegister, apiRegister publishservice.APIRegister, invokerRegister invokermanagement.InvokerRegister) *echo.Echo {
+func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister) *echo.Echo {
 	swagger, err := securityapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -200,7 +200,7 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, apiRegister pub
 
 	swagger.Servers = nil
 
-	s := NewSecurity(serviceRegister, apiRegister, invokerRegister)
+	s := NewSecurity(serviceRegister, publishRegister, invokerRegister)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())
