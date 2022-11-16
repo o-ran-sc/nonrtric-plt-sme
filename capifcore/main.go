@@ -50,7 +50,7 @@ var repoName string
 
 func main() {
 	var port = flag.Int("port", 8090, "Port for CAPIF Core Function HTTP server")
-	flag.StringVar(&url, "url", "http://localhost:8080", "ChartMuseum url")
+	flag.StringVar(&url, "chartMuseumUrl", "", "ChartMuseum URL")
 	flag.StringVar(&repoName, "repoName", "capifcore", "Repository name")
 	var logLevelStr = flag.String("loglevel", "Info", "Log level")
 	flag.Parse()
@@ -60,11 +60,10 @@ func main() {
 	}
 
 	// Add repo
-	fmt.Printf("Adding %s to Helm Repo\n", url)
 	helmManager = helmmanagement.NewHelmManager(cli.New())
 	err := helmManager.SetUpRepo(repoName, url)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Warnf("No Helm repo added due to: %s", err.Error())
 	}
 
 	go startWebServer(getEcho(), *port)

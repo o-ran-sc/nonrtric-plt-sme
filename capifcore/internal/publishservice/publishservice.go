@@ -142,14 +142,12 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 
 	newId := "api_id_" + newServiceAPIDescription.ApiName
 	newServiceAPIDescription.ApiId = &newId
-	info := strings.Split(*newServiceAPIDescription.Description, ",")
-	if len(info) == 5 {
-		err = ps.helmManager.InstallHelmChart(info[1], info[2], info[3], info[4])
-		if err != nil {
-			return sendCoreError(ctx, http.StatusBadRequest, "Unable to install Helm chart due to: "+err.Error())
-		}
-		log.Info("Installed service: ", newId)
+
+	shouldReturn, returnValue := ps.installHelmChart(newServiceAPIDescription, err, ctx, newId)
+	if shouldReturn {
+		return returnValue
 	}
+
 	_, ok := ps.publishedServices[apfId]
 	if ok {
 		ps.publishedServices[apfId] = append(ps.publishedServices[apfId], &newServiceAPIDescription)
@@ -166,6 +164,18 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	}
 
 	return nil
+}
+
+func (ps *PublishService) installHelmChart(newServiceAPIDescription publishserviceapi.ServiceAPIDescription, err error, ctx echo.Context, newId string) (bool, error) {
+	info := strings.Split(*newServiceAPIDescription.Description, ",")
+	if len(info) == 5 {
+		err = ps.helmManager.InstallHelmChart(info[1], info[2], info[3], info[4])
+		if err != nil {
+			return true, sendCoreError(ctx, http.StatusBadRequest, "Unable to install Helm chart due to: "+err.Error())
+		}
+		log.Info("Installed service: ", newId)
+	}
+	return false, nil
 }
 
 func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {

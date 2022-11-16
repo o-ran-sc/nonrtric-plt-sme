@@ -22,9 +22,9 @@ package helmmanagement
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -49,6 +49,7 @@ type HelmManager interface {
 type helmManagerImpl struct {
 	settings *cli.EnvSettings
 	repo     *repo.ChartRepository
+	setUp    bool
 }
 
 func NewHelmManager(s *cli.EnvSettings) *helmManagerImpl {
@@ -58,17 +59,48 @@ func NewHelmManager(s *cli.EnvSettings) *helmManagerImpl {
 }
 
 func (hm *helmManagerImpl) SetUpRepo(repoName, url string) error {
-	repoFile := hm.settings.RepositoryConfig
+	if len(strings.TrimSpace(url)) == 0 {
+		log.Info("No ChartMuseum repo set up.")
+		return nil
+	}
+	log.Debugf("Adding %s to Helm Repo\n", url)
+	repoFile := filepath.Join(filepath.Dir(hm.settings.RepositoryConfig), "index.yaml")
+	log.Debug("Repo file: ", repoFile)
+
+	c := repo.Entry{
+		Name: filepath.Dir(repoFile),
+		URL:  url,
+	}
+
+	var err error
+	r := hm.repo
+	if r == nil {
+		r, err = repo.NewChartRepository(&c, getter.All(hm.settings))
+		if err != nil {
+			return err
+		}
+	}
 
 	//Ensure the file directory exists as it is required for file locking
-	err := os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+	err = os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Error("Unable to create folder for Helm.")
 		return err
 	}
 
 	b, err := os.ReadFile(repoFile)
 	if err != nil {
-		return err
+		log.Info("Creating repo file: ", repoFile)
+		err = r.Index()
+		if err != nil {
+			log.Error("Unable to create repo file: ", repoFile)
+			return err
+		}
+		b, err = os.ReadFile(repoFile)
+		if err != nil {
+			log.Error("Unable to read repo file: ", repoFile)
+			return err
+		}
 	}
 
 	var f repo.File
@@ -81,21 +113,8 @@ func (hm *helmManagerImpl) SetUpRepo(repoName, url string) error {
 		return nil
 	}
 
-	c := repo.Entry{
-		Name: repoName,
-		URL:  url,
-	}
-
-	r := hm.repo
-	if r == nil {
-		r, err = repo.NewChartRepository(&c, getter.All(hm.settings))
-		if err != nil {
-			return err
-		}
-	}
-
 	if _, err := r.DownloadIndexFile(); err != nil {
-		err := errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", url)
+		err = errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", url)
 		return err
 	}
 
@@ -104,11 +123,16 @@ func (hm *helmManagerImpl) SetUpRepo(repoName, url string) error {
 	if err := f.WriteFile(repoFile, 0644); err != nil {
 		return err
 	}
+	hm.setUp = true
 	log.Debugf("%q has been added to your repositories\n", repoName)
 	return nil
 }
 
 func (hm *helmManagerImpl) InstallHelmChart(namespace, repoName, chartName, releaseName string) error {
+	if !hm.setUp {
+		log.Warnf("Helm repo not added, so chart %s not installed", chartName)
+		return nil
+	}
 	actionConfig, err := getActionConfig(namespace)
 	if err != nil {
 		return err

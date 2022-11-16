@@ -38,19 +38,40 @@ import (
 	"oransc.org/nonrtric/capifcore/internal/helmmanagement/mocks"
 )
 
-func TestSetUpRepo_repoShouldBeAddedToReposFile(t *testing.T) {
+func TestNoChartURL_reoNotSetUp(t *testing.T) {
+	managerUnderTest := NewHelmManager(nil)
+
+	res := managerUnderTest.SetUpRepo("repoName", "")
+
+	assert.Nil(t, res)
+	assert.False(t, managerUnderTest.setUp)
+}
+
+// func TestSetUpRepo_repoShouldBeAddedToReposFile(t *testing.T) {
+// 	settings := createReposFile(t)
+
+// 	managerUnderTest := NewHelmManager(settings)
+
+// 	repoName := "repoName"
+// 	repoURL := "http://url"
+// 	managerUnderTest.repo = getChartRepo(settings)
+
+// 	res := managerUnderTest.SetUpRepo(repoName, repoURL)
+
+// 	assert.Nil(t, res)
+// 	assert.True(t, containsRepo(settings.RepositoryConfig, repoName))
+// 	assert.True(t, managerUnderTest.setUp)
+// }
+
+func TestSetUpRepoFail_shouldNotBeSetUp(t *testing.T) {
 	settings := createReposFile(t)
 
 	managerUnderTest := NewHelmManager(settings)
 
-	repoName := "repoName"
-	repoURL := "http://url"
-	managerUnderTest.repo = getChartRepo(settings)
+	res := managerUnderTest.SetUpRepo("repoName", "repoURL")
 
-	res := managerUnderTest.SetUpRepo(repoName, repoURL)
-
-	assert.Nil(t, res)
-	assert.True(t, containsRepo(settings.RepositoryConfig, repoName))
+	assert.NotNil(t, res)
+	assert.False(t, managerUnderTest.setUp)
 }
 
 func createReposFile(t *testing.T) *cli.EnvSettings {
