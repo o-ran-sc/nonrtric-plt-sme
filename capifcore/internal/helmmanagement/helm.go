@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
@@ -64,43 +63,17 @@ func (hm *helmManagerImpl) SetUpRepo(repoName, url string) error {
 		return nil
 	}
 	log.Debugf("Adding %s to Helm Repo\n", url)
-	repoFile := filepath.Join(filepath.Dir(hm.settings.RepositoryConfig), "index.yaml")
-	log.Debug("Repo file: ", repoFile)
-
-	c := repo.Entry{
-		Name: filepath.Dir(repoFile),
-		URL:  url,
-	}
-
-	var err error
-	r := hm.repo
-	if r == nil {
-		r, err = repo.NewChartRepository(&c, getter.All(hm.settings))
-		if err != nil {
-			return err
-		}
-	}
+	repoFile := hm.settings.RepositoryConfig
 
 	//Ensure the file directory exists as it is required for file locking
-	err = os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		log.Error("Unable to create folder for Helm.")
+	err := os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
+	if err != nil && !os.IsExist(err) {
 		return err
 	}
 
 	b, err := os.ReadFile(repoFile)
-	if err != nil {
-		log.Info("Creating repo file: ", repoFile)
-		err = r.Index()
-		if err != nil {
-			log.Error("Unable to create repo file: ", repoFile)
-			return err
-		}
-		b, err = os.ReadFile(repoFile)
-		if err != nil {
-			log.Error("Unable to read repo file: ", repoFile)
-			return err
-		}
+	if err != nil && !os.IsNotExist(err) {
+		return err
 	}
 
 	var f repo.File
@@ -110,21 +83,35 @@ func (hm *helmManagerImpl) SetUpRepo(repoName, url string) error {
 
 	if f.Has(repoName) {
 		log.Debugf("repository name (%s) already exists\n", repoName)
+		hm.setUp = true
 		return nil
 	}
 
-	if _, err := r.DownloadIndexFile(); err != nil {
-		err = errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", url)
+	c := repo.Entry{
+		Name: repoName,
+		URL:  url,
+	}
+
+	r := hm.repo
+	if r == nil {
+		r, err = repo.NewChartRepository(&c, getter.All(hm.settings))
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, err = r.DownloadIndexFile(); err != nil {
+		log.Errorf("looks like %q is not a valid chart repository or cannot be reached", url)
 		return err
 	}
 
 	f.Update(&c)
 
-	if err := f.WriteFile(repoFile, 0644); err != nil {
+	if err = f.WriteFile(repoFile, 0644); err != nil {
 		return err
 	}
-	hm.setUp = true
 	log.Debugf("%q has been added to your repositories\n", repoName)
+	hm.setUp = true
 	return nil
 }
 
@@ -142,13 +129,13 @@ func (hm *helmManagerImpl) InstallHelmChart(namespace, repoName, chartName, rele
 
 	cp, err := install.ChartPathOptions.LocateChart(fmt.Sprintf("%s/%s", repoName, chartName), hm.settings)
 	if err != nil {
-		log.Error("Unable to locate chart!")
+		log.Errorf("Unable to locate chart: %s", chartName)
 		return err
 	}
 
 	chartRequested, err := loader.Load(cp)
 	if err != nil {
-		log.Error("Unable to load chart path!")
+		log.Errorf("Unable to load chart path for chart: %s", chartName)
 		return err
 	}
 
@@ -156,7 +143,7 @@ func (hm *helmManagerImpl) InstallHelmChart(namespace, repoName, chartName, rele
 	install.ReleaseName = releaseName
 	_, err = install.Run(chartRequested, nil)
 	if err != nil {
-		log.Error("Unable to run chart!")
+		log.Errorf("Unable to run chart: %s", chartName)
 		return err
 	}
 	log.Debug("Successfully onboarded ", namespace, repoName, chartName, releaseName)

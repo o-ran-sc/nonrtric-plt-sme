@@ -25,6 +25,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -38,7 +39,7 @@ import (
 	"oransc.org/nonrtric/capifcore/internal/helmmanagement/mocks"
 )
 
-func TestNoChartURL_reoNotSetUp(t *testing.T) {
+func TestNoChartURL_repoNotSetUp(t *testing.T) {
 	managerUnderTest := NewHelmManager(nil)
 
 	res := managerUnderTest.SetUpRepo("repoName", "")
@@ -47,21 +48,21 @@ func TestNoChartURL_reoNotSetUp(t *testing.T) {
 	assert.False(t, managerUnderTest.setUp)
 }
 
-// func TestSetUpRepo_repoShouldBeAddedToReposFile(t *testing.T) {
-// 	settings := createReposFile(t)
+func TestSetUpRepoExistingRepoFile_repoShouldBeAddedToReposFile(t *testing.T) {
+	settings := createReposFile(t)
 
-// 	managerUnderTest := NewHelmManager(settings)
+	managerUnderTest := NewHelmManager(settings)
 
-// 	repoName := "repoName"
-// 	repoURL := "http://url"
-// 	managerUnderTest.repo = getChartRepo(settings)
+	repoName := filepath.Dir(settings.RepositoryConfig)
+	repoURL := "http://url"
+	managerUnderTest.repo = getChartRepo(settings)
 
-// 	res := managerUnderTest.SetUpRepo(repoName, repoURL)
+	res := managerUnderTest.SetUpRepo(repoName, repoURL)
 
-// 	assert.Nil(t, res)
-// 	assert.True(t, containsRepo(settings.RepositoryConfig, repoName))
-// 	assert.True(t, managerUnderTest.setUp)
-// }
+	assert.Nil(t, res)
+	assert.True(t, containsRepo(settings.RepositoryConfig, repoName))
+	assert.True(t, managerUnderTest.setUp)
+}
 
 func TestSetUpRepoFail_shouldNotBeSetUp(t *testing.T) {
 	settings := createReposFile(t)
@@ -83,7 +84,7 @@ func createReposFile(t *testing.T) *cli.EnvSettings {
 		os.RemoveAll(reposDir)
 	})
 
-	reposFile := reposDir + "/repositories.yaml"
+	reposFile := reposDir + "/index.yaml"
 	settings := &cli.EnvSettings{
 		RepositoryConfig: reposFile,
 	}
@@ -106,7 +107,7 @@ func createReposFile(t *testing.T) *cli.EnvSettings {
 func getChartRepo(settings *cli.EnvSettings) *repo.ChartRepository {
 	repoURL := "http://repoURL"
 	c := repo.Entry{
-		Name: "",
+		Name: filepath.Dir(settings.RepositoryConfig),
 		URL:  repoURL,
 	}
 	r, _ := repo.NewChartRepository(&c, getter.All(settings))
