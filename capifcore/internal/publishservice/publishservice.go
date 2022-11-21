@@ -120,7 +120,18 @@ func (ps *PublishService) IsAPIPublished(aefId, path string) bool {
 }
 
 func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+	serviceDescriptions, ok := ps.publishedServices[apfId]
+	if ok {
+		err := ctx.JSON(http.StatusOK, serviceDescriptions)
+		if err != nil {
+			// Something really bad happened, tell Echo that our handler failed
+			return err
+		}
+	} else {
+		return sendCoreError(ctx, http.StatusNotFound, "Provider not registered")
+	}
+
+	return nil
 }
 
 func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) error {

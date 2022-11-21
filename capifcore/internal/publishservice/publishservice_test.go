@@ -47,30 +47,29 @@ import (
 func TestPublishUnpublishService(t *testing.T) {
 	apfId := "apfId"
 	aefId := "aefId"
-	newApiId := "api_id_app-management"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	serviceUnderTest, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
 
-	// Check no services published
-	result := testutil.NewRequest().Get("/aefId/service-apis/"+newApiId).Go(t, requestHandler)
+	// Check no services published for provider
+	result := testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNotFound, result.Code())
 
-	domainName := "domain"
-	var protocol publishapi.Protocol = "HTTP_1_1"
+	apiName := "app-management"
 	description := "Description,namespace,repoName,chartName,releaseName"
-	newServiceDescription := getServiceAPIDescription(aefId, domainName, description, protocol)
+	newServiceDescription := getServiceAPIDescription(aefId, apiName, description)
 
-	// Publish a service
+	// Publish a service for provider
 	result = testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusCreated, result.Code())
 	var resultService publishapi.ServiceAPIDescription
 	err := result.UnmarshalBodyToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
+	newApiId := "api_id_app-management"
 	assert.Equal(t, *resultService.ApiId, newApiId)
 	assert.Equal(t, "http://example.com/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 	newServiceDescription.ApiId = &newApiId
@@ -81,7 +80,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	helmManagerMock.AssertCalled(t, "InstallHelmChart", "namespace", "repoName", "chartName", "releaseName")
 	assert.ElementsMatch(t, []string{aefId}, serviceUnderTest.getAllAefIds())
 
-	// Check that service is published
+	// Check that the service is published for the provider
 	result = testutil.NewRequest().Get("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusOK, result.Code())
@@ -89,7 +88,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, *resultService.ApiId, newApiId)
 
-	// Delete a service
+	// Delete the service
 	helmManagerMock.On("UninstallHelmChart", mock.Anything, mock.Anything).Return(nil)
 	result = testutil.NewRequest().Delete("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
@@ -110,10 +109,7 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{"otherAefId"})
 	_, requestHandler := getEcho(&serviceRegisterMock, nil)
 
-	domainName := "domain"
-	var protocol publishapi.Protocol = "HTTP_1_1"
-	description := "Description"
-	newServiceDescription := getServiceAPIDescription(aefId, domainName, description, protocol)
+	newServiceDescription := getServiceAPIDescription(aefId, "apiname", "description")
 
 	// Publish a service
 	result := testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
@@ -126,6 +122,40 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	assert.Equal(t, &errMsg, resultError.Cause)
 	notFound := http.StatusNotFound
 	assert.Equal(t, &notFound, resultError.Status)
+}
+
+func TestGetServices(t *testing.T) {
+	apfId := "apfId"
+	aefId := "aefId"
+	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId})
+	_, requestHandler := getEcho(&serviceRegisterMock, nil)
+
+	// Check no services published for provider
+	result := testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNotFound, result.Code())
+
+	serviceDescription1 := getServiceAPIDescription(aefId, "api1", "Description")
+	serviceDescription2 := getServiceAPIDescription(aefId, "api2", "Description")
+
+	// Publish a service for provider
+	testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(serviceDescription1).Go(t, requestHandler)
+	testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(serviceDescription2).Go(t, requestHandler)
+
+	// Get all services for provider
+	result = testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
+	assert.Equal(t, http.StatusOK, result.Code())
+	var resultServices []publishapi.ServiceAPIDescription
+	err := result.UnmarshalBodyToObject(&resultServices)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Len(t, resultServices, 2)
+	apiId1 := "api_id_api1"
+	serviceDescription1.ApiId = &apiId1
+	apiId2 := "api_id_api2"
+	serviceDescription2.ApiId = &apiId2
+	assert.Contains(t, resultServices, serviceDescription1)
+	assert.Contains(t, resultServices, serviceDescription2)
 }
 
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, *echo.Echo) {
@@ -147,7 +177,9 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager hel
 	return ps, e
 }
 
-func getServiceAPIDescription(aefId, domainName, description string, protocol publishapi.Protocol) publishapi.ServiceAPIDescription {
+func getServiceAPIDescription(aefId, apiName, description string) publishapi.ServiceAPIDescription {
+	domainName := "domainName"
+	var protocol publishapi.Protocol = "HTTP_1_1"
 	return publishapi.ServiceAPIDescription{
 		AefProfiles: &[]publishapi.AefProfile{
 			{
@@ -171,7 +203,7 @@ func getServiceAPIDescription(aefId, domainName, description string, protocol pu
 				},
 			},
 		},
-		ApiName:     "app-management",
+		ApiName:     apiName,
 		Description: &description,
 	}
 }
