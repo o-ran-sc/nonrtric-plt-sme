@@ -49,9 +49,11 @@ var dataFormatJSON = publishapi.DataFormatJSON
 func TestGetAllServiceAPIs(t *testing.T) {
 	var err error
 
+	apiName1 := "apiName1"
+	apiName2 := "apiName2"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "aefId", "apiCategory", "v1", nil, nil, ""),
-		getAPI("apiName2", "aefId", "apiCategory", "v1", nil, nil, ""),
+		getAPI(apiName1, "aefId", "apiCategory", "v1", nil, nil, ""),
+		getAPI(apiName2, "aefId", "apiCategory", "v1", nil, nil, ""),
 	}
 	invokerId := "api_invoker_id"
 	invokerRegisterrMock := getInvokerRegisterMock(invokerId, apiList)
@@ -65,8 +67,8 @@ func TestGetAllServiceAPIs(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 2, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
-	assert.Equal(t, "apiName2", (*resultInvoker.ServiceAPIDescriptions)[1].ApiName)
+	assert.Equal(t, apiName1, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName2, (*resultInvoker.ServiceAPIDescriptions)[1].ApiName)
 	assert.Equal(t, 2, len(*resultInvoker.ServiceAPIDescriptions))
 }
 
@@ -85,8 +87,8 @@ func TestGetAllServiceAPIsWhenMissingProvider(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	notFound := http.StatusNotFound
 	assert.Equal(t, &notFound, problemDetails.Status)
-	errMsg := "Invoker not registered"
-	assert.Equal(t, &errMsg, problemDetails.Cause)
+	assert.Contains(t, *problemDetails.Cause, invokerId)
+	assert.Contains(t, *problemDetails.Cause, "not registered")
 }
 
 func TestFilterApiName(t *testing.T) {
@@ -109,15 +111,16 @@ func TestFilterApiName(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func TestFilterAefId(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	aefId := "aefId"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", aefId, "", "", nil, nil, ""),
+		getAPI(apiName, aefId, "", "", nil, nil, ""),
 		getAPI("apiName2", "otherAefId", "", "", nil, nil, ""),
 	}
 	invokerId := "api_invoker_id"
@@ -132,15 +135,16 @@ func TestFilterAefId(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func TestFilterVersion(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	version := "v1"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", version, nil, nil, ""),
+		getAPI(apiName, "", "", version, nil, nil, ""),
 		getAPI("apiName2", "", "", "v2", nil, nil, ""),
 	}
 	invokerId := "api_invoker_id"
@@ -155,15 +159,16 @@ func TestFilterVersion(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func TestFilterCommType(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	commType := publishapi.CommunicationTypeREQUESTRESPONSE
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "", nil, nil, commType),
+		getAPI(apiName, "", "", "", nil, nil, commType),
 		getAPI("apiName2", "", "", "", nil, nil, publishapi.CommunicationTypeSUBSCRIBENOTIFY),
 	}
 	invokerId := "api_invoker_id"
@@ -178,17 +183,18 @@ func TestFilterCommType(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func TestFilterVersionAndCommType(t *testing.T) {
 	var err error
 
+	apiName := "apiName2"
 	version := "v1"
 	commType := publishapi.CommunicationTypeSUBSCRIBENOTIFY
 	apiList := []publishapi.ServiceAPIDescription{
 		getAPI("apiName1", "", "", version, nil, nil, publishapi.CommunicationTypeREQUESTRESPONSE),
-		getAPI("apiName2", "", "", version, nil, nil, commType),
+		getAPI(apiName, "", "", version, nil, nil, commType),
 		getAPI("apiName3", "", "", "v2", nil, nil, commType),
 	}
 	invokerId := "api_invoker_id"
@@ -203,15 +209,16 @@ func TestFilterVersionAndCommType(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName2", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func TestFilterAPICategory(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	apiCategory := "apiCategory"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", apiCategory, "", nil, nil, ""),
+		getAPI(apiName, "", apiCategory, "", nil, nil, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
 	invokerId := "api_invoker_id"
@@ -226,14 +233,15 @@ func TestFilterAPICategory(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func TestFilterProtocol(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "", &protocolHTTP11, nil, ""),
+		getAPI(apiName, "", "", "", &protocolHTTP11, nil, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
 	invokerId := "api_invoker_id"
@@ -248,7 +256,7 @@ func TestFilterProtocol(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 var DataFormatOther publishapi.DataFormat = "OTHER"
@@ -256,8 +264,9 @@ var DataFormatOther publishapi.DataFormat = "OTHER"
 func TestFilterDataFormat(t *testing.T) {
 	var err error
 
+	apiName := "apiName1"
 	apiList := []publishapi.ServiceAPIDescription{
-		getAPI("apiName1", "", "", "", nil, &dataFormatJSON, ""),
+		getAPI(apiName, "", "", "", nil, &dataFormatJSON, ""),
 		getAPI("apiName2", "", "", "", nil, nil, ""),
 	}
 	invokerId := "api_invoker_id"
@@ -272,7 +281,7 @@ func TestFilterDataFormat(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, 1, len(*resultInvoker.ServiceAPIDescriptions))
-	assert.Equal(t, "apiName1", (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
+	assert.Equal(t, apiName, (*resultInvoker.ServiceAPIDescriptions)[0].ApiName)
 }
 
 func getEcho(invokerManager invokermanagement.InvokerRegister) *echo.Echo {

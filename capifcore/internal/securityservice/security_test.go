@@ -60,10 +60,14 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock)
 
 	data := url.Values{}
-	data.Set("client_id", "id")
-	data.Add("client_secret", "secret")
+	clientId := "id"
+	clientSecret := "secret"
+	aefId := "aefId"
+	path := "path"
+	data.Set("client_id", clientId)
+	data.Add("client_secret", clientSecret)
 	data.Add("grant_type", "client_credentials")
-	data.Add("scope", "scope#aefId:path")
+	data.Add("scope", "scope#"+aefId+":"+path)
 	encodedData := data.Encode()
 
 	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
@@ -73,13 +77,13 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	err := result.UnmarshalBodyToObject(&resultResponse)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.NotEmpty(t, resultResponse.AccessToken)
-	assert.Equal(t, "scope#aefId:path", *resultResponse.Scope)
+	assert.Equal(t, "scope#"+aefId+":"+path, *resultResponse.Scope)
 	assert.Equal(t, securityapi.AccessTokenRspTokenTypeBearer, resultResponse.TokenType)
 	assert.Equal(t, common29122.DurationSec(0), resultResponse.ExpiresIn)
-	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", "id")
-	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", "id", "secret")
-	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", "aefId")
-	publishRegisterMock.AssertCalled(t, "IsAPIPublished", "aefId", "path")
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", clientId)
+	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", clientId, clientSecret)
+	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
+	publishRegisterMock.AssertCalled(t, "IsAPIPublished", aefId, path)
 }
 
 func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {

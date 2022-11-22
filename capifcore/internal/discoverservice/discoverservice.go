@@ -21,6 +21,7 @@
 package discoverservice
 
 import (
+	"fmt"
 	"net/http"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
@@ -45,7 +46,7 @@ func NewDiscoverService(invokerRegister invokermanagement.InvokerRegister) *Disc
 func (ds *DiscoverService) GetAllServiceAPIs(ctx echo.Context, params discoverapi.GetAllServiceAPIsParams) error {
 	allApis := ds.invokerRegister.GetInvokerApiList(params.ApiInvokerId)
 	if allApis == nil {
-		return sendCoreError(ctx, http.StatusNotFound, "Invoker not registered")
+		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Invoker %s not registered", params.ApiInvokerId))
 	}
 	filteredApis := []publishapi.ServiceAPIDescription{}
 	gatewayDomain := "r1-expo-func-aef"

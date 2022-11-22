@@ -21,6 +21,7 @@
 package publishservice
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 	"strings"
@@ -128,7 +129,7 @@ func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) er
 			return err
 		}
 	} else {
-		return sendCoreError(ctx, http.StatusNotFound, "Provider not registered")
+		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Provider %s not registered", apfId))
 	}
 
 	return nil
@@ -138,7 +139,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	var newServiceAPIDescription publishserviceapi.ServiceAPIDescription
 	err := ctx.Bind(&newServiceAPIDescription)
 	if err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for service")
+		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for service "+apfId)
 	}
 
 	ps.lock.Lock()
@@ -147,14 +148,14 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	registeredFuncs := ps.serviceRegister.GetAefsForPublisher(apfId)
 	for _, profile := range *newServiceAPIDescription.AefProfiles {
 		if !slices.Contains(registeredFuncs, profile.AefId) {
-			return sendCoreError(ctx, http.StatusNotFound, "Function not registered, "+profile.AefId)
+			return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Function %s not registered", profile.AefId))
 		}
 	}
 
 	newId := "api_id_" + newServiceAPIDescription.ApiName
 	newServiceAPIDescription.ApiId = &newId
 
-	shouldReturn, returnValue := ps.installHelmChart(newServiceAPIDescription, err, ctx, newId)
+	shouldReturn, returnValue := ps.installHelmChart(newServiceAPIDescription, ctx)
 	if shouldReturn {
 		return returnValue
 	}
@@ -177,14 +178,14 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	return nil
 }
 
-func (ps *PublishService) installHelmChart(newServiceAPIDescription publishserviceapi.ServiceAPIDescription, err error, ctx echo.Context, newId string) (bool, error) {
+func (ps *PublishService) installHelmChart(newServiceAPIDescription publishserviceapi.ServiceAPIDescription, ctx echo.Context) (bool, error) {
 	info := strings.Split(*newServiceAPIDescription.Description, ",")
 	if len(info) == 5 {
-		err = ps.helmManager.InstallHelmChart(info[1], info[2], info[3], info[4])
+		err := ps.helmManager.InstallHelmChart(info[1], info[2], info[3], info[4])
 		if err != nil {
-			return true, sendCoreError(ctx, http.StatusBadRequest, "Unable to install Helm chart due to: "+err.Error())
+			return true, sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf("Unable to install Helm chart %s due to: %s", info[3], err.Error()))
 		}
-		log.Info("Installed service: ", newId)
+		log.Debug("Installed service: ", newServiceAPIDescription.ApiId)
 	}
 	return false, nil
 }
@@ -197,7 +198,7 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 			info := strings.Split(*description.Description, ",")
 			if len(info) == 5 {
 				ps.helmManager.UninstallHelmChart(info[1], info[3])
-				log.Info("Deleted service: ", serviceApiId)
+				log.Debug("Deleted service: ", serviceApiId)
 			}
 			ps.lock.Lock()
 			defer ps.lock.Unlock()

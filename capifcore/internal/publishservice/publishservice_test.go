@@ -59,7 +59,11 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, result.Code())
 
 	apiName := "app-management"
-	description := "Description,namespace,repoName,chartName,releaseName"
+	namespace := "namespace"
+	repoName := "repoName"
+	chartName := "chartName"
+	releaseName := "releaseName"
+	description := fmt.Sprintf("Description,%s,%s,%s,%s", namespace, repoName, chartName, releaseName)
 	newServiceDescription := getServiceAPIDescription(aefId, apiName, description)
 
 	// Publish a service for provider
@@ -69,15 +73,15 @@ func TestPublishUnpublishService(t *testing.T) {
 	var resultService publishapi.ServiceAPIDescription
 	err := result.UnmarshalBodyToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
-	newApiId := "api_id_app-management"
+	newApiId := "api_id_" + apiName
 	assert.Equal(t, *resultService.ApiId, newApiId)
 	assert.Equal(t, "http://example.com/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 	newServiceDescription.ApiId = &newApiId
 	wantedAPILIst := []publishapi.ServiceAPIDescription{newServiceDescription}
 	assert.True(t, serviceUnderTest.AreAPIsPublished(&wantedAPILIst))
-	assert.True(t, serviceUnderTest.IsAPIPublished("aefId", "app-management"))
+	assert.True(t, serviceUnderTest.IsAPIPublished(aefId, apiName))
 	serviceRegisterMock.AssertCalled(t, "GetAefsForPublisher", apfId)
-	helmManagerMock.AssertCalled(t, "InstallHelmChart", "namespace", "repoName", "chartName", "releaseName")
+	helmManagerMock.AssertCalled(t, "InstallHelmChart", namespace, repoName, chartName, releaseName)
 	assert.ElementsMatch(t, []string{aefId}, serviceUnderTest.getAllAefIds())
 
 	// Check that the service is published for the provider
@@ -93,7 +97,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	result = testutil.NewRequest().Delete("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
-	helmManagerMock.AssertCalled(t, "UninstallHelmChart", "namespace", "chartName")
+	helmManagerMock.AssertCalled(t, "UninstallHelmChart", namespace, chartName)
 	assert.Empty(t, serviceUnderTest.getAllAefIds())
 
 	// Check no services published
@@ -118,8 +122,8 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	var resultError common29122.ProblemDetails
 	err := result.UnmarshalBodyToObject(&resultError)
 	assert.NoError(t, err, "error unmarshaling response")
-	errMsg := "Function not registered, aefId"
-	assert.Equal(t, &errMsg, resultError.Cause)
+	assert.Contains(t, *resultError.Cause, aefId)
+	assert.Contains(t, *resultError.Cause, "not registered")
 	notFound := http.StatusNotFound
 	assert.Equal(t, &notFound, resultError.Status)
 }
