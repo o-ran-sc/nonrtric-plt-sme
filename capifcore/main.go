@@ -25,8 +25,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"helm.sh/helm/v3/pkg/cli"
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/providermanagementapi"
@@ -125,7 +127,7 @@ func getEcho() *echo.Echo {
 	discoverserviceapi.RegisterHandlersWithBaseURL(e, discoverService, "/service-apis/v1")
 
 	// Register Security
-	securitySwagger, err := publishserviceapi.GetSwagger()
+	securitySwagger, err := securityapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading Security swagger spec\n: %s", err)
 	}
@@ -136,6 +138,8 @@ func getEcho() *echo.Echo {
 	securityapi.RegisterHandlersWithBaseURL(e, securityService, "/capif-security/v1")
 
 	e.GET("/", hello)
+
+	e.GET("/swagger/:apiName", getSwagger)
 
 	return e
 }
@@ -151,4 +155,34 @@ func keepServerAlive() {
 
 func hello(c echo.Context) error {
 	return c.String(http.StatusOK, "Hello, World!\n")
+}
+
+func getSwagger(c echo.Context) error {
+	var swagger *openapi3.T
+	var err error
+	switch api := c.Param("apiName"); api {
+	case "provider":
+		swagger, err = providermanagementapi.GetSwagger()
+	case "publish":
+		swagger, err = publishserviceapi.GetSwagger()
+	case "invoker":
+		swagger, err = invokermanagementapi.GetSwagger()
+	case "discover":
+		swagger, err = discoverserviceapi.GetSwagger()
+	case "security":
+		swagger, err = securityapi.GetSwagger()
+	default:
+		return c.JSON(http.StatusBadRequest, getProblemDetails("Invalid API name "+api, http.StatusBadRequest))
+	}
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, getProblemDetails("Unable to get swagger for API", http.StatusInternalServerError))
+	}
+	return c.JSON(http.StatusOK, swagger)
+}
+
+func getProblemDetails(cause string, status int) common29122.ProblemDetails {
+	return common29122.ProblemDetails{
+		Cause:  &cause,
+		Status: &status,
+	}
 }
