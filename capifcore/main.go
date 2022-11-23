@@ -25,8 +25,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"helm.sh/helm/v3/pkg/cli"
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/providermanagementapi"
@@ -47,6 +49,12 @@ import (
 var url string
 var helmManager helmmanagement.HelmManager
 var repoName string
+
+var providerManagerSwagger *openapi3.T
+var publishServiceSwagger *openapi3.T
+var invokerManagerSwagger *openapi3.T
+var discoverServiceSwagger *openapi3.T
+var securitySwagger *openapi3.T
 
 func main() {
 	var port = flag.Int("port", 8090, "Port for CAPIF Core Function HTTP server")
@@ -80,8 +88,9 @@ func getEcho() *echo.Echo {
 	e.Use(echomiddleware.Logger())
 
 	var group *echo.Group
+	var err error
 	// Register ProviderManagement
-	providerManagerSwagger, err := providermanagementapi.GetSwagger()
+	providerManagerSwagger, err = providermanagementapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading ProviderManagement swagger spec\n: %s", err)
 	}
@@ -92,7 +101,7 @@ func getEcho() *echo.Echo {
 	providermanagementapi.RegisterHandlersWithBaseURL(e, providerManager, "/api-provider-management/v1")
 
 	// Register PublishService
-	publishServiceSwagger, err := publishserviceapi.GetSwagger()
+	publishServiceSwagger, err = publishserviceapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading PublishService swagger spec\n: %s", err)
 	}
@@ -103,7 +112,7 @@ func getEcho() *echo.Echo {
 	publishserviceapi.RegisterHandlersWithBaseURL(e, publishService, "/published-apis/v1")
 
 	// Register InvokerManagement
-	invokerManagerSwagger, err := invokermanagementapi.GetSwagger()
+	invokerManagerSwagger, err = invokermanagementapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading InvokerManagement swagger spec\n: %s", err)
 	}
@@ -114,7 +123,7 @@ func getEcho() *echo.Echo {
 	invokermanagementapi.RegisterHandlersWithBaseURL(e, invokerManager, "/api-invoker-management/v1")
 
 	// Register DiscoverService
-	discoverServiceSwagger, err := discoverserviceapi.GetSwagger()
+	discoverServiceSwagger, err = discoverserviceapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading DiscoverService swagger spec\n: %s", err)
 	}
@@ -125,7 +134,7 @@ func getEcho() *echo.Echo {
 	discoverserviceapi.RegisterHandlersWithBaseURL(e, discoverService, "/service-apis/v1")
 
 	// Register Security
-	securitySwagger, err := publishserviceapi.GetSwagger()
+	securitySwagger, err = securityapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading Security swagger spec\n: %s", err)
 	}
@@ -136,6 +145,8 @@ func getEcho() *echo.Echo {
 	securityapi.RegisterHandlersWithBaseURL(e, securityService, "/capif-security/v1")
 
 	e.GET("/", hello)
+
+	e.GET("/swagger/:apiName", getSwagger)
 
 	return e
 }
@@ -151,4 +162,29 @@ func keepServerAlive() {
 
 func hello(c echo.Context) error {
 	return c.String(http.StatusOK, "Hello, World!\n")
+}
+
+func getSwagger(c echo.Context) error {
+	switch api := c.Param("apiName"); api {
+	case "provider":
+		return c.JSON(http.StatusOK, providerManagerSwagger)
+	case "publish":
+		return c.JSON(http.StatusOK, publishServiceSwagger)
+	case "invoker":
+		return c.JSON(http.StatusOK, invokerManagerSwagger)
+	case "discover":
+		return c.JSON(http.StatusOK, discoverServiceSwagger)
+	case "security":
+		return c.JSON(http.StatusOK, securitySwagger)
+	default:
+		cause := "Invalid API name"
+		status := http.StatusBadRequest
+		pd := common29122.ProblemDetails{
+			Cause:  &cause,
+			Status: &status,
+		}
+
+		return c.JSON(status, pd)
+	}
+
 }

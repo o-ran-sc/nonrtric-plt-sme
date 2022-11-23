@@ -25,8 +25,10 @@ import (
 	"testing"
 
 	"github.com/deepmap/oapi-codegen/pkg/testutil"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 )
 
 var e *echo.Echo
@@ -104,4 +106,69 @@ func Test_routing(t *testing.T) {
 			assert.Equal(t, tt.args.returnStatus, result.Code(), tt.name)
 		})
 	}
+}
+
+func TestGetSwagger(t *testing.T) {
+	e = getEcho()
+
+	type args struct {
+		apiPath string
+		apiName string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "Provider api",
+			args: args{
+				apiPath: "provider",
+				apiName: "Provider",
+			},
+		},
+		{
+			name: "Publish api",
+			args: args{
+				apiPath: "publish",
+				apiName: "Publish",
+			},
+		},
+		{
+			name: "Invoker api",
+			args: args{
+				apiPath: "invoker",
+				apiName: "Invoker",
+			},
+		},
+		{
+			name: "Discover api",
+			args: args{
+				apiPath: "discover",
+				apiName: "Discover",
+			},
+		},
+		{
+			name: "Security api",
+			args: args{
+				apiPath: "security",
+				apiName: "Security",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := testutil.NewRequest().Get("/swagger/"+tt.args.apiPath).Go(t, e)
+			assert.Equal(t, http.StatusOK, result.Code())
+			var swaggerResponse openapi3.T
+			err := result.UnmarshalJsonToObject(&swaggerResponse)
+			assert.Nil(t, err)
+			assert.Contains(t, swaggerResponse.Info.Title, tt.args.apiName)
+		})
+	}
+	result := testutil.NewRequest().Get("/swagger/foobar").Go(t, e)
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var errorResponse common29122.ProblemDetails
+	err := result.UnmarshalJsonToObject(&errorResponse)
+	assert.Nil(t, err)
+	assert.Contains(t, *errorResponse.Cause, "Invalid API")
 }
