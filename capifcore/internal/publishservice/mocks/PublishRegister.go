@@ -27,6 +27,22 @@ func (_m *PublishRegister) AreAPIsPublished(serviceDescriptions *[]publishservic
 	return r0
 }
 
+// GetAllPublishedServices provides a mock function with given fields:
+func (_m *PublishRegister) GetAllPublishedServices() []publishserviceapi.ServiceAPIDescription {
+	ret := _m.Called()
+
+	var r0 []publishserviceapi.ServiceAPIDescription
+	if rf, ok := ret.Get(0).(func() []publishserviceapi.ServiceAPIDescription); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]publishserviceapi.ServiceAPIDescription)
+		}
+	}
+
+	return r0
+}
+
 // IsAPIPublished provides a mock function with given fields: aefId, path
 func (_m *PublishRegister) IsAPIPublished(aefId string, path string) bool {
 	ret := _m.Called(aefId, path)

@@ -162,6 +162,23 @@ func TestGetServices(t *testing.T) {
 	assert.Contains(t, resultServices, serviceDescription2)
 }
 
+func TestGetPublishedServices(t *testing.T) {
+	serviceUnderTest := NewPublishService(nil, nil)
+
+	profiles := make([]publishapi.AefProfile, 1)
+	serviceDescription := publishapi.ServiceAPIDescription{
+		AefProfiles: &profiles,
+	}
+	serviceUnderTest.publishedServices["publisher1"] = []publishapi.ServiceAPIDescription{
+		serviceDescription,
+	}
+	serviceUnderTest.publishedServices["publisher2"] = []publishapi.ServiceAPIDescription{
+		serviceDescription,
+	}
+	result := serviceUnderTest.GetAllPublishedServices()
+	assert.Len(t, result, 2)
+}
+
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, *echo.Echo) {
 	swagger, err := publishapi.GetSwagger()
 	if err != nil {

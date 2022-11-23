@@ -39,8 +39,14 @@ import (
 
 //go:generate mockery --name InvokerRegister
 type InvokerRegister interface {
+	// Checks if the invoker is registered.
+	// Returns true of the provided invoker is registered, false otherwise.
 	IsInvokerRegistered(invokerId string) bool
+	// Verifies that the provided secret is the invoker's registered secret.
+	// Returns true if the provided secret is the registered invoker's secret, false otherwise.
 	VerifyInvokerSecret(invokerId, secret string) bool
+	// Gets the provided invoker's registered APIs.
+	// Returns a list of all the invoker's registered APIs.
 	GetInvokerApiList(invokerId string) *invokerapi.APIList
 }
 
@@ -51,6 +57,7 @@ type InvokerManager struct {
 	lock              sync.Mutex
 }
 
+// Creates a manager that implements both the InvokerRegister and the invokermanagementapi.ServerInterface interfaces.
 func NewInvokerManager(publishRegister publishservice.PublishRegister) *InvokerManager {
 	return &InvokerManager{
 		onboardedInvokers: make(map[string]invokerapi.APIInvokerEnrolmentDetails),
@@ -86,6 +93,7 @@ func (im *InvokerManager) GetInvokerApiList(invokerId string) *invokerapi.APILis
 	return nil
 }
 
+// Creates a new individual API Invoker profile.
 func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	var newInvoker invokerapi.APIInvokerEnrolmentDetails
 	err := ctx.Bind(&newInvoker)
@@ -110,6 +118,9 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	}
 	newInvoker.OnboardingInformation.OnboardingSecret = &onboardingSecret
 
+	var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
+	newInvoker.ApiList = &apiList
+
 	im.onboardedInvokers[*newInvoker.ApiInvokerId] = newInvoker
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
@@ -123,6 +134,7 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	return nil
 }
 
+// Deletes an individual API Invoker.
 func (im *InvokerManager) DeleteOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
 	im.lock.Lock()
 	defer im.lock.Unlock()
@@ -132,6 +144,7 @@ func (im *InvokerManager) DeleteOnboardedInvokersOnboardingId(ctx echo.Context, 
 	return ctx.NoContent(http.StatusNoContent)
 }
 
+// Updates an individual API invoker details.
 func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
 	var invoker invokerapi.APIInvokerEnrolmentDetails
 	err := ctx.Bind(&invoker)

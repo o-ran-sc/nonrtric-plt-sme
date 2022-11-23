@@ -31,7 +31,7 @@ import (
 	"k8s.io/utils/strings/slices"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
-	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
+	publishapi "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 
 	"oransc.org/nonrtric/capifcore/internal/helmmanagement"
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
@@ -41,26 +41,34 @@ import (
 
 //go:generate mockery --name PublishRegister
 type PublishRegister interface {
-	AreAPIsPublished(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool
+	// Checks if the provided APIs are published.
+	// Returns true if all provided APIs have been published, false otherwise.
+	AreAPIsPublished(serviceDescriptions *[]publishapi.ServiceAPIDescription) bool
+	// Checks if the provided API is published.
+	// Returns true if the provided API has been published, false otherwise.
 	IsAPIPublished(aefId, path string) bool
+	// Gets all published APIs.
+	// Returns a list of all APIs that has been published.
+	GetAllPublishedServices() []publishapi.ServiceAPIDescription
 }
 
 type PublishService struct {
-	publishedServices map[string][]*publishserviceapi.ServiceAPIDescription
+	publishedServices map[string][]publishapi.ServiceAPIDescription
 	serviceRegister   providermanagement.ServiceRegister
 	helmManager       helmmanagement.HelmManager
 	lock              sync.Mutex
 }
 
+// Creates a service that implements both the PublishRegister and the publishserviceapi.ServerInterface interfaces.
 func NewPublishService(serviceRegister providermanagement.ServiceRegister, hm helmmanagement.HelmManager) *PublishService {
 	return &PublishService{
 		helmManager:       hm,
-		publishedServices: make(map[string][]*publishserviceapi.ServiceAPIDescription),
+		publishedServices: make(map[string][]publishapi.ServiceAPIDescription),
 		serviceRegister:   serviceRegister,
 	}
 }
 
-func (ps *PublishService) AreAPIsPublished(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool {
+func (ps *PublishService) AreAPIsPublished(serviceDescriptions *[]publishapi.ServiceAPIDescription) bool {
 
 	if serviceDescriptions != nil {
 		registeredApis := ps.getAllAefIds()
@@ -76,13 +84,13 @@ func (ps *PublishService) getAllAefIds() []string {
 	allIds := []string{}
 	for _, descriptions := range ps.publishedServices {
 		for _, description := range descriptions {
-			allIds = append(allIds, getIdsFromDescription(*description)...)
+			allIds = append(allIds, getIdsFromDescription(description)...)
 		}
 	}
 	return allIds
 }
 
-func getIdsFromDescription(description publishserviceapi.ServiceAPIDescription) []string {
+func getIdsFromDescription(description publishapi.ServiceAPIDescription) []string {
 	allIds := []string{}
 	if description.AefProfiles != nil {
 		for _, aefProfile := range *description.AefProfiles {
@@ -92,7 +100,7 @@ func getIdsFromDescription(description publishserviceapi.ServiceAPIDescription) 
 	return allIds
 }
 
-func checkNewDescriptions(newDescriptions []publishserviceapi.ServiceAPIDescription, registeredAefIds []string) bool {
+func checkNewDescriptions(newDescriptions []publishapi.ServiceAPIDescription, registeredAefIds []string) bool {
 	registered := true
 	for _, newApi := range newDescriptions {
 		if !checkProfiles(newApi.AefProfiles, registeredAefIds) {
@@ -103,7 +111,7 @@ func checkNewDescriptions(newDescriptions []publishserviceapi.ServiceAPIDescript
 	return registered
 }
 
-func checkProfiles(newProfiles *[]publishserviceapi.AefProfile, registeredAefIds []string) bool {
+func checkProfiles(newProfiles *[]publishapi.AefProfile, registeredAefIds []string) bool {
 	allRegistered := true
 	if newProfiles != nil {
 		for _, profile := range *newProfiles {
@@ -120,6 +128,15 @@ func (ps *PublishService) IsAPIPublished(aefId, path string) bool {
 	return slices.Contains(ps.getAllAefIds(), aefId)
 }
 
+func (ps *PublishService) GetAllPublishedServices() []publishapi.ServiceAPIDescription {
+	publishedDescriptions := []publishapi.ServiceAPIDescription{}
+	for _, descriptions := range ps.publishedServices {
+		publishedDescriptions = append(publishedDescriptions, descriptions...)
+	}
+	return publishedDescriptions
+}
+
+// Retrieve all published APIs.
 func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
 	serviceDescriptions, ok := ps.publishedServices[apfId]
 	if ok {
@@ -135,8 +152,9 @@ func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) er
 	return nil
 }
 
+// Publish a new API.
 func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) error {
-	var newServiceAPIDescription publishserviceapi.ServiceAPIDescription
+	var newServiceAPIDescription publishapi.ServiceAPIDescription
 	err := ctx.Bind(&newServiceAPIDescription)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for service "+apfId)
@@ -162,9 +180,9 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 
 	_, ok := ps.publishedServices[apfId]
 	if ok {
-		ps.publishedServices[apfId] = append(ps.publishedServices[apfId], &newServiceAPIDescription)
+		ps.publishedServices[apfId] = append(ps.publishedServices[apfId], newServiceAPIDescription)
 	} else {
-		ps.publishedServices[apfId] = append([]*publishserviceapi.ServiceAPIDescription{}, &newServiceAPIDescription)
+		ps.publishedServices[apfId] = append([]publishapi.ServiceAPIDescription{}, newServiceAPIDescription)
 	}
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
@@ -178,7 +196,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	return nil
 }
 
-func (ps *PublishService) installHelmChart(newServiceAPIDescription publishserviceapi.ServiceAPIDescription, ctx echo.Context) (bool, error) {
+func (ps *PublishService) installHelmChart(newServiceAPIDescription publishapi.ServiceAPIDescription, ctx echo.Context) (bool, error) {
 	info := strings.Split(*newServiceAPIDescription.Description, ",")
 	if len(info) == 5 {
 		err := ps.helmManager.InstallHelmChart(info[1], info[2], info[3], info[4])
@@ -190,6 +208,7 @@ func (ps *PublishService) installHelmChart(newServiceAPIDescription publishservi
 	return false, nil
 }
 
+// Unpublish a published service API.
 func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	serviceDescriptions, ok := ps.publishedServices[string(apfId)]
 	if ok {
@@ -208,6 +227,7 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 	return ctx.NoContent(http.StatusNoContent)
 }
 
+// Retrieve a published service API.
 func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -229,26 +249,28 @@ func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	return ctx.NoContent(http.StatusNotFound)
 }
 
-func getServiceDescription(serviceApiId string, descriptions []*publishserviceapi.ServiceAPIDescription) (int, *publishserviceapi.ServiceAPIDescription) {
+func getServiceDescription(serviceApiId string, descriptions []publishapi.ServiceAPIDescription) (int, *publishapi.ServiceAPIDescription) {
 	for pos, description := range descriptions {
 		if serviceApiId == *description.ApiId {
-			return pos, description
+			return pos, &description
 		}
 	}
 	return -1, nil
 }
 
-func removeServiceDescription(i int, a []*publishserviceapi.ServiceAPIDescription) []*publishserviceapi.ServiceAPIDescription {
-	a[i] = a[len(a)-1] // Copy last element to index i.
-	a[len(a)-1] = nil  // Erase last element (write zero value).
-	a = a[:len(a)-1]   // Truncate slice.
+func removeServiceDescription(i int, a []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
+	a[i] = a[len(a)-1]                               // Copy last element to index i.
+	a[len(a)-1] = publishapi.ServiceAPIDescription{} // Erase last element (write zero value).
+	a = a[:len(a)-1]                                 // Truncate slice.
 	return a
 }
 
+// Modify an existing published service API.
 func (ps *PublishService) ModifyIndAPFPubAPI(ctx echo.Context, apfId string, serviceApiId string) error {
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
+// Update a published service API.
 func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	return ctx.NoContent(http.StatusNotImplemented)
 }
