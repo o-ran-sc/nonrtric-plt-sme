@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3471f2db_3be77564",
+        "filename": "capifcore/internal/invokermanagement/invokermanagement.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 121,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2022-11-24T17:44:08Z",
+      "side": 1,
+      "message": "As we discussed earlier - this returns ALL registered services, not just the one this invoker can/should see ... we will need to come back to this later I guess.",
+      "range": {
+        "startLine": 121,
+        "startChar": 53,
+        "endLine": 121,
+        "endChar": 76
+      },
+      "revId": "0b4c4ecb52b1c04037a65644dc8c6c29981d9736",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
