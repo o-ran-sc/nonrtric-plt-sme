@@ -49,7 +49,7 @@ var (
 	funcIdAEF     = "AEF_id_rApp_as_AEF"
 )
 
-func TestProviderHandlingSuccessfully(t *testing.T) {
+func TestRegisterValidProvider(t *testing.T) {
 	managerUnderTest, requestHandler := getEcho()
 
 	newProvider := getProvider()
@@ -68,36 +68,91 @@ func TestProviderHandlingSuccessfully(t *testing.T) {
 	assert.Empty(t, resultProvider.FailReason)
 	assert.Equal(t, "http://example.com/registrations/"+*resultProvider.ApiProvDomId, result.Recorder.Header().Get(echo.HeaderLocation))
 	assert.True(t, managerUnderTest.IsFunctionRegistered("APF_id_rApp_as_APF"))
+}
 
-	// Update the provider
-	newProvider.ApiProvDomId = &domainID
-	(*newProvider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
-	(*newProvider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
-	(*newProvider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+func TestUpdateValidProvider(t *testing.T) {
+	managerUnderTest, requestHandler := getEcho()
+
+	provider := getProvider()
+	provider.ApiProvDomId = &domainID
+	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
+	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+	managerUnderTest.onboardedProviders[domainID] = provider
+
+	// Modify the provider
+	updatedProvider := getProvider()
+	updatedProvider.ApiProvDomId = &domainID
+	(*updatedProvider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	(*updatedProvider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
+	(*updatedProvider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+	newDomainInfo := "New domain info"
+	updatedProvider.ApiProvDomInfo = &newDomainInfo
+	newFunctionInfo := "New function info"
+	(*updatedProvider.ApiProvFuncs)[0].ApiProvFuncInfo = &newFunctionInfo
 	newFuncInfoAEF := "new func as AEF"
-	testFuncs := *newProvider.ApiProvFuncs
+	testFuncs := *updatedProvider.ApiProvFuncs
 	testFuncs = append(testFuncs, provapi.APIProviderFunctionDetails{
 		ApiProvFuncInfo: &newFuncInfoAEF,
-		ApiProvFuncRole: "AEF",
+		ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
 	})
-	newProvider.ApiProvFuncs = &testFuncs
+	updatedProvider.ApiProvFuncs = &testFuncs
 
-	result = testutil.NewRequest().Put("/registrations/"+domainID).WithJsonBody(newProvider).Go(t, requestHandler)
+	result := testutil.NewRequest().Put("/registrations/"+domainID).WithJsonBody(updatedProvider).Go(t, requestHandler)
 
+	var resultProvider provapi.APIProviderEnrolmentDetails
 	assert.Equal(t, http.StatusOK, result.Code())
-	err = result.UnmarshalBodyToObject(&resultProvider)
+	err := result.UnmarshalBodyToObject(&resultProvider)
 	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, newDomainInfo, *resultProvider.ApiProvDomInfo)
+	assert.Equal(t, newFunctionInfo, *(*resultProvider.ApiProvFuncs)[0].ApiProvFuncInfo)
 	assert.Equal(t, *(*resultProvider.ApiProvFuncs)[3].ApiProvFuncId, "AEF_id_new_func_as_AEF")
 	assert.Empty(t, resultProvider.FailReason)
 	assert.True(t, managerUnderTest.IsFunctionRegistered("AEF_id_new_func_as_AEF"))
-
-	// Delete the provider
-	result = testutil.NewRequest().Delete("/registrations/"+*resultProvider.ApiProvDomId).Go(t, requestHandler)
-
-	assert.Equal(t, http.StatusNoContent, result.Code())
-	assert.False(t, managerUnderTest.IsFunctionRegistered("APF_id_rApp_as_APF"))
 }
 
+func TestUpdateMissingFunction(t *testing.T) {
+	managerUnderTest, requestHandler := getEcho()
+
+	provider := getProvider()
+	provider.ApiProvDomId = &domainID
+	otherId := "otherId"
+	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &otherId
+	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
+	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+	managerUnderTest.onboardedProviders[domainID] = provider
+
+	// Modify the provider
+	updatedProvider := getProvider()
+	updatedProvider.ApiProvDomId = &domainID
+	(*updatedProvider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	newFunctionInfo := "New function info"
+	(*updatedProvider.ApiProvFuncs)[0].ApiProvFuncInfo = &newFunctionInfo
+
+	result := testutil.NewRequest().Put("/registrations/"+domainID).WithJsonBody(updatedProvider).Go(t, requestHandler)
+
+	var errorObj common29122.ProblemDetails
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	err := result.UnmarshalBodyToObject(&errorObj)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Contains(t, *errorObj.Cause, funcIdAPF)
+	assert.Contains(t, *errorObj.Cause, "not registered")
+}
+
+func TestDeleteProvider(t *testing.T) {
+	managerUnderTest, requestHandler := getEcho()
+
+	provider := getProvider()
+	provider.ApiProvDomId = &domainID
+	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	managerUnderTest.onboardedProviders[domainID] = provider
+	assert.True(t, managerUnderTest.IsFunctionRegistered(funcIdAPF))
+
+	result := testutil.NewRequest().Delete("/registrations/"+domainID).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNoContent, result.Code())
+	assert.False(t, managerUnderTest.IsFunctionRegistered(funcIdAPF))
+}
 func TestProviderHandlingValidation(t *testing.T) {
 	_, requestHandler := getEcho()
 
@@ -119,7 +174,12 @@ func TestProviderHandlingValidation(t *testing.T) {
 func TestGetExposedFunctionsForPublishingFunction(t *testing.T) {
 	managerUnderTest := NewProviderManager()
 
-	managerUnderTest.onboardedProviders[domainID] = getProvider()
+	provider := getProvider()
+	provider.ApiProvDomId = &domainID
+	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
+	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+	managerUnderTest.onboardedProviders[domainID] = provider
 	managerUnderTest.onboardedProviders[otherDomainID] = getOtherProvider()
 
 	exposedFuncs := managerUnderTest.GetAefsForPublisher(funcIdAPF)
@@ -130,23 +190,19 @@ func TestGetExposedFunctionsForPublishingFunction(t *testing.T) {
 func getProvider() provapi.APIProviderEnrolmentDetails {
 	testFuncs := []provapi.APIProviderFunctionDetails{
 		{
-			ApiProvFuncId:   &funcIdAPF,
 			ApiProvFuncInfo: &funcInfoAPF,
 			ApiProvFuncRole: provapi.ApiProviderFuncRoleAPF,
 		},
 		{
-			ApiProvFuncId:   &funcIdAMF,
 			ApiProvFuncInfo: &funcInfoAMF,
 			ApiProvFuncRole: provapi.ApiProviderFuncRoleAMF,
 		},
 		{
-			ApiProvFuncId:   &funcIdAEF,
 			ApiProvFuncInfo: &funcInfoAEF,
 			ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
 		},
 	}
 	return provapi.APIProviderEnrolmentDetails{
-		ApiProvDomId:   &domainID,
 		ApiProvDomInfo: &domainInfo,
 		ApiProvFuncs:   &testFuncs,
 	}

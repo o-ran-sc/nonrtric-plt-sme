@@ -21,6 +21,7 @@
 package providermanagement
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 	"strings"
@@ -131,38 +132,95 @@ func (pm *ProviderManager) DeleteRegistrationsRegistrationId(ctx echo.Context, r
 }
 
 func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, registrationId string) error {
-	registeredProvider, ok := pm.onboardedProviders[registrationId]
-	if !ok {
-		return sendCoreError(ctx, http.StatusBadRequest, "Provider must be onboarded before updating it")
-
-	}
-
-	var updatedProvider provapi.APIProviderEnrolmentDetails
-	err := ctx.Bind(&updatedProvider)
-	if err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for provider")
-	}
-
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 
-	for _, function := range *updatedProvider.ApiProvFuncs {
-		if function.ApiProvFuncId == nil {
-			function.ApiProvFuncId = pm.getFuncId(function.ApiProvFuncRole, function.ApiProvFuncInfo)
-			registeredFuncs := *registeredProvider.ApiProvFuncs
-			newFuncs := append(registeredFuncs, function)
-			registeredProvider.ApiProvFuncs = &newFuncs
-			pm.onboardedProviders[*registeredProvider.ApiProvDomId] = registeredProvider
-		}
+	registeredProvider, shouldReturn, returnValue := pm.checkIfProviderIsRegistered(registrationId, ctx)
+	if shouldReturn {
+		return returnValue
 	}
 
-	err = ctx.JSON(http.StatusOK, registeredProvider)
+	updatedProvider, shouldReturn1, returnValue1 := getProviderFromRequest(ctx)
+	if shouldReturn1 {
+		return returnValue1
+	}
+
+	if updatedProvider.ApiProvDomInfo != nil {
+		registeredProvider.ApiProvDomInfo = updatedProvider.ApiProvDomInfo
+	}
+
+	shouldReturn, returnValue = pm.updateFunctions(updatedProvider, registeredProvider, ctx)
+	if shouldReturn {
+		return returnValue
+	}
+
+	err := ctx.JSON(http.StatusOK, pm.onboardedProviders[registrationId])
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
 		return err
 	}
 
 	return nil
+}
+
+func (pm *ProviderManager) checkIfProviderIsRegistered(registrationId string, ctx echo.Context) (provapi.APIProviderEnrolmentDetails, bool, error) {
+	registeredProvider, ok := pm.onboardedProviders[registrationId]
+	if !ok {
+		return provapi.APIProviderEnrolmentDetails{}, true, sendCoreError(ctx, http.StatusBadRequest, "Provider must be onboarded before updating it")
+	}
+	return registeredProvider, false, nil
+}
+
+func getProviderFromRequest(ctx echo.Context) (provapi.APIProviderEnrolmentDetails, bool, error) {
+	var updatedProvider provapi.APIProviderEnrolmentDetails
+	err := ctx.Bind(&updatedProvider)
+	if err != nil {
+		return provapi.APIProviderEnrolmentDetails{}, true, sendCoreError(ctx, http.StatusBadRequest, "Invalid format for provider")
+	}
+	return updatedProvider, false, nil
+}
+
+func (pm *ProviderManager) updateFunctions(updatedProvider provapi.APIProviderEnrolmentDetails, registeredProvider provapi.APIProviderEnrolmentDetails, ctx echo.Context) (bool, error) {
+	for _, function := range *updatedProvider.ApiProvFuncs {
+		if function.ApiProvFuncId == nil {
+			pm.addFunction(function, registeredProvider)
+		} else {
+			shouldReturn, returnValue := pm.updateFunction(function, registeredProvider, ctx)
+			if shouldReturn {
+				return true, returnValue
+			}
+		}
+	}
+	return false, nil
+}
+
+func (pm *ProviderManager) addFunction(function provapi.APIProviderFunctionDetails, registeredProvider provapi.APIProviderEnrolmentDetails) {
+	function.ApiProvFuncId = pm.getFuncId(function.ApiProvFuncRole, function.ApiProvFuncInfo)
+	registeredFuncs := *registeredProvider.ApiProvFuncs
+	newFuncs := append(registeredFuncs, function)
+	registeredProvider.ApiProvFuncs = &newFuncs
+	pm.onboardedProviders[*registeredProvider.ApiProvDomId] = registeredProvider
+}
+
+func (*ProviderManager) updateFunction(function provapi.APIProviderFunctionDetails, registeredProvider provapi.APIProviderEnrolmentDetails, ctx echo.Context) (bool, error) {
+	pos, registeredFunction, err := getApiFunc(*function.ApiProvFuncId, registeredProvider.ApiProvFuncs)
+	if err != nil {
+		return true, sendCoreError(ctx, http.StatusBadRequest, "Unable to update provider due to: "+err.Error())
+	}
+	if function.ApiProvFuncInfo != nil {
+		registeredFunction.ApiProvFuncInfo = function.ApiProvFuncInfo
+		(*registeredProvider.ApiProvFuncs)[pos] = registeredFunction
+	}
+	return false, nil
+}
+
+func getApiFunc(funcId string, apiFunctions *[]provapi.APIProviderFunctionDetails) (int, provapi.APIProviderFunctionDetails, error) {
+	for pos, function := range *apiFunctions {
+		if *function.ApiProvFuncId == funcId {
+			return pos, function, nil
+		}
+	}
+	return 0, provapi.APIProviderFunctionDetails{}, fmt.Errorf("function with ID %s is not registered for the provider", funcId)
 }
 
 func (pm *ProviderManager) ModifyIndApiProviderEnrolment(ctx echo.Context, registrationId string) error {
