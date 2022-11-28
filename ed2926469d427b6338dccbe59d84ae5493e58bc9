@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ad20a700_84ed18cb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2022-11-28T09:48:02Z",
+      "side": 1,
+      "message": "To review the generated diagrams (*.svg), open the README.md file in an IDE with a preview function for md files.",
+      "revId": "ed2926469d427b6338dccbe59d84ae5493e58bc9",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
