@@ -1,0 +1,34 @@
+@startuml Register Provider
+actor rAppCatalogue
+participant rAppManager
+box "CAPIF Internal"
+participant capifcore
+participant providermanager
+participant helmmanager
+participant publishservice
+end box
+
+rAppCatalogue->rAppManager: Start rApp, with rApp\n descriptor specifying which\n services to expose and consume
+alt#paleGreen #paleGreen Provider Enrolment
+    rAppManager->capifcore: Register provider with\n APIProviderEnrolmentDetails
+    capifcore->providermanager:Store provider
+    capifcore->rAppManager: Provider with apfId and aefIds
+end
+alt#LightBlue #LightBlue Publish Service
+    rAppManager->capifcore: Publish services\n with ServiceAPIDescription
+    capifcore->providermanager: Check that AEFs are\n registered for provider
+    providermanager->capifcore: Ok
+    capifcore->helmmanager: Install and start chart
+    helmmanager->capifcore: Ok
+    capifcore->publishservice: Store published services
+    capifcore->rAppManager: ServiceAPIDescription with apiId
+end
+alt#Red #Red Register Invoker
+    rAppManager->capifcore: Register invoker with\n APIProviderFunctionDetails
+    capifcore->publishservice:Get available services for invoker
+    publishservice->capifcore: Services available for the given invoker
+    capifcore->rAppManager: Invoker with invokerId\n and avialable services
+end
+rAppManager->rAppCatalogue: Ok
+
+@enduml

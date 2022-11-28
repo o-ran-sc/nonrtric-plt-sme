@@ -1,0 +1,106 @@
+@startuml Information in rApp registration
+struct APIProviderEnrolmentDetails #palegreen {
+    string apiProvDomId
+    string apiProvDomInfo
+    []APIProviderFunctionDetails apiProvFuncs
+}
+note right of APIProviderEnrolmentDetails::apiProvDomId
+    Id provided by CAPIF Core
+end note
+struct APIProviderFunctionDetails #palegreen {
+    string apiProvFuncId
+    string apiProvFuncInfo
+    ApiProviderFuncRole apiProviderFuncRole (required)
+    RegistrationInformation regInfo (required)
+}
+note right of APIProviderFunctionDetails::apiProvFuncId
+    Id provided by CAPIF Core
+end note
+note right of APIProviderFunctionDetails::apiProviderFuncRole
+    - AEF: API provider function is API Exposing Function.
+    - APF: API provider function is API Publishing Function.
+    - AMF: API Provider function is API Management Function.
+end note
+struct RegistrationInformation #palegreen {
+    string apiProvCert
+    atring apiProvPubKey (required)
+}
+APIProviderEnrolmentDetails::apiProvFuncs o-- APIProviderFunctionDetails
+APIProviderFunctionDetails::regInfo o-- RegistrationInformation
+
+struct ServiceAPIDescription #lightblue {
+    string apiId
+    string apiName (required)
+    string description
+    []AefProfile aefProfiles
+}
+note bottom of ServiceAPIDescription
+    Id provided by CAPIF Core
+end note
+struct AefProfile #lightblue {
+    string aefId (required)
+    DataFormat dataFormat
+    string domainName
+    []InterfaceDescription interfaceDescriptions
+    Protocol protocol
+    []SecurityMethod securityMethods
+    []Version versions (required)
+}
+note left of AefProfile::dataFormat
+    - JSON: JavaScript Object Notation
+end note
+note left of AefProfile::protocol
+    - HTTP_1_1: HTTP version 1.1
+    - HTTP_2: HTTP version 2
+end note
+note left of AefProfile::securityMethods
+    - PSK: Security method 1 (Using TLS-PSK)
+    - PKI: Security method 2 (Using PKI)
+    - OAUTH: Security method 3 (TLS with OAuth token)
+end note
+note "From APIProviderFunctionDetails" as aefIdRel
+APIProviderFunctionDetails::apiProvFuncId .. aefIdRel
+aefIdRel .. AefProfile::aefId
+struct InterfaceDescription #lightblue {
+    string ipv4Address
+    string ipv6Address
+    []Operation operations
+    []SecurityMethod securityMethods
+}
+note right of InterfaceDescription
+    Security methods supported by the interface,
+    it take precedence over the security methods
+    provided in AefProfile, for this specific interface.
+end note
+struct Version #lightblue {
+    string apiVersion
+    []Resource resources
+}
+note right of Version::resources
+    - REQUEST_RESPONSE
+    - SUBSCRIBE_NOTIFY
+end note
+ServiceAPIDescription::aefProfiles o-- AefProfile
+AefProfile::interfaceDescriptions o-- InterfaceDescription
+AefProfile::versions o-- Version
+
+struct APIInvokerEnrolmentDetails #red {
+    string apiInvokerId
+    string apiInvokerInformation
+    APIList apiList
+    OnboardingInformation onboardingInformation
+}
+struct OnboardingInformation #red {
+    string apiInvokerCertificate
+    string ApiInvokerPublicKey (required)
+    string onboardingSecret
+}
+note right of OnboardingInformation::onboardingSecret
+    Secret provided by CAPIF Core
+end note
+note right of APIInvokerEnrolmentDetails::apiInvokerId
+    Id provided by CAPIF Core
+end note
+APIInvokerEnrolmentDetails::apiList o-- ServiceAPIDescription : APIList
+APIInvokerEnrolmentDetails::onboardingInformation o-- OnboardingInformation
+@enduml 

@@ -20,9 +20,17 @@
 
 -->
 
-# O-RAN-SC Non-RealTime CAPIF implementation
+# O-RAN-SC Non-RealTime CAPIF Core implementation
 
-This product is a Go implementation of the CAPIF Core function, based on the 3GPP CAPIF interfaces.
+This product is a Go implementation of the CAPIF Core function, based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
+
+The data used within CAPIF Core is shown in the diagram below.
+
+<img src="docs/diagrams/Information in rApp registration.svg">
+
+An example of how an rApp that both exposes and consumes services can be registered in CAPIF Core is shown in the sequence diagram below.
+
+<img src="docs/diagrams/Register Provider.svg">
 
 ## Generation of API code
 
@@ -42,8 +50,8 @@ To fix the specifications there are three tools:
 
 When a dependency to a new specification is introduced in any of the CAPIF specifications, see example below, the following steps should be performed:
 
-For the CAPIF specification "TS29222_CAPIF_Discover_Service_API" a new dependency like the following has been introduced.  
-websockNotifConfig:  
+For the CAPIF specification "TS29222_CAPIF_Discover_Service_API" a new dependency like the following has been introduced.
+websockNotifConfig:
 &nbsp;&nbsp;&nbsp;&nbsp;$ref: '**TS29122_CommonData.yaml#/components/schemas/WebsockNotifConfig**'
 
 1. Copy the bold part of the reference and add it to the `definitions.txt` file. This step is not needed if the type is already defined in the file.
@@ -75,7 +83,8 @@ The application can also be built as a Docker image, by using the following comm
 
 ## Run
 
-To run the Core Function from the command line, run the following commands from this folder.
+To run the Core Function from the command line, run the following commands from this folder. For the parameter `chartMuseumUrl`, if it is not provided CAPIF Core will not do any Helm integration, i.e. try to start any Halm chart when publishing a service.
 
-    ./capifcore [-port <port (default 8080)>]
+    ./capifcore [-port <port (default 8090)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>]
 
+To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scipts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available att port `31570`.
