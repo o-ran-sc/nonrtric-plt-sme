@@ -272,7 +272,59 @@ func (ps *PublishService) ModifyIndAPFPubAPI(ctx echo.Context, apfId string, ser
 
 // Update a published service API.
 func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+	ps.lock.Lock()
+	defer ps.lock.Unlock()
+
+	pos, publishedService, shouldReturn, returnValue := ps.checkIfServiceIsPublished(apfId, serviceApiId, ctx)
+	if shouldReturn {
+		return returnValue
+	}
+
+	updatedServiceDescription, shouldReturn, returnValue := getServiceFromRequest(ctx)
+	if shouldReturn {
+		return returnValue
+	}
+
+	if updatedServiceDescription.Description != nil {
+		publishedService.Description = updatedServiceDescription.Description
+		ps.publishedServices[apfId][pos] = publishedService
+	}
+
+	err := ctx.JSON(http.StatusOK, ps.publishedServices[apfId][pos])
+	if err != nil {
+		// Something really bad happened, tell Echo that our handler failed
+		return err
+	}
+
+	return nil
+}
+
+func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId string, ctx echo.Context) (int, publishapi.ServiceAPIDescription, bool, error) {
+
+	publishedServices, ok := ps.publishedServices[apfId]
+	if !ok {
+		return 0, publishapi.ServiceAPIDescription{}, true, sendCoreError(ctx, http.StatusBadRequest, "Service must be published before updating it")
+	} else {
+		for pos, description := range publishedServices {
+			if *description.ApiId == serviceApiId {
+				return pos, description, false, nil
+
+			}
+
+		}
+
+	}
+	return 0, publishapi.ServiceAPIDescription{}, true, sendCoreError(ctx, http.StatusBadRequest, "Service must be published before updating it")
+
+}
+
+func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, bool, error) {
+	var updatedServiceDescription publishapi.ServiceAPIDescription
+	err := ctx.Bind(&updatedServiceDescription)
+	if err != nil {
+		return publishapi.ServiceAPIDescription{}, true, sendCoreError(ctx, http.StatusBadRequest, "Invalid format for service")
+	}
+	return updatedServiceDescription, false, nil
 }
 
 // This function wraps sending of an error in the Error format, and

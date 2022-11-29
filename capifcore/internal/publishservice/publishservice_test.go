@@ -179,6 +179,37 @@ func TestGetPublishedServices(t *testing.T) {
 	assert.Len(t, result, 2)
 }
 
+func TestUpdateDescription(t *testing.T) {
+	apfId := "apfId"
+	serviceApiId := "serviceApiId"
+	aefId := "aefId"
+	apiName := "apiName"
+	description := "description"
+	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
+	helmManagerMock := helmMocks.HelmManager{}
+	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	serviceUnderTest, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
+
+	serviceDescription := getServiceAPIDescription(aefId, apiName, description)
+	serviceDescription.ApiId = &serviceApiId
+	serviceUnderTest.publishedServices[apfId] = []publishapi.ServiceAPIDescription{serviceDescription}
+
+	//Modify the service
+	updatedServiceDescription := getServiceAPIDescription(aefId, apiName, description)
+	updatedServiceDescription.ApiId = &description
+	newDescription := "new description"
+	updatedServiceDescription.Description = &newDescription
+	result := testutil.NewRequest().Put("/"+apfId+"/service-apis/"+serviceApiId).WithJsonBody(updatedServiceDescription).Go(t, requestHandler)
+
+	var resultService publishapi.ServiceAPIDescription
+	assert.Equal(t, http.StatusOK, result.Code())
+	err := result.UnmarshalBodyToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, resultService.Description, &newDescription)
+
+}
+
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, *echo.Echo) {
 	swagger, err := publishapi.GetSwagger()
 	if err != nil {
