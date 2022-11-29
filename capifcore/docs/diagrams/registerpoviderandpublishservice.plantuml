@@ -19,12 +19,13 @@ alt#LightBlue #LightBlue Publish Service
     capifcore->providermanager: Check that AEFs are\n registered for provider
     providermanager->capifcore: Ok
     capifcore->helmmanager: Install and start chart
+    note right: Optional and not decided yet
     helmmanager->capifcore: Ok
     capifcore->publishservice: Store published services
     capifcore->rAppManager: ServiceAPIDescription with apiId
 end
 alt#coral #coral Register Invoker
-    rAppManager->capifcore: Register invoker with\n APIProviderFunctionDetails
+    rAppManager->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
     capifcore->publishservice:Get available services for invoker
     publishservice->capifcore: Services available for the given invoker
     capifcore->rAppManager: Invoker with invokerId\n and avialable services
