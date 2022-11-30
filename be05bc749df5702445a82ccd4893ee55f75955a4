@@ -16,6 +16,46 @@
       "message": "left a comment",
       "revId": "be05bc749df5702445a82ccd4893ee55f75955a4",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "11e31b0e_a3b7c0b8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1001589
+      },
+      "writtenOn": "2022-11-30T16:04:48Z",
+      "side": 1,
+      "message": "left a comment",
+      "revId": "be05bc749df5702445a82ccd4893ee55f75955a4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d6e4596d_65eb3da5",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 283,
+      "author": {
+        "id": 1001589
+      },
+      "writtenOn": "2022-11-30T16:04:48Z",
+      "side": 1,
+      "message": "Can we reuse shouldReturn, returnValue from the previous statement here instead?\nThe variable names are a bit ambiguous, it might be better to call them something else.",
+      "range": {
+        "startLine": 283,
+        "startChar": 28,
+        "endLine": 283,
+        "endChar": 55
+      },
+      "revId": "be05bc749df5702445a82ccd4893ee55f75955a4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
