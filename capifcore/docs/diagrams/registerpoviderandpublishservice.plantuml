@@ -6,30 +6,47 @@ participant capifcore
 participant providermanager
 participant helmmanager
 participant publishservice
+participant invokerservice
+participant discoverservice
 end box
 
 rAppCatalogue->rAppManager: Start rApp, with rApp\n descriptor specifying which\n services to expose and consume
 alt#paleGreen #paleGreen Provider Enrolment
     rAppManager->capifcore: Register provider with\n APIProviderEnrolmentDetails
+    capifcore->capifcore: Create apiProvDomId\n and apiProvFuncIds\n for provided functions
     capifcore->providermanager:Store provider
+    providermanager->capifcore: Ok
     capifcore->rAppManager: Provider with apfId and aefIds
 end
 alt#LightBlue #LightBlue Publish Service
-    rAppManager->capifcore: Publish services\n with ServiceAPIDescription
+    rAppManager->capifcore: Publish services\n with providerId\n andServiceAPIDescription
     capifcore->providermanager: Check that AEFs are\n registered for provider
     providermanager->capifcore: Ok
+    capifcore->capifcore: Create apiId
     capifcore->helmmanager: Install and start chart
     note right: Optional and not decided yet
     helmmanager->capifcore: Ok
     capifcore->publishservice: Store published services
+    publishservice->capifcore: Ok
     capifcore->rAppManager: ServiceAPIDescription with apiId
 end
 alt#coral #coral Register Invoker
     rAppManager->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
-    capifcore->publishservice:Get available services for invoker
-    publishservice->capifcore: Services available for the given invoker
-    capifcore->rAppManager: Invoker with invokerId\n and avialable services
+    capifcore->capifcore: Create apiInvokderId
+    capifcore->invokerservice:Get available services for the invoker
+    invokerservice->publishservice: Get services available\n for the invoker
+    publishservice->invokerservice: Services available \nfor the invoker
+    invokerservice->capifcore: Services available for the invoker
+    capifcore->rAppManager: Invoker with invokerId\n and available services
 end
 rAppManager->rAppCatalogue: Ok
 
+alt#Yellow #Yellow Discover Services
+    rAppManager->capifcore: Discover services for an\n invoker with apiInvokerId\n and filter parameters
+    capifcore->discoverservice: Get services available for the invoker
+    discoverservice->invokerservice: Get services available\n for the invoker
+    invokerservice->discoverservice: Services available \nfor the invoker
+    discoverservice->capifcore: Services available for the\n invoker matching the\n filter parameters
+    capifcore->rAppManager: Services available for the\n invoker and matching the\n filter parameters
+end
 @enduml
