@@ -28,9 +28,9 @@ The data used within CAPIF Core is shown in the diagram below.
 
 <img src="docs/diagrams/Information in rApp registration.svg">
 
-An example of how an rApp that both exposes and consumes services can be registered in CAPIF Core is shown in the sequence diagram below.
+An example of how an rApp that both exposes and consumes services can be registered in CAPIF Core is shown in the sequence diagram below. Discovery of services for an invoker is also shown.
 
-***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation and starting. This is just provided in the prototype as an example of what CAPIF Core could do. Before publisihing a service, the chart that belongs to the service must be registered in ChartMusem. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An exaple of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
+***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do. Before publisihing a service, the chart that belongs to the service must be registered in ChartMusem. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
 
 <img src="docs/diagrams/Register Provider.svg">
 
