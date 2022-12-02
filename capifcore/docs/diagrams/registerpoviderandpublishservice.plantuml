@@ -1,35 +1,69 @@
 @startuml Register Provider
 actor rAppCatalogue
+actor rApp
 participant rAppManager
 box "CAPIF Internal"
 participant capifcore
 participant providermanager
 participant helmmanager
 participant publishservice
+participant invokerservice
+participant discoverservice
+participant securityservice
 end box
 
 rAppCatalogue->rAppManager: Start rApp, with rApp\n descriptor specifying which\n services to expose and consume
 alt#paleGreen #paleGreen Provider Enrolment
     rAppManager->capifcore: Register provider with\n APIProviderEnrolmentDetails
-    capifcore->providermanager:Store provider
-    capifcore->rAppManager: Provider with apfId and aefIds
+    capifcore->providermanager:Register provider
+    providermanager->providermanager: Create apiProvDomId\n and apiProvFuncIds\n for provided functions
+    providermanager->capifcore: Provider with\n apfId and aefIds
+    capifcore->rAppManager: Provider with\n apfId and aefIds
 end
 alt#LightBlue #LightBlue Publish Service
-    rAppManager->capifcore: Publish services\n with ServiceAPIDescription
-    capifcore->providermanager: Check that AEFs are\n registered for provider
-    providermanager->capifcore: Ok
-    capifcore->helmmanager: Install and start chart
+    rAppManager->capifcore: Publish services\n with providerId\n andServiceAPIDescription
+    capifcore->publishservice: Publish services
+    publishservice->providermanager: Are AEFs are\n registered for provider?
+    providermanager->publishservice: Ok
+    publishservice->publishservice: Create apiId
+    publishservice->helmmanager: Install chart
     note right: Optional and not decided yet
-    helmmanager->capifcore: Ok
-    capifcore->publishservice: Store published services
-    capifcore->rAppManager: ServiceAPIDescription with apiId
+    helmmanager->publishservice: Ok
+    publishservice->capifcore: ServiceAPIDescription\n with apiId
+    capifcore->rAppManager: ServiceAPIDescription\n with apiId
 end
 alt#coral #coral Register Invoker
     rAppManager->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
-    capifcore->publishservice:Get available services for invoker
-    publishservice->capifcore: Services available for the given invoker
-    capifcore->rAppManager: Invoker with invokerId\n and avialable services
+    capifcore->invokerservice: Register invoker
+    invokerservice->invokerservice: Create apiInvokerId and\n onboardingSecret
+    invokerservice->publishservice: Get available services
+    publishservice->invokerservice: Available services
+    invokerservice->capifcore: Services available\n for the invoker
+    capifcore->rAppManager: Invoker with invokerId\n and available services
 end
 rAppManager->rAppCatalogue: Ok
 
+alt#Yellow #Yellow Discover Services
+    rAppManager->capifcore: Discover services for an\n invoker with apiInvokerId\n and filter parameters
+    capifcore->discoverservice: Get services available\n for the invoker
+    discoverservice->invokerservice: Get services available\n for the invoker
+    invokerservice->publishservice: Get available services
+    publishservice->invokerservice: Available services
+    invokerservice->discoverservice: Services available \nfor the invoker
+    discoverservice->capifcore: Services available for the\n invoker matching the\n filter parameters
+    capifcore->rAppManager: Services available for the\n invoker and matching the\n filter parameters
+end
+
+alt#Pink #Pink Security Service
+    rApp->securityservice: Request token\n for service with\n AccessTokenReq
+    securityservice->invokerservice: Is invoker registered?
+    invokerservice->securityservice: Ok
+    securityservice->invokerservice: Is secret valid?
+    invokerservice->securityservice: Ok
+    securityservice->providermanager: Is function providing\n service registered?
+    providermanager->securityservice: Ok
+    securityservice->publishservice: Is service published?
+    publishservice->securityservice: Ok
+    securityservice->rApp: AccessTokenRsp with\n token
+end
 @enduml
