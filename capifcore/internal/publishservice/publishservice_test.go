@@ -200,28 +200,64 @@ func TestUpdateDescription(t *testing.T) {
 	aefId := "aefId"
 	apiName := "apiName"
 	description := "description"
+
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
-	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId", "aefIdNew"})
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	serviceUnderTest, eventChannel, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
-
 	serviceDescription := getServiceAPIDescription(aefId, apiName, description)
 	serviceDescription.ApiId = &serviceApiId
 	serviceUnderTest.publishedServices[apfId] = []publishapi.ServiceAPIDescription{serviceDescription}
+	(*serviceDescription.AefProfiles)[0].AefId = aefId
 
 	//Modify the service
 	updatedServiceDescription := getServiceAPIDescription(aefId, apiName, description)
-	updatedServiceDescription.ApiId = &description
+	updatedServiceDescription.ApiId = &serviceApiId
+	(*updatedServiceDescription.AefProfiles)[0].AefId = aefId
 	newDescription := "new description"
 	updatedServiceDescription.Description = &newDescription
+	newDomainName := "new domainName"
+	(*updatedServiceDescription.AefProfiles)[0].DomainName = &newDomainName
+
+	newProfileDomain := "new profile Domain name"
+	var protocol publishapi.Protocol = "HTTP_1_1"
+	test := make([]publishapi.AefProfile, 1)
+	test = *updatedServiceDescription.AefProfiles
+	test = append(test, publishapi.AefProfile{
+
+		AefId:      "aefIdNew",
+		DomainName: &newProfileDomain,
+		Protocol:   &protocol,
+		Versions: []publishapi.Version{
+			{
+				ApiVersion: "v1",
+				Resources: &[]publishapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+						Operations: &[]publishapi.Operation{
+							"POST",
+						},
+						ResourceName: "app",
+						Uri:          "app",
+					},
+				},
+			},
+		},
+	},
+	)
+
+	updatedServiceDescription.AefProfiles = &test
+
 	result := testutil.NewRequest().Put("/"+apfId+"/service-apis/"+serviceApiId).WithJsonBody(updatedServiceDescription).Go(t, requestHandler)
 
 	var resultService publishapi.ServiceAPIDescription
 	assert.Equal(t, http.StatusOK, result.Code())
 	err := result.UnmarshalBodyToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, resultService.Description, &newDescription)
+	assert.Equal(t, newDescription, *resultService.Description)
+	assert.Equal(t, newDomainName, *(*resultService.AefProfiles)[0].DomainName)
+	assert.Equal(t, "aefIdNew", (*resultService.AefProfiles)[1].AefId)
 
 	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
 		assert.Fail(t, "No event sent")

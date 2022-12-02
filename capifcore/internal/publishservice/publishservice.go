@@ -296,6 +296,11 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 		go ps.sendEvent(publishedService, eventsapi.CAPIFEventSERVICEAPIUPDATE)
 	}
 
+	pos, shouldReturn, returnValue = ps.updateProfiles(pos, apfId, updatedServiceDescription, publishedService, ctx)
+	if shouldReturn {
+		return returnValue
+	}
+
 	err := ctx.JSON(http.StatusOK, ps.publishedServices[apfId][pos])
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
@@ -330,6 +335,28 @@ func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, 
 	return updatedServiceDescription, false, nil
 }
 
+func (ps *PublishService) updateProfiles(pos int, apfId string, updatedServiceDescription publishapi.ServiceAPIDescription, publishedService publishapi.ServiceAPIDescription, ctx echo.Context) (int, bool, error) {
+	registeredFuncs := ps.serviceRegister.GetAefsForPublisher(apfId)
+	for _, profile := range *updatedServiceDescription.AefProfiles {
+		if !slices.Contains(registeredFuncs, profile.AefId) {
+			return 0, false, sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Function %s not registered", profile.AefId))
+		}
+		if ps.checkIfProfileIsNew(profile.AefId, *publishedService.AefProfiles) {
+
+			publishedService.AefProfiles = ps.addProfile(profile, publishedService)
+			ps.publishedServices[apfId][pos] = publishedService
+
+		} else {
+			pos, shouldReturn, returnValue := ps.updateProfile(profile, publishedService, ctx)
+			if shouldReturn {
+				return pos, true, returnValue
+			}
+		}
+
+	}
+	return 0, false, nil
+}
+
 func (ps *PublishService) sendEvent(service publishapi.ServiceAPIDescription, eventType eventsapi.CAPIFEvent) {
 	apiIds := []string{*service.ApiId}
 	apis := []publishapi.ServiceAPIDescription{service}
@@ -341,6 +368,43 @@ func (ps *PublishService) sendEvent(service publishapi.ServiceAPIDescription, ev
 		Events: eventType,
 	}
 	ps.eventChannel <- event
+}
+
+func (ps *PublishService) checkIfProfileIsNew(aefId string, publishedPofiles []publishapi.AefProfile) bool {
+	for _, profile := range publishedPofiles {
+		if profile.AefId == aefId {
+			return false
+		}
+	}
+	return true
+}
+func (ps *PublishService) addProfile(profile publishapi.AefProfile, publishedService publishapi.ServiceAPIDescription) *[]publishapi.AefProfile {
+	registeredProfiles := *publishedService.AefProfiles
+	newProfiles := append(registeredProfiles, profile)
+	publishedService.AefProfiles = &newProfiles
+	return &newProfiles
+
+}
+
+func (*PublishService) updateProfile(profile publishapi.AefProfile, publishedService publishapi.ServiceAPIDescription, ctx echo.Context) (int, bool, error) {
+	pos, registeredProfile, err := getProfile(profile.AefId, publishedService.AefProfiles)
+	if err != nil {
+		return pos, true, sendCoreError(ctx, http.StatusBadRequest, "Unable to update service due to: "+err.Error())
+	}
+	if profile.DomainName != nil {
+		registeredProfile.DomainName = profile.DomainName
+		(*publishedService.AefProfiles)[pos] = registeredProfile
+	}
+	return -1, false, nil
+}
+
+func getProfile(profileId string, apiProfiles *[]publishapi.AefProfile) (int, publishapi.AefProfile, error) {
+	for pos, profile := range *apiProfiles {
+		if profile.AefId == profileId {
+			return pos, profile, nil
+		}
+	}
+	return 0, publishapi.AefProfile{}, fmt.Errorf("profile with ID %s is not registered for the service", profileId)
 }
 
 // This function wraps sending of an error in the Error format, and
