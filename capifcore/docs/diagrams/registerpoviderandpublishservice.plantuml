@@ -1,5 +1,6 @@
 @startuml Register Provider
 actor rAppCatalogue
+actor rApp
 participant rAppManager
 box "CAPIF Internal"
 participant capifcore
@@ -8,6 +9,7 @@ participant helmmanager
 participant publishservice
 participant invokerservice
 participant discoverservice
+participant securityservice
 end box
 
 rAppCatalogue->rAppManager: Start rApp, with rApp\n descriptor specifying which\n services to expose and consume
@@ -21,7 +23,7 @@ end
 alt#LightBlue #LightBlue Publish Service
     rAppManager->capifcore: Publish services\n with providerId\n andServiceAPIDescription
     capifcore->publishservice: Publish services
-    publishservice->providermanager: Check that AEFs are\n registered for provider
+    publishservice->providermanager: Are AEFs are\n registered for provider?
     providermanager->publishservice: Ok
     publishservice->publishservice: Create apiId
     publishservice->helmmanager: Install chart
@@ -50,5 +52,18 @@ alt#Yellow #Yellow Discover Services
     invokerservice->discoverservice: Services available \nfor the invoker
     discoverservice->capifcore: Services available for the\n invoker matching the\n filter parameters
     capifcore->rAppManager: Services available for the\n invoker and matching the\n filter parameters
+end
+
+alt#Pink #Pink Security Service
+    rApp->securityservice: Request token\n for service with\n AccessTokenReq
+    securityservice->invokerservice: Is invoker registered?
+    invokerservice->securityservice: Ok
+    securityservice->invokerservice: Is secret valid?
+    invokerservice->securityservice: Ok
+    securityservice->providermanager: Is function providing\n service registered?
+    providermanager->securityservice: Ok
+    securityservice->publishservice: Is service published?
+    publishservice->securityservice: Ok
+    securityservice->rApp: AccessTokenRsp with\n token
 end
 @enduml

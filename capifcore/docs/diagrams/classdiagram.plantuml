@@ -155,4 +155,27 @@ note "Services can only be discovered\n for an onboarded invoker through\n APIIn
 DiscoveredAPIs .. invokerDiscoverRel
 invokerDiscoverRel .. APIInvokerEnrolmentDetails::apiInvokerId
 
+package "Security Service" #Pink {
+    struct AccessTokenReq {
+        string grant_type (required)
+        string client_id (required)
+        string client_secret
+        string scope
+    }
+    struct AccessTokenRsp {
+        string access_token (required)
+        string token_type (required)
+        DurationSec expires_in (required)
+        string scope
+    }
+}
+note "AccessTokenReq::client_id and\n AccessTokenReq::client_secret\n must match registered invoker" as accessInvokerRel
+AccessTokenReq::client_id .. accessInvokerRel
+accessInvokerRel .. APIInvokerEnrolmentDetails::apiInvokerId
+note "Function provided in\n AccessTokenReq:scope\n must be registered for a provider" as accessProviderRel
+AccessTokenReq::scope .. accessProviderRel
+accessProviderRel .. APIProviderFunctionDetails::apiProvFuncId
+note "API provided in\n AccessTokenReq:scope\n must be published" as accessPublishRel
+AccessTokenReq::scope .. accessPublishRel
+accessPublishRel .. AefProfile::aefId
 @enduml
