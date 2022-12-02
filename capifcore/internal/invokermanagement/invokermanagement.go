@@ -88,7 +88,11 @@ func (im *InvokerManager) VerifyInvokerSecret(invokerId, secret string) bool {
 func (im *InvokerManager) GetInvokerApiList(invokerId string) *invokerapi.APIList {
 	invoker, ok := im.onboardedInvokers[invokerId]
 	if ok {
-		return invoker.ApiList
+		var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
+		im.lock.Lock()
+		defer im.lock.Unlock()
+		invoker.ApiList = &apiList
+		return &apiList
 	}
 	return nil
 }

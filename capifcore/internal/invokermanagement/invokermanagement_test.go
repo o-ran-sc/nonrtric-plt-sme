@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 	"testing"
 
@@ -113,61 +112,53 @@ func TestOnboardInvoker(t *testing.T) {
 }
 
 func TestDeleteInvoker(t *testing.T) {
-	publishRegisterMock := publishmocks.PublishRegister{}
-	publishRegisterMock.On("GetAllPublishedServices").Return([]publishserviceapi.ServiceAPIDescription{})
-	invokerUnderTest, requestHandler := getEcho(&publishRegisterMock)
+	invokerUnderTest, requestHandler := getEcho(nil)
 
+	invokerId := "invokerId"
 	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
+		ApiInvokerId:            &invokerId,
 		NotificationDestination: "url",
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
 			ApiInvokerPublicKey: "key",
 		},
 	}
-
-	// Onboard an invoker
-	result := testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
-
-	invokerUrl := result.Recorder.Header().Get(echo.HeaderLocation)
-	assert.True(t, invokerUnderTest.IsInvokerRegistered(path.Base(invokerUrl)))
+	invokerUnderTest.onboardedInvokers[invokerId] = newInvoker
+	assert.True(t, invokerUnderTest.IsInvokerRegistered(invokerId))
 
 	// Delete the invoker
-	result = testutil.NewRequest().Delete(invokerUrl).Go(t, requestHandler)
+	result := testutil.NewRequest().Delete("/onboardedInvokers/"+invokerId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
-	assert.False(t, invokerUnderTest.IsInvokerRegistered(path.Base(invokerUrl)))
+	assert.False(t, invokerUnderTest.IsInvokerRegistered(invokerId))
 }
 
 func TestUpdateInvoker(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return([]publishserviceapi.ServiceAPIDescription{})
-	_, requestHandler := getEcho(&publishRegisterMock)
+	serviceUnderTest, requestHandler := getEcho(&publishRegisterMock)
 
-	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
+	invokerId := "invokerId"
+	invoker := invokermanagementapi.APIInvokerEnrolmentDetails{
+		ApiInvokerId:            &invokerId,
 		NotificationDestination: "url",
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
 			ApiInvokerPublicKey: "key",
 		},
 	}
-
-	// Onboard an invoker
-	result := testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
-	var resultInvoker invokermanagementapi.APIInvokerEnrolmentDetails
-	result.UnmarshalBodyToObject(&resultInvoker)
+	serviceUnderTest.onboardedInvokers[invokerId] = invoker
 
 	// Update the invoker with valid invoker, should return 200 with updated invoker details
-	invokerId := resultInvoker.ApiInvokerId
-	invokerUrl := result.Recorder.Header().Get(echo.HeaderLocation)
-	resultInvoker.ApiList = nil
 	newNotifURL := "newUrl"
-	resultInvoker.NotificationDestination = common29122.Uri(newNotifURL)
+	invoker.NotificationDestination = common29122.Uri(newNotifURL)
 	newPublicKey := "newPublicKey"
-	resultInvoker.OnboardingInformation.ApiInvokerPublicKey = newPublicKey
-	result = testutil.NewRequest().Put(invokerUrl).WithJsonBody(resultInvoker).Go(t, requestHandler)
+	invoker.OnboardingInformation.ApiInvokerPublicKey = newPublicKey
+	result := testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invoker).Go(t, requestHandler)
 
+	var resultInvoker invokermanagementapi.APIInvokerEnrolmentDetails
 	assert.Equal(t, http.StatusOK, result.Code())
 	err := result.UnmarshalBodyToObject(&resultInvoker)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, invokerId, resultInvoker.ApiInvokerId)
+	assert.Equal(t, invokerId, *resultInvoker.ApiInvokerId)
 	assert.Equal(t, newNotifURL, string(resultInvoker.NotificationDestination))
 	assert.Equal(t, newPublicKey, resultInvoker.OnboardingInformation.ApiInvokerPublicKey)
 
@@ -176,10 +167,10 @@ func TestUpdateInvoker(t *testing.T) {
 		ApiInvokerPublicKey: "key",
 	}
 	invalidInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
-		ApiInvokerId:          invokerId,
+		ApiInvokerId:          &invokerId,
 		OnboardingInformation: validOnboardingInfo,
 	}
-	result = testutil.NewRequest().Put(invokerUrl).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	var problemDetails common29122.ProblemDetails
@@ -193,7 +184,7 @@ func TestUpdateInvoker(t *testing.T) {
 	// Update with an invoker missing required OnboardingInformation.ApiInvokerPublicKey, should get 400 with problem details
 	invalidInvoker.NotificationDestination = "url"
 	invalidInvoker.OnboardingInformation = invokermanagementapi.OnboardingInformation{}
-	result = testutil.NewRequest().Put(invokerUrl).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -206,7 +197,7 @@ func TestUpdateInvoker(t *testing.T) {
 	invalidId := "1"
 	invalidInvoker.ApiInvokerId = &invalidId
 	invalidInvoker.OnboardingInformation = validOnboardingInfo
-	result = testutil.NewRequest().Put(invokerUrl).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -217,8 +208,8 @@ func TestUpdateInvoker(t *testing.T) {
 
 	// Update an invoker that has not been onboarded, shold get 404 with problem details
 	missingId := "1"
-	newInvoker.ApiInvokerId = &missingId
-	result = testutil.NewRequest().Put("/onboardedInvokers/"+missingId).WithJsonBody(newInvoker).Go(t, requestHandler)
+	invoker.ApiInvokerId = &missingId
+	result = testutil.NewRequest().Put("/onboardedInvokers/"+missingId).WithJsonBody(invoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNotFound, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -250,16 +241,22 @@ func TestGetInvokerApiList(t *testing.T) {
 	})
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(apiList)
-	invokerUnderTest, requestHandler := getEcho(&publishRegisterMock)
+	invokerUnderTest, _ := getEcho(&publishRegisterMock)
 
 	invokerInfo := "invoker a"
 	newInvoker := getInvoker(invokerInfo)
-	testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
-	newInvoker = getInvoker("invoker b")
-	testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+	invokerAId := "api_invoker_id_" + strings.ReplaceAll(invokerInfo, " ", "_")
+	newInvoker.ApiInvokerId = &invokerAId
+	invokerUnderTest.onboardedInvokers[invokerAId] = newInvoker
+	invokerInfo = "invoker b"
+	newInvoker = getInvoker(invokerInfo)
+	invokerId := "api_invoker_id_" + strings.ReplaceAll(invokerInfo, " ", "_")
+	newInvoker.ApiInvokerId = &invokerId
+	invokerUnderTest.onboardedInvokers[invokerId] = newInvoker
 
-	wantedApiList := invokerUnderTest.GetInvokerApiList("api_invoker_id_" + strings.Replace(invokerInfo, " ", "_", 1))
+	wantedApiList := invokerUnderTest.GetInvokerApiList(invokerAId)
 	assert.NotNil(t, wantedApiList)
+	assert.Len(t, *wantedApiList, 2)
 	assert.Equal(t, apiId, *(*wantedApiList)[0].ApiId)
 }
 
