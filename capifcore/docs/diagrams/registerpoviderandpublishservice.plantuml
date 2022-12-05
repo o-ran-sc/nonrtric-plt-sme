@@ -10,6 +10,7 @@ participant publishservice
 participant invokerservice
 participant discoverservice
 participant securityservice
+participant eventservice
 end box
 
 rAppCatalogue->rAppManager: Start rApp, with rApp\n descriptor specifying which\n services to expose and consume
@@ -29,6 +30,10 @@ alt#LightBlue #LightBlue Publish Service
     publishservice->helmmanager: Install chart
     note right: Optional and not decided yet
     helmmanager->publishservice: Ok
+    alt#Orange #Orange Subcribed Event Handling
+        publishservice->eventservice: Service published
+        eventservice->rApp: CAPIFEventDetail
+    end
     publishservice->capifcore: ServiceAPIDescription\n with apiId
     capifcore->rAppManager: ServiceAPIDescription\n with apiId
 end
@@ -38,6 +43,10 @@ alt#coral #coral Register Invoker
     invokerservice->invokerservice: Create apiInvokerId and\n onboardingSecret
     invokerservice->publishservice: Get available services
     publishservice->invokerservice: Available services
+    alt#Orange #Orange Subcribed Event Handling
+        invokerservice->eventservice: Invoker registered
+        eventservice->rApp: CAPIFEventDetail
+    end
     invokerservice->capifcore: Services available\n for the invoker
     capifcore->rAppManager: Invoker with invokerId\n and available services
 end
@@ -65,5 +74,11 @@ alt#Pink #Pink Security Service
     securityservice->publishservice: Is service published?
     publishservice->securityservice: Ok
     securityservice->rApp: AccessTokenRsp with\n token
+end
+
+alt#Orange #Orange Event Service
+    rApp->eventservice: Subscribe to event with EventSubscription
+    eventservice->eventservice: Create subscriptionId
+    eventservice->rApp: subscriptionId
 end
 @enduml

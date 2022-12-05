@@ -30,7 +30,7 @@ The data used within CAPIF Core is shown in the diagram below.
 
 An example of how an rApp that both exposes and consumes services can be registered in CAPIF Core is shown in the sequence diagram below. Discovery of services for an invoker is also shown.
 
-***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do. Before publisihing a service, the chart that belongs to the service must be registered in ChartMusem. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
+***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do. Before publishing a service, the chart that belongs to the service must be registered in ChartMuseum. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
 
 <img src="docs/diagrams/Register Provider.svg">
 
@@ -89,4 +89,4 @@ To run the Core Function from the command line, run the following commands from 
 
     ./capifcore [-port <port (default 8090)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>]
 
-To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scipts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available att port `31570`.
+To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available att port `31570`.
