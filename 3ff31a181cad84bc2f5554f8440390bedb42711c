@@ -1,0 +1,10 @@
+Verified+1: ORAN Jobbuilder <releng+oran-jobbuilder@linuxfoundation.org>
+Code-Review+1: Sonia Sangari <sonia.sangari@est.tech>
+Code-Review+1: Kevin Timoney <kevin.timoney@est.tech>
+Code-Review+1: Shivani Khare <shivani.khare@est.tech>
+Code-Review+2: John  Keeney <john.keeney@est.tech>
+Submitted-by: Henrik Andersson <henrik.b.andersson@est.tech>
+Submitted-at: Mon, 05 Dec 2022 15:41:49 +0000
+Reviewed-on: https://gerrit.o-ran-sc.org/r/c/nonrtric/plt/sme/+/9947
+Project: nonrtric/plt/sme
+Branch: refs/heads/master
