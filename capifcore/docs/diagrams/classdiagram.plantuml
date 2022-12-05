@@ -1,4 +1,5 @@
 @startuml Information in rApp registration
+' Provider Service
 package "Provider Service" #palegreen {
     struct APIProviderEnrolmentDetails {
         string apiProvDomId
@@ -32,7 +33,8 @@ APIProviderEnrolmentDetails::apiProvFuncs "1" o-- "1..N" APIProviderFunctionDeta
 APIProviderFunctionDetails::regInfo "1" o-- "1" RegistrationInformation
 APIProviderFunctionDetails::apiProviderFuncRole "1" o-- "1" ApiProviderFuncRole
 
-package "Publish Service" #lightblue {
+' Publish Service
+package "Publish Service" as publishservice #lightblue {
     struct ServiceAPIDescription {
         string apiId
         string apiName (required)
@@ -123,6 +125,7 @@ CustomOperation::CommunicationType "1" o-- "1" CommunicationType
 CustomOperation::operations "0..N" o-- "0..N" Operation
 Resource::commType "1" o-- "1" CommunicationType
 
+' Invoker Management
 package "Invoker Management" #coral {
     struct APIInvokerEnrolmentDetails {
         string apiInvokerId
@@ -136,25 +139,27 @@ package "Invoker Management" #coral {
         string onboardingSecret
     }
 }
-note right of OnboardingInformation::onboardingSecret
-    Secret provided by CAPIF Core
+note right of APIInvokerEnrolmentDetails::apiInvokerId
+    Id provided by Capif Core
 end note
-note left of APIInvokerEnrolmentDetails::apiInvokerId
-    Id provided by CAPIF Core
+note right of OnboardingInformation::onboardingSecret
+    Secret provided by Capif Core
 end note
 APIInvokerEnrolmentDetails::apiList "1" o-- "1..N" ServiceAPIDescription : APIList containing services\n available for the invoker.\n Provided by capifcore
 APIInvokerEnrolmentDetails::onboardingInformation "1" o-- "1" OnboardingInformation
 
+' Discover Service
 package "Discover Service"  #Yellow {
     struct DiscoveredAPIs {
         []ServiceAPIDescription serviceAPIDescriptions
     }
 }
 DiscoveredAPIs::serviceAPIDescriptions "0..N" o-- "0..N" ServiceAPIDescription
-note "Services can only be discovered\n for an onboarded invoker through\n APIInvokerEnrolmentDetails::apiId" as invokerDiscoverRel
+note "Services can only be discovered\n for an onboarded invoker through\n APIInvokerEnrolmentDetails::apiInvokerId" as invokerDiscoverRel
 DiscoveredAPIs .. invokerDiscoverRel
 invokerDiscoverRel .. APIInvokerEnrolmentDetails::apiInvokerId
 
+' Security Service
 package "Security Service" #Pink {
     struct AccessTokenReq {
         string grant_type (required)
@@ -178,4 +183,87 @@ accessProviderRel .. APIProviderFunctionDetails::apiProvFuncId
 note "API provided in\n AccessTokenReq:scope\n must be published" as accessPublishRel
 AccessTokenReq::scope .. accessPublishRel
 accessPublishRel .. AefProfile::aefId
+
+' Event Service
+package "Event Service" as eventservice #Orange {
+    struct EventSubscription {
+        []CAPIFEvent events (required)
+        Uri notificationDestination (required)
+        ReportingInformation eventReq
+        []CAPIFEventFilter eventFilters
+    }
+    struct CAPIFEventFilter {
+        []string aefIds
+        []string apiIds
+        []string apiInvokerIds
+    }
+    enum CAPIFEvent {
+        SERVICE_API_AVAILABLE
+        SERVICE_API_UNAVAILABLE
+        SERVICE_API_UPDATE
+        API_INVOKER_ONBOARDED
+        API_INVOKER_OFFBOARDED
+        SERVICE_API_INVOCATION_SUCCESS
+        SERVICE_API_INVOCATION_FAILURE
+        ACCESS_CONTROL_POLICY_UPDATE
+        ACCESS_CONTROL_POLICY_UNAVAILABLE
+        API_INVOKER_AUTHORIZATION_REVOKED
+        API_INVOKER_UPDATED
+        API_TOPOLOGY_HIDING_CREATED
+        API_TOPOLOGY_HIDING_REVOKED
+    }
+    struct ReportingInformation {
+        DurationSec grpRepTime
+        bool immRep
+        Uinteger maxReportNbr
+        NotificationFlag notifFlag
+        NotificationMethod notifMethod
+        PartitioningCriteria partitionCriteria
+        DurationSec repPeriod
+        SamplingRation sampRatio
+    }
+    struct CAPIFEventDetail {
+        AccessControlPolicyListExt accCtrlPolList
+        []string apiIds
+        []string apiInvokerIds
+        []ServiceAPIDescription serviceAPIDescriptions
+    }
+    struct AccessControlPolicyListExt {
+        AccessControlPolicyList accessControlPolicyList
+        string apiId
+    }
+}
+EventSubscription::eventFilters "0..N" o-- "0..N" CAPIFEventFilter
+EventSubscription::events "1" o-- "1..N" CAPIFEvent
+EventSubscription::eventReq "0..N" o-- "0..N" ReportingInformation
+CAPIFEventDetail::serviceAPIDescriptions "0..N" o-- "0..N" ServiceAPIDescription
+CAPIFEventFilter::aefIds .. APIProviderFunctionDetails::apiProvFuncId
+CAPIFEventFilter::apiIds .. ServiceAPIDescription::apiId
+CAPIFEventFilter::apiInvokerIds .. APIInvokerEnrolmentDetails::apiInvokerId
+CAPIFEventDetail::apiIds .. ServiceAPIDescription::apiId
+CAPIFEventDetail::apiInvokerIds .. APIInvokerEnrolmentDetails::apiInvokerId
+CAPIFEventDetail::accCtrlPolList "0..N" o-- "0..N" AccessControlPolicyListExt
+AccessControlPolicyListExt::apiId .. ServiceAPIDescription::apiId
+
+' Access Control Policy
+package "Access Control Policy" #LightCyan {
+    struct AccessControlPolicyList {
+        []ApiInvokerPolicy apiInvokerPolicies
+    }
+    struct ApiInvokerPolicy {
+        []TimeRangeList allowedInvocationTimeRangeList
+        int allowedInvocationsPerSecond
+        int allowedTotalInvocations
+        string apiInvokerId (required)
+    }
+    struct TimeRangeList {
+        DateTime startTime
+        DateTime stopTime
+    }
+}
+AccessControlPolicyList::apiInvokerPolicies "0..N" o-- "0..N" ApiInvokerPolicy
+ApiInvokerPolicy::allowedInvocationTimeRangeList "0..N" o-- "0..N" TimeRangeList
+AccessControlPolicyListExt::accessControlPolicyList "0..N" o-- "0..N" AccessControlPolicyList
+ApiInvokerPolicy::apiInvokerId .. APIInvokerEnrolmentDetails::apiInvokerId
+ApiInvokerPolicy::apiInvokerId .. APIInvokerEnrolmentDetails::apiInvokerId
 @enduml
