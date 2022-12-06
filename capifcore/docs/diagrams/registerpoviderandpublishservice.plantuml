@@ -13,54 +13,55 @@ participant securityservice
 participant eventservice
 end box
 
-rAppCatalogue->rAppManager: Start rApp, with rApp\n descriptor specifying which\n services to expose and consume
-alt#paleGreen #paleGreen Provider Enrolment
-    rAppManager->capifcore: Register provider with\n APIProviderEnrolmentDetails
-    capifcore->providermanager:Register provider
-    providermanager->providermanager: Create apiProvDomId\n and apiProvFuncIds\n for provided functions
-    providermanager->capifcore: Provider with\n apfId and aefIds
-    capifcore->rAppManager: Provider with\n apfId and aefIds
-end
-alt#LightBlue #LightBlue Publish Service
-    rAppManager->capifcore: Publish services\n with providerId\n andServiceAPIDescription
-    capifcore->publishservice: Publish services
-    publishservice->providermanager: Are AEFs are\n registered for provider?
-    providermanager->publishservice: Ok
-    publishservice->publishservice: Create apiId
-    publishservice->helmmanager: Install chart
-    note right: Optional and not decided yet
-    helmmanager->publishservice: Ok
-    alt#Orange #Orange Subcribed Event Handling
-        publishservice->eventservice: Service published
-        eventservice->rApp: CAPIFEventDetail
+alt Regtister rApp as both provider and consumer
+    rAppCatalogue->rAppManager: Register rApp, with rApp\n descriptor specifying which\n services to expose and consume
+    alt#paleGreen #paleGreen Provider Enrolment
+        rAppManager->capifcore: Register provider with\n APIProviderEnrolmentDetails
+        capifcore->providermanager:Register provider
+        providermanager->providermanager: Create apiProvDomId\n and apiProvFuncIds\n for provided functions
+        providermanager->capifcore: Provider with\n apfId and aefIds
+        capifcore->rAppManager: Provider with\n apfId and aefIds
     end
-    publishservice->capifcore: ServiceAPIDescription\n with apiId
-    capifcore->rAppManager: ServiceAPIDescription\n with apiId
-end
-alt#coral #coral Register Invoker
-    rAppManager->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
-    capifcore->invokerservice: Register invoker
-    invokerservice->invokerservice: Create apiInvokerId and\n onboardingSecret
-    invokerservice->publishservice: Get available services
-    publishservice->invokerservice: Available services
-    alt#Orange #Orange Subcribed Event Handling
-        invokerservice->eventservice: Invoker registered
-        eventservice->rApp: CAPIFEventDetail
+    alt#LightBlue #LightBlue Publish Service
+        rAppManager->capifcore: Publish services\n with providerId\n andServiceAPIDescription
+        capifcore->publishservice: Publish services
+        publishservice->providermanager: Are AEFs registered\n for provider?
+        providermanager->publishservice: Ok
+        publishservice->publishservice: Create apiId
+        publishservice->helmmanager: Install chart
+        note right: Optional and not decided yet
+        helmmanager->publishservice: Ok
+        alt#Orange #Orange Subcribed Event Handling
+            publishservice->eventservice: Service published
+            eventservice->rApp: CAPIFEventDetail
+        end
+        publishservice->capifcore: ServiceAPIDescription\n with apiId
+        capifcore->rAppManager: ServiceAPIDescription\n with apiId
     end
-    invokerservice->capifcore: Services available\n for the invoker
-    capifcore->rAppManager: Invoker with invokerId\n and available services
+    alt#coral #coral Register Invoker
+        rAppManager->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
+        capifcore->invokerservice: Register invoker
+        invokerservice->invokerservice: Create apiInvokerId and\n onboardingSecret
+        invokerservice->publishservice: Get available services
+        publishservice->invokerservice: Available services
+        alt#Orange #Orange Subcribed Event Handling
+            invokerservice->eventservice: Invoker registered
+            eventservice->rApp: CAPIFEventDetail
+        end
+        invokerservice->capifcore: Services available\n for the invoker
+        capifcore->rAppManager: Invoker with invokerId\n and available services
+    end
+    rAppManager->rAppCatalogue: Ok
 end
-rAppManager->rAppCatalogue: Ok
-
 alt#Yellow #Yellow Discover Services
-    rAppManager->capifcore: Discover services for an\n invoker with apiInvokerId\n and filter parameters
+    rApp->capifcore: Discover services for an\n invoker with apiInvokerId\n and filter parameters
     capifcore->discoverservice: Get services available\n for the invoker
     discoverservice->invokerservice: Get services available\n for the invoker
     invokerservice->publishservice: Get available services
     publishservice->invokerservice: Available services
     invokerservice->discoverservice: Services available \nfor the invoker
     discoverservice->capifcore: Services available for the\n invoker matching the\n filter parameters
-    capifcore->rAppManager: Services available for the\n invoker and matching the\n filter parameters
+    capifcore->rApp: Services available for the\n invoker and matching the\n filter parameters
 end
 
 alt#Pink #Pink Security Service

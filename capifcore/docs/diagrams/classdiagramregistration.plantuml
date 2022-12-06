@@ -1,0 +1,158 @@
+@startuml Information in rApp registration
+package "Provider Service" #palegreen {
+    struct APIProviderEnrolmentDetails {
+        string apiProvDomId
+        string apiProvDomInfo
+        []APIProviderFunctionDetails apiProvFuncs
+        string regSec (required)
+    }
+    note right of APIProviderEnrolmentDetails::apiProvDomId
+        Id provided by CAPIF Core
+    end note
+    struct APIProviderFunctionDetails {
+        string apiProvFuncId
+        string apiProvFuncInfo
+        ApiProviderFuncRole apiProviderFuncRole (required)
+        RegistrationInformation regInfo (required)
+    }
+    note right of APIProviderFunctionDetails::apiProvFuncId
+        Id provided by CAPIF Core
+    end note
+    enum ApiProviderFuncRole {
+        AEF: API provider function is API Exposing Function.
+        APF: API provider function is API Publishing Function.
+        AMF: API Provider function is API Management Function.
+    }
+    struct RegistrationInformation {
+        string apiProvCert
+        string apiProvPubKey (required)
+    }
+}
+APIProviderEnrolmentDetails::apiProvFuncs "1" o-- "1..N" APIProviderFunctionDetails
+APIProviderFunctionDetails::regInfo "1" o-- "1" RegistrationInformation
+APIProviderFunctionDetails::apiProviderFuncRole "1" o-- "1" ApiProviderFuncRole
+
+package "Publish Service" #lightblue {
+    struct ServiceAPIDescription {
+        string apiId
+        string apiName (required)
+        string description
+        []AefProfile aefProfiles
+    }
+    note left of ServiceAPIDescription::apiId
+        Id provided by CAPIF Core
+    end note
+    note "apfId matching\n APIProviderFunctionDetails::apiProvFuncId\n must be provided when publishing" as publishProviderRel
+    ServiceAPIDescription .. publishProviderRel
+    publishProviderRel .. APIProviderFunctionDetails::apiProvFuncId
+    struct AefProfile {
+        string aefId (required)
+        DataFormat dataFormat
+        string domainName
+        []InterfaceDescription interfaceDescriptions
+        Protocol protocol
+        []SecurityMethod securityMethods
+        []Version versions (required)
+    }
+    enum DataFormat {
+        JSON
+    }
+    enum Protocol {
+        HTTP_1_1
+        HTTP_2
+    }
+    note "AefProfile::aefId should match\n APIProviderFunctionDetails::apiProvFuncId" as aefIdRel
+    APIProviderFunctionDetails::apiProvFuncId .. aefIdRel
+    aefIdRel .. AefProfile::aefId
+    struct InterfaceDescription {
+        string ipv4Address
+        string ipv6Address
+        int port
+        []SecurityMethod securityMethods
+    }
+    note left of InterfaceDescription::securityMethods
+        Security methods supported by the interface,
+        it take precedence over the security methods
+        provided in AefProfile, for this specific interface.
+    end note
+    struct Version {
+        []CustomOperation custOperations
+        DateTime expiry
+        []Resource resources
+        string apiVersion (required)
+    }
+    struct CustomOperation {
+        CommunicationType commType (required)
+        string custOpName (required)
+        string description
+        []Operation operations
+    }
+    enum Operation {
+        GET
+        POST
+        PUT
+        PATCH
+        DELETE
+    }
+    enum SecurityMethod {
+        PSK
+        PKI
+        OAUTH
+    }
+    struct Resource {
+        string resourceName (required)
+        string uri (required)
+        CommunicationType commType (required)
+        string description
+    }
+    enum CommunicationType {
+        REQUEST_RESPONSE
+        SUBSCRIBE_NOTIFY
+    }
+}
+ServiceAPIDescription::aefProfiles "1" o-- "1..N" AefProfile
+AefProfile::interfaceDescriptions "1" o-- "1..N" InterfaceDescription
+AefProfile::protocol "0..1" o-- "0..1" Protocol
+AefProfile::securityMethods "1" o-- "1..N" SecurityMethod
+AefProfile::dataFormat "0..1" o-- "0..N" DataFormat
+InterfaceDescription::securityMethods "1" o-- "1..N" SecurityMethod
+AefProfile::versions "1" o-- "1..N" Version
+Version::resources "1..N" o-- "1..N" Resource
+Version::custOperations "0..1" o-- "0..N" CustomOperation
+CustomOperation::CommunicationType "1" o-- "1" CommunicationType
+CustomOperation::operations "0..N" o-- "0..N" Operation
+Resource::commType "1" o-- "1" CommunicationType
+
+package "Invoker Management" #coral {
+    struct APIInvokerEnrolmentDetails {
+        string apiInvokerId
+        string apiInvokerInformation
+        APIList apiList
+        OnboardingInformation onboardingInformation (required)
+    }
+    struct OnboardingInformation {
+        string apiInvokerCertificate
+        string ApiInvokerPublicKey (required)
+        string onboardingSecret
+    }
+    note right of OnboardingInformation::onboardingSecret
+        Secret provided by CAPIF Core
+    end note
+    note right of APIInvokerEnrolmentDetails::apiInvokerId
+        Id provided by CAPIF Core
+    end note
+}
+APIInvokerEnrolmentDetails::apiList "1" o-- "1..N" ServiceAPIDescription : APIList containing services\n available for the invoker.\n Provided by capifcore
+APIInvokerEnrolmentDetails::onboardingInformation "1" o-- "1" OnboardingInformation
+
+package "Discover Service"  #Yellow {
+    struct DiscoveredAPIs {
+        []ServiceAPIDescription serviceAPIDescriptions
+    }
+}
+DiscoveredAPIs::serviceAPIDescriptions "0..N" o-- "0..N" ServiceAPIDescription
+note "Services can only be discovered\n for an onboarded invoker through\n APIInvokerEnrolmentDetails::apiId" as invokerDiscoverRel
+DiscoveredAPIs .. invokerDiscoverRel
+invokerDiscoverRel .. APIInvokerEnrolmentDetails::apiInvokerId
+
+@enduml

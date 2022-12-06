@@ -24,15 +24,21 @@
 
 This product is a Go implementation of the CAPIF Core function, based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
 
-The data used within CAPIF Core is shown in the diagram below.
+The, almost, complete data model for CAPIF is shown in the diagram below.
+
+<img src="docs/diagrams/Information model for CAPIF.svg">
+
+The data used within CAPIF Core for registering an rApp that both provides and consumes services is shown in the diagram below.
 
 <img src="docs/diagrams/Information in rApp registration.svg">
 
-An example of how an rApp that both exposes and consumes services can be registered in CAPIF Core is shown in the sequence diagram below. Discovery of services for an invoker is also shown.
+An example of how an rApp that both provides and consumes services can be registered in CAPIF Core is shown in the sequence diagram below. Discovery of services, request for access token and event subscription for an invoker is also shown.
 
-***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do. Before publishing a service, the chart that belongs to the service must be registered in ChartMuseum. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
+***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do. 
 
 <img src="docs/diagrams/Register Provider.svg">
+
+If Helm is used, before publishing a service, the chart that belongs to the service must be registered in ChartMuseum. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
 
 ## Generation of API code
 
@@ -53,10 +59,11 @@ To fix the specifications there are three tools:
 When a dependency to a new specification is introduced in any of the CAPIF specifications, see example below, the following steps should be performed:
 
 For the CAPIF specification "TS29222_CAPIF_Discover_Service_API" a new dependency like the following has been introduced.
-websockNotifConfig:
-&nbsp;&nbsp;&nbsp;&nbsp;$ref: '**TS29122_CommonData.yaml#/components/schemas/WebsockNotifConfig**'
 
-1. Copy the bold part of the reference and add it to the `definitions.txt` file. This step is not needed if the type is already defined in the file.
+    websockNotifConfig:
+        $ref: ✅TS29122_CommonData.yaml#/components/schemas/WebsockNotifConfig✅'
+
+1. Copy the part between the checkboxes of the reference and add it to the `definitions.txt` file. This step is not needed if the type is already defined in the file.
 2. Look in the `generate.sh` script, between the "<replacements_start>" and "<new_replacement>" tags, to see if "TS29122_CommonData"
    has already been replaced in "TS29222_CAPIF_Discover_Service_API".
 3. If it has not been replaced, add a replacement above the "<new_replacement>" tag by copying and adapting the two rows above the tag.
@@ -89,4 +96,4 @@ To run the Core Function from the command line, run the following commands from 
 
     ./capifcore [-port <port (default 8090)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>]
 
-To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available att port `31570`.
+To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available on port `31570`.
