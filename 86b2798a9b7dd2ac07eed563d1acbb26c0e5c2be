@@ -39,6 +39,30 @@
       },
       "revId": "86b2798a9b7dd2ac07eed563d1acbb26c0e5c2be",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "da170227_27d83f3c",
+        "filename": "capifcore/README.md",
+        "patchSetId": 2
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2022-12-06T12:08:55Z",
+      "side": 1,
+      "message": "Thank you for seeing this! Will be corrected in a later commit.",
+      "parentUuid": "47b44ddb_ca61719a",
+      "range": {
+        "startLine": 92,
+        "startChar": 185,
+        "endLine": 92,
+        "endChar": 189
+      },
+      "revId": "86b2798a9b7dd2ac07eed563d1acbb26c0e5c2be",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
