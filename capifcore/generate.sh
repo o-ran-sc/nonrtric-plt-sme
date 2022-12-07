@@ -83,6 +83,9 @@ mv temp.yaml TS29571_CommonData.yaml
 sed '/oneOf.*/,+2d' TS29222_CAPIF_Publish_Service_API.yaml >temp.yaml
 mv temp.yaml TS29222_CAPIF_Publish_Service_API.yaml
 
+sed '/oneOf.*/,+2d' TS29222_CAPIF_Security_API.yaml >temp.yaml
+mv temp.yaml TS29222_CAPIF_Security_API.yaml
+
 # Replace references to external specs that are collected to the common spec by the commoncollector
 # <replacements_start>
 cat TS29122_CommonData.yaml | sed 's/TS29572_Nlmf_Location/CommonData/g' > temp.yaml

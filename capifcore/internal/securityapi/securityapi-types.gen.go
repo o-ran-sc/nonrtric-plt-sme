@@ -6,6 +6,7 @@ package securityapi
 import (
 	externalRef0 "oransc.org/nonrtric/capifcore/internal/common29122"
 	externalRef1 "oransc.org/nonrtric/capifcore/internal/common29571"
+	externalRef2 "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 )
 
 // Defines values for AccessTokenErrError.
@@ -81,7 +82,31 @@ type AccessTokenRspTokenType string
 type Cause string
 
 // Represents the interface details and the security method.
-type SecurityInformation interface{}
+type SecurityInformation struct {
+	// Identifier of the API exposing function
+	AefId *string `json:"aefId,omitempty"`
+
+	// API identifier
+	ApiId *string `json:"apiId,omitempty"`
+
+	// Authentication related information
+	AuthenticationInfo *string `json:"authenticationInfo,omitempty"`
+
+	// Authorization related information
+	AuthorizationInfo *string `json:"authorizationInfo,omitempty"`
+
+	// Represents the description of an API's interface.
+	InterfaceDetails *externalRef2.InterfaceDescription `json:"interfaceDetails,omitempty"`
+
+	// Security methods preferred by the API invoker for the API interface.
+	PrefSecurityMethods []externalRef2.SecurityMethod `json:"prefSecurityMethods"`
+
+	// Possible values are:
+	// - PSK: Security method 1 (Using TLS-PSK) as described in 3GPP TS 33.122
+	// - PKI: Security method 2 (Using PKI) as described in 3GPP TS 33.122
+	// - OAUTH: Security method 3 (TLS with OAuth token) as described in 3GPP TS 33.122
+	SelSecurityMethod *externalRef2.SecurityMethod `json:"selSecurityMethod,omitempty"`
+}
 
 // Represents revoked authorization notification details.
 type SecurityNotification struct {
