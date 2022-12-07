@@ -28,13 +28,13 @@ The, almost, complete data model for CAPIF is shown in the diagram below.
 
 <img src="docs/diagrams/Information model for CAPIF.svg">
 
-The data used within CAPIF Core for registering an rApp that both provides and consumes services is shown in the diagram below.
+The data used within CAPIF Core for registering rApps that both provides and consumes services is shown in the diagram below.
 
 <img src="docs/diagrams/Information in rApp registration.svg">
 
-An example of how an rApp that both provides and consumes services can be registered in CAPIF Core is shown in the sequence diagram below. Discovery of services, request for access token and event subscription for an invoker is also shown.
+Some examples of interactions between components using the CAPIF interface are shown in the sequence diagram below.
 
-***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do. 
+***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do.
 
 <img src="docs/diagrams/Register Provider.svg">
 

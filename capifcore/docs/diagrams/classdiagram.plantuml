@@ -374,7 +374,7 @@ package "Routing Service" {
     RoutingInfo::routingRules "1" o-- "1..N" RoutingRule
     RoutingRule::aefProfile "1" o-- "1" AefProfile
     GetServiceApisServiceApiIdParams::aefId .. APIProviderFunctionDetails::apiProvFuncId
-    note "A call with\n GetServiceApisServiceApiIdParams\n returns a RoutingRule" as routingRel
+    note "A call with\n GetServiceApisServiceApiIdParams\n returns a RoutingInfo" as routingRel
     GetServiceApisServiceApiIdParams .. routingRel
     routingRel .. RoutingInfo
 }
