@@ -251,6 +251,11 @@ package "Event Service" #Orange {
         DurationSec repPeriod
         SamplingRation sampRatio
     }
+    struct EventNotification {
+        CAPIFEventDetail eventDetail
+        CAPIFEvent events (required)
+        string subscriptionId (required)
+    }
     struct CAPIFEventDetail {
         AccessControlPolicyListExt accCtrlPolList
         []string apiIds
@@ -261,6 +266,11 @@ package "Event Service" #Orange {
         AccessControlPolicyList accessControlPolicyList
         string apiId
     }
+    note right of EventNotification::subscriptionId
+        subscriptionId generated
+        by CAPIF Core when
+        subscription was created
+    end note
 }
 EventSubscription::eventFilters "0..N" o-- "0..N" CAPIFEventFilter
 EventSubscription::events "1" o-- "1..N" CAPIFEvent
@@ -269,6 +279,8 @@ CAPIFEventDetail::serviceAPIDescriptions "0..N" o-- "0..N" ServiceAPIDescription
 CAPIFEventFilter::aefIds .. APIProviderFunctionDetails::apiProvFuncId
 CAPIFEventFilter::apiIds .. ServiceAPIDescription::apiId
 CAPIFEventFilter::apiInvokerIds .. APIInvokerEnrolmentDetails::apiInvokerId
+EventNotification::eventDetail "0..1" o-- "0..N" CAPIFEventDetail
+EventNotification::events "1" o-- "1" CAPIFEvent
 CAPIFEventDetail::apiIds .. ServiceAPIDescription::apiId
 CAPIFEventDetail::apiInvokerIds .. APIInvokerEnrolmentDetails::apiInvokerId
 CAPIFEventDetail::accCtrlPolList "0..N" o-- "0..N" AccessControlPolicyListExt

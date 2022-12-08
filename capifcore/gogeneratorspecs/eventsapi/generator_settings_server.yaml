@@ -24,3 +24,11 @@ package: eventsapi
 generate:
   - server
   - spec
+import-mapping:
+  TS29571_CommonData.yaml: oransc.org/nonrtric/capifcore/internal/common29571
+  TS29122_CommonData.yaml: oransc.org/nonrtric/capifcore/internal/common29122
+  CommonData.yaml: oransc.org/nonrtric/capifcore/internal/common
+  TS29222_CAPIF_Access_Control_Policy_API.yaml: oransc.org/nonrtric/capifcore/internal/accesscontrolpolicyapi
+  TS29222_CAPIF_Logging_API_Invocation_API.yaml: oransc.org/nonrtric/capifcore/internal/loggingapi
+  TS29222_CAPIF_Publish_Service_API.yaml: oransc.org/nonrtric/capifcore/internal/publishserviceapi
+  TS29222_CAPIF_Routing_Info_API.yaml: oransc.org/nonrtric/capifcore/internal/routinginfoapi
