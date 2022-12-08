@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 
+	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	publishapi "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
@@ -54,15 +55,17 @@ type InvokerManager struct {
 	onboardedInvokers map[string]invokerapi.APIInvokerEnrolmentDetails
 	publishRegister   publishservice.PublishRegister
 	nextId            int64
+	eventChannel      chan<- eventsapi.EventNotification
 	lock              sync.Mutex
 }
 
 // Creates a manager that implements both the InvokerRegister and the invokermanagementapi.ServerInterface interfaces.
-func NewInvokerManager(publishRegister publishservice.PublishRegister) *InvokerManager {
+func NewInvokerManager(publishRegister publishservice.PublishRegister, eventChannel chan<- eventsapi.EventNotification) *InvokerManager {
 	return &InvokerManager{
 		onboardedInvokers: make(map[string]invokerapi.APIInvokerEnrolmentDetails),
 		publishRegister:   publishRegister,
 		nextId:            1000,
+		eventChannel:      eventChannel,
 	}
 }
 
@@ -126,6 +129,7 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	newInvoker.ApiList = &apiList
 
 	im.onboardedInvokers[*newInvoker.ApiInvokerId] = newInvoker
+	go im.sendEvent(*newInvoker.ApiInvokerId, eventsapi.CAPIFEventAPIINVOKERONBOARDED)
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, *newInvoker.ApiInvokerId))
@@ -144,6 +148,7 @@ func (im *InvokerManager) DeleteOnboardedInvokersOnboardingId(ctx echo.Context, 
 	defer im.lock.Unlock()
 
 	delete(im.onboardedInvokers, onboardingId)
+	go im.sendEvent(onboardingId, eventsapi.CAPIFEventAPIINVOKEROFFBOARDED)
 
 	return ctx.NoContent(http.StatusNoContent)
 }
@@ -219,6 +224,17 @@ func (im *InvokerManager) getId(invokerInfo *string) *string {
 		im.nextId = im.nextId + 1
 	}
 	return &idAsString
+}
+
+func (im *InvokerManager) sendEvent(invokerId string, eventType eventsapi.CAPIFEvent) {
+	invokerIds := []string{invokerId}
+	event := eventsapi.EventNotification{
+		EventDetail: &eventsapi.CAPIFEventDetail{
+			ApiInvokerIds: &invokerIds,
+		},
+		Events: eventType,
+	}
+	im.eventChannel <- event
 }
 
 // This function wraps sending of an error in the Error format, and

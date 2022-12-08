@@ -25,7 +25,9 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
 
 	"github.com/labstack/echo/v4"
@@ -55,7 +57,7 @@ func TestOnboardInvoker(t *testing.T) {
 	}
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
-	invokerUnderTest, requestHandler := getEcho(&publishRegisterMock)
+	invokerUnderTest, eventChannel, requestHandler := getEcho(&publishRegisterMock)
 
 	invokerInfo := "invoker a"
 	newInvoker := getInvoker(invokerInfo)
@@ -78,6 +80,12 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.True(t, invokerUnderTest.VerifyInvokerSecret(wantedInvokerId, wantedInvokerSecret))
 	publishRegisterMock.AssertCalled(t, "GetAllPublishedServices")
 	assert.Equal(t, invokermanagementapi.APIList(publishedServices), *resultInvoker.ApiList)
+	if invokerEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+		assert.Fail(t, "No event sent")
+	} else {
+		assert.Equal(t, *resultInvoker.ApiInvokerId, (*invokerEvent.EventDetail.ApiInvokerIds)[0])
+		assert.Equal(t, eventsapi.CAPIFEventAPIINVOKERONBOARDED, invokerEvent.Events)
+	}
 
 	// Onboard an invoker missing required NotificationDestination, should get 400 with problem details
 	invalidInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
@@ -112,7 +120,7 @@ func TestOnboardInvoker(t *testing.T) {
 }
 
 func TestDeleteInvoker(t *testing.T) {
-	invokerUnderTest, requestHandler := getEcho(nil)
+	invokerUnderTest, eventChannel, requestHandler := getEcho(nil)
 
 	invokerId := "invokerId"
 	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
@@ -130,12 +138,18 @@ func TestDeleteInvoker(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
 	assert.False(t, invokerUnderTest.IsInvokerRegistered(invokerId))
+	if invokerEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+		assert.Fail(t, "No event sent")
+	} else {
+		assert.Equal(t, invokerId, (*invokerEvent.EventDetail.ApiInvokerIds)[0])
+		assert.Equal(t, eventsapi.CAPIFEventAPIINVOKEROFFBOARDED, invokerEvent.Events)
+	}
 }
 
 func TestUpdateInvoker(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return([]publishserviceapi.ServiceAPIDescription{})
-	serviceUnderTest, requestHandler := getEcho(&publishRegisterMock)
+	serviceUnderTest, _, requestHandler := getEcho(&publishRegisterMock)
 
 	invokerId := "invokerId"
 	invoker := invokermanagementapi.APIInvokerEnrolmentDetails{
@@ -241,7 +255,7 @@ func TestGetInvokerApiList(t *testing.T) {
 	})
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(apiList)
-	invokerUnderTest, _ := getEcho(&publishRegisterMock)
+	invokerUnderTest, _, _ := getEcho(&publishRegisterMock)
 
 	invokerInfo := "invoker a"
 	newInvoker := getInvoker(invokerInfo)
@@ -260,7 +274,7 @@ func TestGetInvokerApiList(t *testing.T) {
 	assert.Equal(t, apiId, *(*wantedApiList)[0].ApiId)
 }
 
-func getEcho(publishRegister publishservice.PublishRegister) (*InvokerManager, *echo.Echo) {
+func getEcho(publishRegister publishservice.PublishRegister) (*InvokerManager, chan eventsapi.EventNotification, *echo.Echo) {
 	swagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -269,14 +283,15 @@ func getEcho(publishRegister publishservice.PublishRegister) (*InvokerManager, *
 
 	swagger.Servers = nil
 
-	im := NewInvokerManager(publishRegister)
+	eventChannel := make(chan eventsapi.EventNotification)
+	im := NewInvokerManager(publishRegister, eventChannel)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())
 	e.Use(middleware.OapiRequestValidator(swagger))
 
 	invokermanagementapi.RegisterHandlers(e, im)
-	return im, e
+	return im, eventChannel, e
 }
 
 func getAefProfile(aefId string) publishserviceapi.AefProfile {
@@ -304,4 +319,15 @@ func getInvoker(invokerInfo string) invokermanagementapi.APIInvokerEnrolmentDeta
 		ApiList: nil,
 	}
 	return newInvoker
+}
+
+// waitForEvent waits for the channel to receive an event for the specified max timeout.
+// Returns true if waiting timed out.
+func waitForEvent(ch chan eventsapi.EventNotification, timeout time.Duration) (*eventsapi.EventNotification, bool) {
+	select {
+	case event := <-ch:
+		return &event, false // completed normally
+	case <-time.After(timeout):
+		return nil, true // timed out
+	}
 }
