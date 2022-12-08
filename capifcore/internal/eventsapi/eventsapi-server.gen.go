@@ -16,6 +16,13 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
+	externalRef0 "oransc.org/nonrtric/capifcore/internal/accesscontrolpolicyapi"
+	externalRef1 "oransc.org/nonrtric/capifcore/internal/common"
+	externalRef2 "oransc.org/nonrtric/capifcore/internal/common29122"
+	externalRef3 "oransc.org/nonrtric/capifcore/internal/common29571"
+	externalRef4 "oransc.org/nonrtric/capifcore/internal/loggingapi"
+	externalRef5 "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
+	externalRef6 "oransc.org/nonrtric/capifcore/internal/routinginfoapi"
 )
 
 // ServerInterface represents all server handlers.
@@ -184,6 +191,50 @@ func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
 		res[pathToFile] = rawSpec
 	}
 
+	pathPrefix := path.Dir(pathToFile)
+
+	for rawPath, rawFunc := range externalRef1.PathToRawSpec(path.Join(pathPrefix, "CommonData.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
+	for rawPath, rawFunc := range externalRef2.PathToRawSpec(path.Join(pathPrefix, "TS29122_CommonData.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
+	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(pathPrefix, "TS29222_CAPIF_Access_Control_Policy_API.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
+	for rawPath, rawFunc := range externalRef4.PathToRawSpec(path.Join(pathPrefix, "TS29222_CAPIF_Logging_API_Invocation_API.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
+	for rawPath, rawFunc := range externalRef5.PathToRawSpec(path.Join(pathPrefix, "TS29222_CAPIF_Publish_Service_API.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
+	for rawPath, rawFunc := range externalRef6.PathToRawSpec(path.Join(pathPrefix, "TS29222_CAPIF_Routing_Info_API.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
+	for rawPath, rawFunc := range externalRef3.PathToRawSpec(path.Join(pathPrefix, "TS29571_CommonData.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
 	return res
 }
 
