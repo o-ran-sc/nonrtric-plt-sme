@@ -86,6 +86,14 @@ func Test_routing(t *testing.T) {
 			},
 		},
 		{
+			name: "Event path",
+			args: args{
+				url:          "/capif-events/v1/subscriberId/subscriptions/subId",
+				returnStatus: http.StatusNoContent,
+				method:       "DELETE",
+			},
+		},
+		{
 			name: "Security path",
 			args: args{
 				url:          "/capif-security/v1/trustedInvokers/apiInvokerId",
@@ -138,6 +146,13 @@ func TestGetSwagger(t *testing.T) {
 			args: args{
 				apiPath: "invoker",
 				apiName: "Invoker",
+			},
+		},
+		{
+			name: "Events api",
+			args: args{
+				apiPath: "events",
+				apiName: "Events",
 			},
 		},
 		{

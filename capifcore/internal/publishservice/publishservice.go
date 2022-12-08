@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/strings/slices"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
+	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	publishapi "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 
 	"oransc.org/nonrtric/capifcore/internal/helmmanagement"
@@ -56,15 +57,17 @@ type PublishService struct {
 	publishedServices map[string][]publishapi.ServiceAPIDescription
 	serviceRegister   providermanagement.ServiceRegister
 	helmManager       helmmanagement.HelmManager
+	eventChannel      chan<- eventsapi.EventNotification
 	lock              sync.Mutex
 }
 
 // Creates a service that implements both the PublishRegister and the publishserviceapi.ServerInterface interfaces.
-func NewPublishService(serviceRegister providermanagement.ServiceRegister, hm helmmanagement.HelmManager) *PublishService {
+func NewPublishService(serviceRegister providermanagement.ServiceRegister, hm helmmanagement.HelmManager, eventChannel chan<- eventsapi.EventNotification) *PublishService {
 	return &PublishService{
 		helmManager:       hm,
 		publishedServices: make(map[string][]publishapi.ServiceAPIDescription),
 		serviceRegister:   serviceRegister,
+		eventChannel:      eventChannel,
 	}
 }
 
@@ -177,6 +180,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	if shouldReturn {
 		return returnValue
 	}
+	go ps.sendEvent(newServiceAPIDescription, eventsapi.CAPIFEventSERVICEAPIAVAILABLE)
 
 	_, ok := ps.publishedServices[apfId]
 	if ok {
@@ -222,6 +226,7 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 			ps.lock.Lock()
 			defer ps.lock.Unlock()
 			ps.publishedServices[string(apfId)] = removeServiceDescription(pos, serviceDescriptions)
+			go ps.sendEvent(*description, eventsapi.CAPIFEventSERVICEAPIUNAVAILABLE)
 		}
 	}
 	return ctx.NoContent(http.StatusNoContent)
@@ -272,9 +277,6 @@ func (ps *PublishService) ModifyIndAPFPubAPI(ctx echo.Context, apfId string, ser
 
 // Update a published service API.
 func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
-	ps.lock.Lock()
-	defer ps.lock.Unlock()
-
 	pos, publishedService, shouldReturn, returnValue := ps.checkIfServiceIsPublished(apfId, serviceApiId, ctx)
 	if shouldReturn {
 		return returnValue
@@ -286,8 +288,12 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	}
 
 	if updatedServiceDescription.Description != nil {
+		ps.lock.Lock()
+		defer ps.lock.Unlock()
+
 		publishedService.Description = updatedServiceDescription.Description
 		ps.publishedServices[apfId][pos] = publishedService
+		go ps.sendEvent(publishedService, eventsapi.CAPIFEventSERVICEAPIUPDATE)
 	}
 
 	err := ctx.JSON(http.StatusOK, ps.publishedServices[apfId][pos])
@@ -295,12 +301,10 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 		// Something really bad happened, tell Echo that our handler failed
 		return err
 	}
-
 	return nil
 }
 
 func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId string, ctx echo.Context) (int, publishapi.ServiceAPIDescription, bool, error) {
-
 	publishedServices, ok := ps.publishedServices[apfId]
 	if !ok {
 		return 0, publishapi.ServiceAPIDescription{}, true, sendCoreError(ctx, http.StatusBadRequest, "Service must be published before updating it")
@@ -315,7 +319,6 @@ func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId s
 
 	}
 	return 0, publishapi.ServiceAPIDescription{}, true, sendCoreError(ctx, http.StatusBadRequest, "Service must be published before updating it")
-
 }
 
 func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, bool, error) {
@@ -325,6 +328,19 @@ func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, 
 		return publishapi.ServiceAPIDescription{}, true, sendCoreError(ctx, http.StatusBadRequest, "Invalid format for service")
 	}
 	return updatedServiceDescription, false, nil
+}
+
+func (ps *PublishService) sendEvent(service publishapi.ServiceAPIDescription, eventType eventsapi.CAPIFEvent) {
+	apiIds := []string{*service.ApiId}
+	apis := []publishapi.ServiceAPIDescription{service}
+	event := eventsapi.EventNotification{
+		EventDetail: &eventsapi.CAPIFEventDetail{
+			ApiIds:                 &apiIds,
+			ServiceAPIDescriptions: &apis,
+		},
+		Events: eventType,
+	}
+	ps.eventChannel <- event
 }
 
 // This function wraps sending of an error in the Error format, and

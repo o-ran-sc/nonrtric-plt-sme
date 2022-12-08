@@ -30,6 +30,7 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
+	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/providermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/securityapi"
@@ -38,6 +39,7 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"oransc.org/nonrtric/capifcore/internal/discoverservice"
+	"oransc.org/nonrtric/capifcore/internal/eventservice"
 	"oransc.org/nonrtric/capifcore/internal/helmmanagement"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
@@ -93,13 +95,25 @@ func getEcho() *echo.Echo {
 	group.Use(middleware.OapiRequestValidator(providerManagerSwagger))
 	providermanagementapi.RegisterHandlersWithBaseURL(e, providerManager, "/api-provider-management/v1")
 
+	// Register EventService
+	eventServiceSwagger, err := eventsapi.GetSwagger()
+	if err != nil {
+		log.Fatalf("Error loading EventService swagger spec\n: %s", err)
+	}
+	eventServiceSwagger.Servers = nil
+	eventService := eventservice.NewEventService(&http.Client{})
+	group = e.Group("/capif-events/v1")
+	group.Use(middleware.OapiRequestValidator(eventServiceSwagger))
+	eventsapi.RegisterHandlersWithBaseURL(e, eventService, "/capif-events/v1")
+	eventChannel := eventService.GetNotificationChannel()
+
 	// Register PublishService
 	publishServiceSwagger, err := publishserviceapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("Error loading PublishService swagger spec\n: %s", err)
 	}
 	publishServiceSwagger.Servers = nil
-	publishService := publishservice.NewPublishService(providerManager, helmManager)
+	publishService := publishservice.NewPublishService(providerManager, helmManager, eventChannel)
 	group = e.Group("/published-apis/v1")
 	group.Use(middleware.OapiRequestValidator(publishServiceSwagger))
 	publishserviceapi.RegisterHandlersWithBaseURL(e, publishService, "/published-apis/v1")
@@ -169,6 +183,8 @@ func getSwagger(c echo.Context) error {
 		swagger, err = invokermanagementapi.GetSwagger()
 	case "discover":
 		swagger, err = discoverserviceapi.GetSwagger()
+	case "events":
+		swagger, err = eventsapi.GetSwagger()
 	case "security":
 		swagger, err = securityapi.GetSwagger()
 	default:

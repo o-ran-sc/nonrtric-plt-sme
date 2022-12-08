@@ -25,8 +25,10 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
+	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
 
 	"github.com/labstack/echo/v4"
@@ -51,7 +53,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	serviceUnderTest, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
+	serviceUnderTest, eventChannel, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
 
 	// Check no services published for provider
 	result := testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
@@ -83,6 +85,12 @@ func TestPublishUnpublishService(t *testing.T) {
 	serviceRegisterMock.AssertCalled(t, "GetAefsForPublisher", apfId)
 	helmManagerMock.AssertCalled(t, "InstallHelmChart", namespace, repoName, chartName, releaseName)
 	assert.ElementsMatch(t, []string{aefId}, serviceUnderTest.getAllAefIds())
+	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+		assert.Fail(t, "No event sent")
+	} else {
+		assert.Equal(t, *resultService.ApiId, (*publishEvent.EventDetail.ApiIds)[0])
+		assert.Equal(t, eventsapi.CAPIFEventSERVICEAPIAVAILABLE, publishEvent.Events)
+	}
 
 	// Check that the service is published for the provider
 	result = testutil.NewRequest().Get("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
@@ -103,6 +111,13 @@ func TestPublishUnpublishService(t *testing.T) {
 	// Check no services published
 	result = testutil.NewRequest().Get("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
+	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+		assert.Fail(t, "No event sent")
+	} else {
+		assert.Equal(t, *resultService.ApiId, (*publishEvent.EventDetail.ApiIds)[0])
+		assert.Equal(t, eventsapi.CAPIFEventSERVICEAPIUNAVAILABLE, publishEvent.Events)
+	}
+
 	assert.Equal(t, http.StatusNotFound, result.Code())
 }
 
@@ -111,9 +126,9 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{"otherAefId"})
-	_, requestHandler := getEcho(&serviceRegisterMock, nil)
+	_, _, requestHandler := getEcho(&serviceRegisterMock, nil)
 
-	newServiceDescription := getServiceAPIDescription(aefId, "apiname", "description")
+	newServiceDescription := getServiceAPIDescription(aefId, "apiName", "description")
 
 	// Publish a service
 	result := testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
@@ -133,7 +148,7 @@ func TestGetServices(t *testing.T) {
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId})
-	_, requestHandler := getEcho(&serviceRegisterMock, nil)
+	_, _, requestHandler := getEcho(&serviceRegisterMock, nil)
 
 	// Check no services published for provider
 	result := testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
@@ -163,7 +178,7 @@ func TestGetServices(t *testing.T) {
 }
 
 func TestGetPublishedServices(t *testing.T) {
-	serviceUnderTest := NewPublishService(nil, nil)
+	serviceUnderTest := NewPublishService(nil, nil, nil)
 
 	profiles := make([]publishapi.AefProfile, 1)
 	serviceDescription := publishapi.ServiceAPIDescription{
@@ -189,7 +204,7 @@ func TestUpdateDescription(t *testing.T) {
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	serviceUnderTest, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
+	serviceUnderTest, eventChannel, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
 
 	serviceDescription := getServiceAPIDescription(aefId, apiName, description)
 	serviceDescription.ApiId = &serviceApiId
@@ -208,9 +223,15 @@ func TestUpdateDescription(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, resultService.Description, &newDescription)
 
+	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+		assert.Fail(t, "No event sent")
+	} else {
+		assert.Equal(t, *resultService.ApiId, (*publishEvent.EventDetail.ApiIds)[0])
+		assert.Equal(t, eventsapi.CAPIFEventSERVICEAPIUPDATE, publishEvent.Events)
+	}
 }
 
-func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, *echo.Echo) {
+func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, chan eventsapi.EventNotification, *echo.Echo) {
 	swagger, err := publishapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -219,14 +240,15 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager hel
 
 	swagger.Servers = nil
 
-	ps := NewPublishService(serviceRegister, helmManager)
+	eventChannel := make(chan eventsapi.EventNotification)
+	ps := NewPublishService(serviceRegister, helmManager, eventChannel)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())
 	e.Use(middleware.OapiRequestValidator(swagger))
 
 	publishapi.RegisterHandlers(e, ps)
-	return ps, e
+	return ps, eventChannel, e
 }
 
 func getServiceAPIDescription(aefId, apiName, description string) publishapi.ServiceAPIDescription {
@@ -257,5 +279,16 @@ func getServiceAPIDescription(aefId, apiName, description string) publishapi.Ser
 		},
 		ApiName:     apiName,
 		Description: &description,
+	}
+}
+
+// waitForEvent waits for the channel to receive an event for the specified max timeout.
+// Returns true if waiting timed out.
+func waitForEvent(ch chan eventsapi.EventNotification, timeout time.Duration) (*eventsapi.EventNotification, bool) {
+	select {
+	case event := <-ch:
+		return &event, false // completed normally
+	case <-time.After(timeout):
+		return nil, true // timed out
 	}
 }
