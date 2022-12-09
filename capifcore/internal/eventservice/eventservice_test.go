@@ -97,7 +97,6 @@ func TestSendEvent(t *testing.T) {
 	apiIds := []string{"apiId"}
 	subId := "sub1"
 	newEvent := eventsapi.EventNotification{
-		SubscriptionId: subId,
 		EventDetail: &eventsapi.CAPIFEventDetail{
 			ApiIds: &apiIds,
 		},
@@ -108,6 +107,7 @@ func TestSendEvent(t *testing.T) {
 		if req.URL.String() == notificationUrl {
 			assert.Equal(t, req.Method, "PUT")
 			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			newEvent.SubscriptionId = subId
 			assert.Equal(t, newEvent, getBodyAsEvent(req, t))
 			wg.Done()
 			return &http.Response{
@@ -129,6 +129,13 @@ func TestSendEvent(t *testing.T) {
 		NotificationDestination: common29122.Uri(notificationUrl),
 	}
 	serviceUnderTest.addSubscription(subId, subscription)
+	sub2 := eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{
+			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
+		},
+		NotificationDestination: common29122.Uri(notificationUrl),
+	}
+	serviceUnderTest.addSubscription("other", sub2)
 
 	wg.Add(1)
 	go func() {
@@ -139,7 +146,35 @@ func TestSendEvent(t *testing.T) {
 		t.Error("Not all calls to server were made")
 		t.Fail()
 	}
+}
 
+func TestMatchEventType(t *testing.T) {
+	notificationUrl := "url"
+	subId := "sub1"
+	serviceUnderTest := NewEventService(nil)
+	subscription := eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{
+			eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
+		},
+		NotificationDestination: common29122.Uri(notificationUrl),
+	}
+	serviceUnderTest.addSubscription(subId, subscription)
+	sub2 := eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{
+			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
+		},
+		NotificationDestination: common29122.Uri(notificationUrl),
+	}
+	serviceUnderTest.addSubscription("other", sub2)
+
+	event := eventsapi.EventNotification{
+		SubscriptionId: subId,
+		Events:         eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
+	}
+
+	matchingSubs := serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 1)
+	assert.Equal(t, subId, matchingSubs[0])
 }
 
 func getEcho(client restclient.HTTPClient) (*EventService, *echo.Echo) {

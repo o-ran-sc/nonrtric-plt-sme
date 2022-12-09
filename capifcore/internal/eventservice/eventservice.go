@@ -30,6 +30,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/strings/slices"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/restclient"
@@ -108,13 +109,38 @@ func getEventSubscriptionFromRequest(ctx echo.Context) (eventsapi.EventSubscript
 }
 
 func (es *EventService) handleEvent(event eventsapi.EventNotification) {
-	subscription := es.getSubscription(event.SubscriptionId)
-	if subscription != nil {
-		e, _ := json.Marshal(event)
-		if error := restclient.Put(string(subscription.NotificationDestination), []byte(e), es.client); error != nil {
-			log.Error("Unable to send event")
+	subsIds := es.getMatchingSubs(event)
+	for _, subId := range subsIds {
+		go es.sendEvent(event, subId)
+	}
+}
+
+func (es *EventService) sendEvent(event eventsapi.EventNotification, subscriptionId string) {
+	event.SubscriptionId = subscriptionId
+	e, _ := json.Marshal(event)
+	if error := restclient.Put(string(es.subscriptions[subscriptionId].NotificationDestination), []byte(e), es.client); error != nil {
+		log.Error("Unable to send event")
+	}
+}
+
+func (es *EventService) getMatchingSubs(event eventsapi.EventNotification) []string {
+	matchingSubs := []string{}
+	es.lock.Lock()
+	defer es.lock.Unlock()
+	for subId, subInfo := range es.subscriptions {
+		if slices.Contains(asStrings(subInfo.Events), string(event.Events)) {
+			matchingSubs = append(matchingSubs, subId)
 		}
 	}
+	return matchingSubs
+}
+
+func asStrings(events []eventsapi.CAPIFEvent) []string {
+	asStrings := make([]string, len(events))
+	for i, event := range events {
+		asStrings[i] = string(event)
+	}
+	return asStrings
 }
 
 func (es *EventService) getSubscriptionId(subscriberId string) string {
