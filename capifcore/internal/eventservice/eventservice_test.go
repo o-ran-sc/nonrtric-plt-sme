@@ -122,13 +122,12 @@ func TestSendEvent(t *testing.T) {
 	})
 	serviceUnderTest, _ := getEcho(clientMock)
 
-	subscription := eventsapi.EventSubscription{
+	serviceUnderTest.addSubscription(subId, eventsapi.EventSubscription{
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
 		},
 		NotificationDestination: common29122.Uri(notificationUrl),
-	}
-	serviceUnderTest.addSubscription(subId, subscription)
+	})
 	sub2 := eventsapi.EventSubscription{
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
@@ -152,20 +151,19 @@ func TestMatchEventType(t *testing.T) {
 	notificationUrl := "url"
 	subId := "sub1"
 	serviceUnderTest := NewEventService(nil)
-	subscription := eventsapi.EventSubscription{
+	serviceUnderTest.addSubscription(subId, eventsapi.EventSubscription{
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
 		},
 		NotificationDestination: common29122.Uri(notificationUrl),
-	}
-	serviceUnderTest.addSubscription(subId, subscription)
-	sub2 := eventsapi.EventSubscription{
+		EventFilters:            &[]eventsapi.CAPIFEventFilter{},
+	})
+	serviceUnderTest.addSubscription("other", eventsapi.EventSubscription{
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
 		},
 		NotificationDestination: common29122.Uri(notificationUrl),
-	}
-	serviceUnderTest.addSubscription("other", sub2)
+	})
 
 	event := eventsapi.EventNotification{
 		SubscriptionId: subId,
@@ -175,6 +173,30 @@ func TestMatchEventType(t *testing.T) {
 	matchingSubs := serviceUnderTest.getMatchingSubs(event)
 	assert.Len(t, matchingSubs, 1)
 	assert.Equal(t, subId, matchingSubs[0])
+}
+
+func TestMatchesApiIds(t *testing.T) {
+	apiId := "apiId"
+	apiIds := []string{apiId, "otherApiId"}
+	eventFilters := []eventsapi.CAPIFEventFilter{
+		{},
+		{
+			ApiIds: &apiIds,
+		},
+	}
+
+	eventApiIds := []string{apiId}
+	assert.True(t, matchesApiIds(eventApiIds, eventFilters))
+	assert.True(t, matchesApiIds(nil, eventFilters))
+
+	altApiIds := []string{"anotherApiId"}
+	unMatchingFilterAdded := append(eventFilters, eventsapi.CAPIFEventFilter{
+		ApiIds: &altApiIds,
+	})
+	assert.False(t, matchesApiIds(eventApiIds, unMatchingFilterAdded))
+
+	apiIds[0] = "anotherId"
+	assert.False(t, matchesApiIds(eventApiIds, eventFilters))
 }
 
 func getEcho(client restclient.HTTPClient) (*EventService, *echo.Echo) {

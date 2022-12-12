@@ -124,15 +124,46 @@ func (es *EventService) sendEvent(event eventsapi.EventNotification, subscriptio
 }
 
 func (es *EventService) getMatchingSubs(event eventsapi.EventNotification) []string {
-	matchingSubs := []string{}
 	es.lock.Lock()
 	defer es.lock.Unlock()
+	matchingTypeSubs := es.filterOnEventType(event)
+	matchingSubs := []string{}
+	for _, subId := range matchingTypeSubs {
+		subscription := es.subscriptions[subId]
+		if subscription.EventFilters == nil || event.EventDetail == nil {
+			matchingSubs = append(matchingSubs, subId)
+			break
+		}
+		if matchesApiIds(*event.EventDetail.ApiIds, *subscription.EventFilters) {
+			matchingSubs = append(matchingSubs, subId)
+		}
+	}
+
+	return matchingSubs
+}
+
+func (es *EventService) filterOnEventType(event eventsapi.EventNotification) []string {
+	matchingSubs := []string{}
 	for subId, subInfo := range es.subscriptions {
 		if slices.Contains(asStrings(subInfo.Events), string(event.Events)) {
 			matchingSubs = append(matchingSubs, subId)
 		}
 	}
 	return matchingSubs
+}
+
+func matchesApiIds(eventIds []string, filters []eventsapi.CAPIFEventFilter) bool {
+	if len(filters) == 0 {
+		return true
+	}
+	for _, apiId := range eventIds {
+		filter := filters[0]
+		if filter.ApiIds == nil {
+			return true && matchesApiIds(eventIds, filters[1:])
+		}
+		return slices.Contains(*filter.ApiIds, apiId) && matchesApiIds(eventIds, filters[1:])
+	}
+	return true
 }
 
 func asStrings(events []eventsapi.CAPIFEvent) []string {
