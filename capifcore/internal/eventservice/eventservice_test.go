@@ -170,33 +170,58 @@ func TestMatchEventType(t *testing.T) {
 		Events:         eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
 	}
 
-	matchingSubs := serviceUnderTest.getMatchingSubs(event)
+	matchingSubs := serviceUnderTest.filterOnEventType(event)
 	assert.Len(t, matchingSubs, 1)
 	assert.Equal(t, subId, matchingSubs[0])
 }
 
-func TestMatchesApiIds(t *testing.T) {
-	apiId := "apiId"
-	apiIds := []string{apiId, "otherApiId"}
-	eventFilters := []eventsapi.CAPIFEventFilter{
-		{},
-		{
-			ApiIds: &apiIds,
+func TestMatchEventTypeAndFilters(t *testing.T) {
+	notificationUrl := "url"
+	subId := "sub1"
+	apiIds := []string{"apiId"}
+	invokerIds := []string{"invokerId"}
+	serviceUnderTest := NewEventService(nil)
+	serviceUnderTest.addSubscription(subId, eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{
+			eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
+		},
+		NotificationDestination: common29122.Uri(notificationUrl),
+		EventFilters: &[]eventsapi.CAPIFEventFilter{
+			{
+				ApiIds:        &apiIds,
+				ApiInvokerIds: &invokerIds,
+			},
+		},
+	})
+	serviceUnderTest.addSubscription("other", eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{
+			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
+		},
+		NotificationDestination: common29122.Uri(notificationUrl),
+	})
+
+	event := eventsapi.EventNotification{
+		Events: eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
+		EventDetail: &eventsapi.CAPIFEventDetail{
+			ApiIds:        &apiIds,
+			ApiInvokerIds: &invokerIds,
 		},
 	}
 
-	eventApiIds := []string{apiId}
-	assert.True(t, matchesApiIds(eventApiIds, eventFilters))
-	assert.True(t, matchesApiIds(nil, eventFilters))
+	matchingSubs := serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 1)
+	assert.Equal(t, subId, matchingSubs[0])
 
-	altApiIds := []string{"anotherApiId"}
-	unMatchingFilterAdded := append(eventFilters, eventsapi.CAPIFEventFilter{
-		ApiIds: &altApiIds,
-	})
-	assert.False(t, matchesApiIds(eventApiIds, unMatchingFilterAdded))
+	otherApiIds := []string{"otherApiId"}
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiIds = &otherApiIds
+	matchingSubs = serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 0)
 
-	apiIds[0] = "anotherId"
-	assert.False(t, matchesApiIds(eventApiIds, eventFilters))
+	otherInvokerIds := []string{"otherInvokerId"}
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiIds = &apiIds
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiInvokerIds = &otherInvokerIds
+	matchingSubs = serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 0)
 }
 
 func getEcho(client restclient.HTTPClient) (*EventService, *echo.Echo) {
