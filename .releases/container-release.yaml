@@ -1,0 +1,10 @@
+---
+distribution_type: container
+container_release_tag: 1.0.0
+container_pull_registry: nexus3.o-ran-sc.org:10004
+container_push_registry: nexus3.o-ran-sc.org:10002
+project: capifcore
+ref: 74a336a09e06d01780e1566ed1b68ece1ec59b91
+containers:
+    - name: nonrtric-plt-capifcore
+      version: 1.0.0
