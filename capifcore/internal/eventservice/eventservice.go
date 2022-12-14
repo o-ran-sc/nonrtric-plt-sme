@@ -33,6 +33,7 @@ import (
 	"k8s.io/utils/strings/slices"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
+	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/restclient"
 )
 
@@ -132,10 +133,9 @@ func (es *EventService) getMatchingSubs(event eventsapi.EventNotification) []str
 		subscription := es.subscriptions[subId]
 		if subscription.EventFilters == nil || event.EventDetail == nil {
 			matchingSubs = append(matchingSubs, subId)
-			break
-		}
-		if matchesFilters(*event.EventDetail.ApiIds, *subscription.EventFilters, getApiIdsFromFilter) &&
-			matchesFilters(*event.EventDetail.ApiInvokerIds, *subscription.EventFilters, getInvokerIdsFromFilter) {
+		} else if matchesFilters(event.EventDetail.ApiIds, *subscription.EventFilters, getApiIdsFromFilter) &&
+			matchesFilters(event.EventDetail.ApiInvokerIds, *subscription.EventFilters, getInvokerIdsFromFilter) &&
+			matchesFilters(getAefIdsFromEvent(event.EventDetail.ServiceAPIDescriptions), *subscription.EventFilters, getAefIdsFromFilter) {
 			matchingSubs = append(matchingSubs, subId)
 		}
 	}
@@ -153,13 +153,14 @@ func (es *EventService) filterOnEventType(event eventsapi.EventNotification) []s
 	return matchingSubs
 }
 
-func matchesFilters(eventIds []string, filters []eventsapi.CAPIFEventFilter, getIds func(eventsapi.CAPIFEventFilter) *[]string) bool {
-	if len(filters) == 0 {
+func matchesFilters(eventIds *[]string, filters []eventsapi.CAPIFEventFilter, getIds func(eventsapi.CAPIFEventFilter) *[]string) bool {
+	if len(filters) == 0 || eventIds == nil {
 		return true
 	}
-	for _, id := range eventIds {
+	for _, id := range *eventIds {
 		filter := filters[0]
-		if getIds(filter) == nil {
+		filterIds := getIds(filter)
+		if filterIds == nil || len(*filterIds) == 0 {
 			return matchesFilters(eventIds, filters[1:], getIds)
 		}
 		return slices.Contains(*getIds(filter), id) && matchesFilters(eventIds, filters[1:], getIds)
@@ -170,8 +171,29 @@ func matchesFilters(eventIds []string, filters []eventsapi.CAPIFEventFilter, get
 func getApiIdsFromFilter(filter eventsapi.CAPIFEventFilter) *[]string {
 	return filter.ApiIds
 }
+
 func getInvokerIdsFromFilter(filter eventsapi.CAPIFEventFilter) *[]string {
 	return filter.ApiInvokerIds
+}
+
+func getAefIdsFromEvent(serviceAPIDescriptions *[]publishserviceapi.ServiceAPIDescription) *[]string {
+	aefIds := []string{}
+	if serviceAPIDescriptions == nil {
+		return &aefIds
+	}
+	for _, serviceDescription := range *serviceAPIDescriptions {
+		if serviceDescription.AefProfiles == nil {
+			return &aefIds
+		}
+		for _, profile := range *serviceDescription.AefProfiles {
+			aefIds = append(aefIds, profile.AefId)
+		}
+	}
+	return &aefIds
+}
+
+func getAefIdsFromFilter(filter eventsapi.CAPIFEventFilter) *[]string {
+	return filter.AefIds
 }
 
 func asStrings(events []eventsapi.CAPIFEvent) []string {

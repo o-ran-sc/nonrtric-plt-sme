@@ -39,6 +39,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
+	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/restclient"
 )
 
@@ -176,52 +177,95 @@ func TestMatchEventType(t *testing.T) {
 }
 
 func TestMatchEventTypeAndFilters(t *testing.T) {
-	notificationUrl := "url"
 	subId := "sub1"
 	apiIds := []string{"apiId"}
 	invokerIds := []string{"invokerId"}
+	aefId := "aefId"
+	aefIds := []string{aefId}
 	serviceUnderTest := NewEventService(nil)
 	serviceUnderTest.addSubscription(subId, eventsapi.EventSubscription{
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
 		},
-		NotificationDestination: common29122.Uri(notificationUrl),
 		EventFilters: &[]eventsapi.CAPIFEventFilter{
 			{
 				ApiIds:        &apiIds,
 				ApiInvokerIds: &invokerIds,
+				AefIds:        &aefIds,
 			},
+		},
+	})
+	serviceUnderTest.addSubscription("otherSameType", eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{
+			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
 		},
 	})
 	serviceUnderTest.addSubscription("other", eventsapi.EventSubscription{
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
 		},
-		NotificationDestination: common29122.Uri(notificationUrl),
 	})
 
 	event := eventsapi.EventNotification{
-		Events: eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
-		EventDetail: &eventsapi.CAPIFEventDetail{
-			ApiIds:        &apiIds,
-			ApiInvokerIds: &invokerIds,
-		},
+		Events: eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE,
 	}
 
+	// Only match type
 	matchingSubs := serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 2)
+
+	// Match with all filter ids
+	aefProfiles := []publishserviceapi.AefProfile{
+		{
+			AefId: aefId,
+		},
+	}
+	serviceDescriptions := []publishserviceapi.ServiceAPIDescription{
+		{
+			AefProfiles: &aefProfiles,
+		},
+	}
+	event.Events = eventsapi.CAPIFEventSERVICEAPIAVAILABLE
+	event.EventDetail = &eventsapi.CAPIFEventDetail{
+		ApiIds:                 &apiIds,
+		ApiInvokerIds:          &invokerIds,
+		ServiceAPIDescriptions: &serviceDescriptions,
+	}
+	matchingSubs = serviceUnderTest.getMatchingSubs(event)
 	assert.Len(t, matchingSubs, 1)
 	assert.Equal(t, subId, matchingSubs[0])
 
+	// Un match apiId
 	otherApiIds := []string{"otherApiId"}
 	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiIds = &otherApiIds
 	matchingSubs = serviceUnderTest.getMatchingSubs(event)
 	assert.Len(t, matchingSubs, 0)
 
+	// Un match invokerId
 	otherInvokerIds := []string{"otherInvokerId"}
-	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiIds = &apiIds
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiIds = nil
 	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiInvokerIds = &otherInvokerIds
 	matchingSubs = serviceUnderTest.getMatchingSubs(event)
 	assert.Len(t, matchingSubs, 0)
+
+	// Un match aefId
+	otherAefIds := []string{"otherAefId"}
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].ApiInvokerIds = nil
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].AefIds = &otherAefIds
+	matchingSubs = serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 0)
+
+	// Match with empty subscription filter id list
+	(*serviceUnderTest.subscriptions[subId].EventFilters)[0].AefIds = &[]string{}
+	matchingSubs = serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 1)
+
+	// Match with empty event id list
+	event.EventDetail.ApiIds = nil
+	event.EventDetail.ApiInvokerIds = nil
+	event.EventDetail.ServiceAPIDescriptions = &[]publishserviceapi.ServiceAPIDescription{}
+	matchingSubs = serviceUnderTest.getMatchingSubs(event)
+	assert.Len(t, matchingSubs, 1)
 }
 
 func getEcho(client restclient.HTTPClient) (*EventService, *echo.Echo) {
