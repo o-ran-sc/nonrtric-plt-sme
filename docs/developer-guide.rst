@@ -5,7 +5,7 @@
 Developer Guide
 ===============
 
-This document provides a quick start for developers of the Non-RT RIC Service Management and Exposure.
+This document provides a quick start for developers of the Non-RT RIC Service Management & Exposure.
 
 Additional developer guides are available on the `O-RAN SC NONRTRIC Developer wiki <https://wiki.o-ran-sc.org/display/RICNR/Release+F>`_.
 
