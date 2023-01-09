@@ -113,22 +113,8 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 		return coreError
 	}
 
-	im.lock.Lock()
-	defer im.lock.Unlock()
+	im.prepareNewInvoker(&newInvoker)
 
-	newInvoker.ApiInvokerId = im.getId(newInvoker.ApiInvokerInformation)
-	onboardingSecret := "onboarding_secret_"
-	if newInvoker.ApiInvokerInformation != nil {
-		onboardingSecret = onboardingSecret + strings.ReplaceAll(*newInvoker.ApiInvokerInformation, " ", "_")
-	} else {
-		onboardingSecret = onboardingSecret + *newInvoker.ApiInvokerId
-	}
-	newInvoker.OnboardingInformation.OnboardingSecret = &onboardingSecret
-
-	var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
-	newInvoker.ApiList = &apiList
-
-	im.onboardedInvokers[*newInvoker.ApiInvokerId] = newInvoker
 	go im.sendEvent(*newInvoker.ApiInvokerId, eventsapi.CAPIFEventAPIINVOKERONBOARDED)
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
@@ -142,12 +128,35 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	return nil
 }
 
-// Deletes an individual API Invoker.
-func (im *InvokerManager) DeleteOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
+func (im *InvokerManager) prepareNewInvoker(newInvoker *invokerapi.APIInvokerEnrolmentDetails) {
 	im.lock.Lock()
 	defer im.lock.Unlock()
 
+	newInvoker.ApiInvokerId = im.getId(newInvoker.ApiInvokerInformation)
+	newInvoker.OnboardingInformation.OnboardingSecret = getOnboardingSecret(*newInvoker)
+
+	var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
+	newInvoker.ApiList = &apiList
+
+	im.onboardedInvokers[*newInvoker.ApiInvokerId] = *newInvoker
+}
+
+func getOnboardingSecret(newInvoker invokerapi.APIInvokerEnrolmentDetails) *string {
+	onboardingSecret := "onboarding_secret_"
+	if newInvoker.ApiInvokerInformation != nil {
+		onboardingSecret = onboardingSecret + strings.ReplaceAll(*newInvoker.ApiInvokerInformation, " ", "_")
+	} else {
+		onboardingSecret = onboardingSecret + *newInvoker.ApiInvokerId
+	}
+	return &onboardingSecret
+}
+
+// Deletes an individual API Invoker.
+func (im *InvokerManager) DeleteOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
+	im.lock.Lock()
 	delete(im.onboardedInvokers, onboardingId)
+	im.lock.Unlock()
+
 	go im.sendEvent(onboardingId, eventsapi.CAPIFEventAPIINVOKEROFFBOARDED)
 
 	return ctx.NoContent(http.StatusNoContent)
@@ -170,11 +179,10 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 		return coreError
 	}
 
-	im.lock.Lock()
-	defer im.lock.Unlock()
-
 	if _, ok := im.onboardedInvokers[onboardingId]; ok {
+		im.lock.Lock()
 		im.onboardedInvokers[*invoker.ApiInvokerId] = invoker
+		im.lock.Unlock()
 	} else {
 		return sendCoreError(ctx, http.StatusNotFound, "The invoker to update has not been onboarded")
 	}
