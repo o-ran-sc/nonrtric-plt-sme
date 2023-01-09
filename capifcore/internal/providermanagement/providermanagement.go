@@ -99,13 +99,7 @@ func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 		return sendCoreError(ctx, http.StatusBadRequest, "Provider missing required ApiProvDomInfo")
 	}
 
-	pm.lock.Lock()
-	defer pm.lock.Unlock()
-
-	newProvider.ApiProvDomId = pm.getDomainId(newProvider.ApiProvDomInfo)
-
-	pm.registerFunctions(newProvider.ApiProvFuncs)
-	pm.onboardedProviders[*newProvider.ApiProvDomId] = newProvider
+	pm.prepareNewProvider(&newProvider)
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, *newProvider.ApiProvDomId))
@@ -118,14 +112,24 @@ func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 	return nil
 }
 
-func (pm *ProviderManager) DeleteRegistrationsRegistrationId(ctx echo.Context, registrationId string) error {
+func (pm *ProviderManager) prepareNewProvider(newProvider *provapi.APIProviderEnrolmentDetails) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
+
+	newProvider.ApiProvDomId = pm.getDomainId(newProvider.ApiProvDomInfo)
+
+	pm.registerFunctions(newProvider.ApiProvFuncs)
+	pm.onboardedProviders[*newProvider.ApiProvDomId] = *newProvider
+}
+
+func (pm *ProviderManager) DeleteRegistrationsRegistrationId(ctx echo.Context, registrationId string) error {
 
 	log.Debug(pm.onboardedProviders)
 	if _, ok := pm.onboardedProviders[registrationId]; ok {
 		log.Debug("Deleting provider", registrationId)
+		pm.lock.Lock()
 		delete(pm.onboardedProviders, registrationId)
+		pm.lock.Unlock()
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
