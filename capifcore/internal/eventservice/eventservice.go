@@ -89,13 +89,13 @@ func (es *EventService) PostSubscriberIdSubscriptions(ctx echo.Context, subscrib
 
 func (es *EventService) DeleteSubscriberIdSubscriptionsSubscriptionId(ctx echo.Context, subscriberId string, subscriptionId string) error {
 	es.lock.Lock()
-	defer es.lock.Unlock()
 
 	log.Debug(es.subscriptions)
 	if _, ok := es.subscriptions[subscriptionId]; ok {
 		log.Debug("Deleting subscription", subscriptionId)
 		delete(es.subscriptions, subscriptionId)
 	}
+	es.lock.Unlock()
 
 	return ctx.NoContent(http.StatusNoContent)
 }

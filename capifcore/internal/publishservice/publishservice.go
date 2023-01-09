@@ -224,8 +224,8 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 				log.Debug("Deleted service: ", serviceApiId)
 			}
 			ps.lock.Lock()
-			defer ps.lock.Unlock()
 			ps.publishedServices[string(apfId)] = removeServiceDescription(pos, serviceDescriptions)
+			ps.lock.Unlock()
 			go ps.sendEvent(*description, eventsapi.CAPIFEventSERVICEAPIUNAVAILABLE)
 		}
 	}
@@ -235,9 +235,9 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 // Retrieve a published service API.
 func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfId string, serviceApiId string) error {
 	ps.lock.Lock()
-	defer ps.lock.Unlock()
-
 	serviceDescriptions, ok := ps.publishedServices[apfId]
+	ps.lock.Unlock()
+
 	if ok {
 		_, serviceDescription := getServiceDescription(serviceApiId, serviceDescriptions)
 		if serviceDescription == nil {
