@@ -88,16 +88,20 @@ func (es *EventService) PostSubscriberIdSubscriptions(ctx echo.Context, subscrib
 }
 
 func (es *EventService) DeleteSubscriberIdSubscriptionsSubscriptionId(ctx echo.Context, subscriberId string, subscriptionId string) error {
-	es.lock.Lock()
 
 	log.Debug(es.subscriptions)
 	if _, ok := es.subscriptions[subscriptionId]; ok {
-		log.Debug("Deleting subscription", subscriptionId)
-		delete(es.subscriptions, subscriptionId)
+		es.deleteSubscription(subscriptionId)
 	}
-	es.lock.Unlock()
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (es *EventService) deleteSubscription(subscriptionId string) {
+	log.Debug("Deleting subscription", subscriptionId)
+	es.lock.Lock()
+	defer es.lock.Unlock()
+	delete(es.subscriptions, subscriptionId)
 }
 
 func getEventSubscriptionFromRequest(ctx echo.Context) (eventsapi.EventSubscription, error) {
@@ -211,8 +215,8 @@ func (es *EventService) getSubscriptionId(subscriberId string) string {
 
 func (es *EventService) addSubscription(subId string, subscription eventsapi.EventSubscription) {
 	es.lock.Lock()
+	defer es.lock.Unlock()
 	es.subscriptions[subId] = subscription
-	es.lock.Unlock()
 }
 
 func (es *EventService) getSubscription(subId string) *eventsapi.EventSubscription {

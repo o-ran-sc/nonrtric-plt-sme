@@ -126,13 +126,17 @@ func (pm *ProviderManager) DeleteRegistrationsRegistrationId(ctx echo.Context, r
 
 	log.Debug(pm.onboardedProviders)
 	if _, ok := pm.onboardedProviders[registrationId]; ok {
-		log.Debug("Deleting provider", registrationId)
-		pm.lock.Lock()
-		delete(pm.onboardedProviders, registrationId)
-		pm.lock.Unlock()
+		pm.deleteProvider(registrationId)
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (pm *ProviderManager) deleteProvider(registrationId string) {
+	log.Debug("Deleting provider", registrationId)
+	pm.lock.Lock()
+	defer pm.lock.Unlock()
+	delete(pm.onboardedProviders, registrationId)
 }
 
 func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, registrationId string) error {

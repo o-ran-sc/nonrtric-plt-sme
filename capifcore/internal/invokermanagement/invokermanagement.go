@@ -89,11 +89,11 @@ func (im *InvokerManager) VerifyInvokerSecret(invokerId, secret string) bool {
 }
 
 func (im *InvokerManager) GetInvokerApiList(invokerId string) *invokerapi.APIList {
+	var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
+	im.lock.Lock()
+	defer im.lock.Unlock()
 	invoker, ok := im.onboardedInvokers[invokerId]
 	if ok {
-		var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
-		im.lock.Lock()
-		defer im.lock.Unlock()
 		invoker.ApiList = &apiList
 		return &apiList
 	}
@@ -153,13 +153,19 @@ func getOnboardingSecret(newInvoker invokerapi.APIInvokerEnrolmentDetails) *stri
 
 // Deletes an individual API Invoker.
 func (im *InvokerManager) DeleteOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
-	im.lock.Lock()
-	delete(im.onboardedInvokers, onboardingId)
-	im.lock.Unlock()
+	if _, ok := im.onboardedInvokers[onboardingId]; ok {
+		im.deleteInvoker(onboardingId)
+	}
 
 	go im.sendEvent(onboardingId, eventsapi.CAPIFEventAPIINVOKEROFFBOARDED)
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (im *InvokerManager) deleteInvoker(onboardingId string) {
+	im.lock.Lock()
+	defer im.lock.Unlock()
+	delete(im.onboardedInvokers, onboardingId)
 }
 
 // Updates an individual API invoker details.
@@ -180,9 +186,7 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 	}
 
 	if _, ok := im.onboardedInvokers[onboardingId]; ok {
-		im.lock.Lock()
-		im.onboardedInvokers[*invoker.ApiInvokerId] = invoker
-		im.lock.Unlock()
+		im.updateInvoker(invoker)
 	} else {
 		return sendCoreError(ctx, http.StatusNotFound, "The invoker to update has not been onboarded")
 	}
@@ -194,6 +198,12 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 	}
 
 	return nil
+}
+
+func (im *InvokerManager) updateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails) {
+	im.lock.Lock()
+	defer im.lock.Unlock()
+	im.onboardedInvokers[*invoker.ApiInvokerId] = invoker
 }
 
 func (im *InvokerManager) ModifyIndApiInvokeEnrolment(ctx echo.Context, onboardingId string) error {
