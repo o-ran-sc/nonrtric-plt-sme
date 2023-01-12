@@ -41,6 +41,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ec59e45c_04c84157",
+        "filename": "capifcore/internal/eventservice/eventservice.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1001867
+      },
+      "writtenOn": "2023-01-12T12:46:32Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "68c84e7a_30235c18",
+      "range": {
+        "startLine": 98,
+        "startChar": 1,
+        "endLine": 98,
+        "endChar": 17
+      },
+      "revId": "d098b22b7bc2f970c1a647d2a46787f23651bbb3",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "086f383b_ad2cbc09",
@@ -64,6 +88,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "7a7a46d5_4060a64c",
+        "filename": "capifcore/internal/invokermanagement/invokermanagement.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1001867
+      },
+      "writtenOn": "2023-01-12T12:46:32Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "086f383b_ad2cbc09",
+      "range": {
+        "startLine": 158,
+        "startChar": 1,
+        "endLine": 158,
+        "endChar": 17
+      },
+      "revId": "d098b22b7bc2f970c1a647d2a46787f23651bbb3",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "c4e57e67_db67e951",
@@ -77,6 +125,30 @@
       "writtenOn": "2023-01-10T15:28:26Z",
       "side": 1,
       "message": "I see you are using defer here even though you have removed it from the code above.\nIt would be better to use the same approach throughout the code.",
+      "range": {
+        "startLine": 281,
+        "startChar": 1,
+        "endLine": 281,
+        "endChar": 23
+      },
+      "revId": "d098b22b7bc2f970c1a647d2a46787f23651bbb3",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "93384b1f_977e00be",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 281,
+      "author": {
+        "id": 1001867
+      },
+      "writtenOn": "2023-01-12T12:46:32Z",
+      "side": 1,
+      "message": "As suggested by @Patrik in above comments, we should always use defer, so that we never end up in a situation where the lock is not unlocked due to an error situation.",
+      "parentUuid": "c4e57e67_db67e951",
       "range": {
         "startLine": 281,
         "startChar": 1,
