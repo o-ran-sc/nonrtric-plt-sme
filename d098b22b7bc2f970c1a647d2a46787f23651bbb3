@@ -20,6 +20,52 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "68c84e7a_30235c18",
+        "filename": "capifcore/internal/eventservice/eventservice.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 1000262
+      },
+      "writtenOn": "2023-01-12T10:49:08Z",
+      "side": 1,
+      "message": "Is it not better to use defer as a pattern so that the lock is guaranteed to \nbe be unlocked even if an exception is thrown (or that there is a return in the middle)?",
+      "range": {
+        "startLine": 98,
+        "startChar": 1,
+        "endLine": 98,
+        "endChar": 17
+      },
+      "revId": "d098b22b7bc2f970c1a647d2a46787f23651bbb3",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "086f383b_ad2cbc09",
+        "filename": "capifcore/internal/invokermanagement/invokermanagement.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1000262
+      },
+      "writtenOn": "2023-01-12T10:49:08Z",
+      "side": 1,
+      "message": "I think it is better to always use defer in for locks.\n\nGeneral comment.",
+      "range": {
+        "startLine": 158,
+        "startChar": 1,
+        "endLine": 158,
+        "endChar": 17
+      },
+      "revId": "d098b22b7bc2f970c1a647d2a46787f23651bbb3",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "c4e57e67_db67e951",
         "filename": "capifcore/internal/publishservice/publishservice.go",
         "patchSetId": 1
