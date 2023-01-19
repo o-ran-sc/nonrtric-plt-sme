@@ -47,6 +47,7 @@ import (
 )
 
 func TestPublishUnpublishService(t *testing.T) {
+
 	apfId := "apfId"
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
@@ -102,6 +103,7 @@ func TestPublishUnpublishService(t *testing.T) {
 
 	// Delete the service
 	helmManagerMock.On("UninstallHelmChart", mock.Anything, mock.Anything).Return(nil)
+
 	result = testutil.NewRequest().Delete("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
@@ -258,6 +260,7 @@ func TestUpdateDescription(t *testing.T) {
 	assert.Equal(t, newDescription, *resultService.Description)
 	assert.Equal(t, newDomainName, *(*resultService.AefProfiles)[0].DomainName)
 	assert.Equal(t, "aefIdNew", (*resultService.AefProfiles)[1].AefId)
+	assert.True(t, serviceUnderTest.IsAPIPublished("aefIdNew", "path"))
 
 	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
 		assert.Fail(t, "No event sent")
@@ -267,6 +270,94 @@ func TestUpdateDescription(t *testing.T) {
 	}
 }
 
+func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
+	apfId := "apfId"
+	serviceApiId := "serviceApiId"
+	aefId := "aefId"
+	apiName := "apiName"
+	description := "description"
+
+	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId", "aefIdNew"})
+	helmManagerMock := helmMocks.HelmManager{}
+	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	serviceUnderTest, _, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
+
+	serviceDescription := getServiceAPIDescription(aefId, apiName, description)
+	serviceDescription.ApiId = &serviceApiId
+	(*serviceDescription.AefProfiles)[0].AefId = aefId
+
+	newProfileDomain := "new profile Domain name"
+	var protocol publishapi.Protocol = "HTTP_1_1"
+	test := make([]publishapi.AefProfile, 1)
+	test = *serviceDescription.AefProfiles
+	test = append(test, publishapi.AefProfile{
+
+		AefId:      "aefIdNew",
+		DomainName: &newProfileDomain,
+		Protocol:   &protocol,
+		Versions: []publishapi.Version{
+			{
+				ApiVersion: "v1",
+				Resources: &[]publishapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+						Operations: &[]publishapi.Operation{
+							"POST",
+						},
+						ResourceName: "app",
+						Uri:          "app",
+					},
+				},
+			},
+		},
+	},
+	)
+	serviceDescription.AefProfiles = &test
+	serviceUnderTest.publishedServices[apfId] = []publishapi.ServiceAPIDescription{serviceDescription}
+
+	//Modify the service
+	updatedServiceDescription := getServiceAPIDescription(aefId, apiName, description)
+	updatedServiceDescription.ApiId = &serviceApiId
+	test1 := make([]publishapi.AefProfile, 1)
+	test1 = *updatedServiceDescription.AefProfiles
+	test1 = append(test1, publishapi.AefProfile{
+
+		AefId:      "aefIdNew",
+		DomainName: &newProfileDomain,
+		Protocol:   &protocol,
+		Versions: []publishapi.Version{
+			{
+				ApiVersion: "v1",
+				Resources: &[]publishapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+						Operations: &[]publishapi.Operation{
+							"POST",
+						},
+						ResourceName: "app",
+						Uri:          "app",
+					},
+				},
+			},
+		},
+	},
+	)
+	updatedServiceDescription.AefProfiles = &test1
+	testFunc := []publishapi.AefProfile{
+		(*updatedServiceDescription.AefProfiles)[1],
+	}
+
+	updatedServiceDescription.AefProfiles = &testFunc
+	result := testutil.NewRequest().Put("/"+apfId+"/service-apis/"+serviceApiId).WithJsonBody(updatedServiceDescription).Go(t, requestHandler)
+	var resultService publishapi.ServiceAPIDescription
+	assert.Equal(t, http.StatusOK, result.Code())
+	err := result.UnmarshalBodyToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Len(t, (*resultService.AefProfiles), 1)
+	assert.False(t, serviceUnderTest.IsAPIPublished("aefId", "path"))
+
+}
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, chan eventsapi.EventNotification, *echo.Echo) {
 	swagger, err := publishapi.GetSwagger()
 	if err != nil {

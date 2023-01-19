@@ -350,35 +350,27 @@ func (ps *PublishService) updateProfiles(pos int, apfId string, updatedServiceDe
 		if !slices.Contains(registeredFuncs, profile.AefId) {
 			return 0, nil, fmt.Errorf("function %s not registered", profile.AefId)
 		}
-		for _, publishedProfile := range *publishedService {
-			if publishedProfile.AefId != profile.AefId {
-				registeredProfiles := *publishedService
-				newProfiles := append(registeredProfiles, profile)
-				publishedService = &newProfiles
-				addedProfiles = append(addedProfiles, profile)
-			} else {
-				pos, registeredProfile, err := getProfile(profile.AefId, publishedService)
-				if err != nil {
-					return pos, updatedServiceDescription, fmt.Errorf("unable to update service due to: %s", err.Error())
-				}
-				if profile.DomainName != nil {
-					registeredProfile.DomainName = profile.DomainName
-					(*publishedService)[pos] = registeredProfile
-				}
-				changedProfiles = append(changedProfiles, profile)
-			}
+		pos, registeredProfile := getProfile(profile.AefId, publishedService)
+		if registeredProfile == nil {
+			addedProfiles = append(addedProfiles, profile)
+		} else {
+			registeredProfile.DomainName = profile.DomainName
+			(*publishedService)[pos] = *registeredProfile
+			changedProfiles = append(changedProfiles, profile)
 		}
 	}
+
 	modifiedProfiles := append(changedProfiles, addedProfiles...)
 	return 0, &modifiedProfiles, nil
 }
-func getProfile(profileId string, apiProfiles *[]publishapi.AefProfile) (int, publishapi.AefProfile, error) {
+func getProfile(profileId string, apiProfiles *[]publishapi.AefProfile) (int, *publishapi.AefProfile) {
 	for pos, profile := range *apiProfiles {
 		if profile.AefId == profileId {
-			return pos, profile, nil
+			return pos, &profile
 		}
 	}
-	return 0, publishapi.AefProfile{}, fmt.Errorf("profile with ID %s is not registered for the service", profileId)
+	return 0, nil
+
 }
 
 // This function wraps sending of an error in the Error format, and
