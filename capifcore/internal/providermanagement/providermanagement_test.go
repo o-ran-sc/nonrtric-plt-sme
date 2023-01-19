@@ -78,7 +78,7 @@ func TestUpdateValidProviderWithNewFunction(t *testing.T) {
 	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
 	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
 	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
-	managerUnderTest.onboardedProviders[domainID] = provider
+	managerUnderTest.registeredProviders[domainID] = provider
 
 	// Modify the provider
 	updatedProvider := getProvider()
@@ -119,7 +119,7 @@ func TestUpdateValidProviderWithDeletedFunction(t *testing.T) {
 	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
 	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
 	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
-	managerUnderTest.onboardedProviders[domainID] = provider
+	managerUnderTest.registeredProviders[domainID] = provider
 
 	// Modify the provider
 	updatedProvider := getProvider()
@@ -152,7 +152,7 @@ func TestUpdateMissingFunction(t *testing.T) {
 	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &otherId
 	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
 	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
-	managerUnderTest.onboardedProviders[domainID] = provider
+	managerUnderTest.registeredProviders[domainID] = provider
 
 	// Modify the provider
 	updatedProvider := getProvider()
@@ -177,7 +177,7 @@ func TestDeleteProvider(t *testing.T) {
 	provider := getProvider()
 	provider.ApiProvDomId = &domainID
 	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
-	managerUnderTest.onboardedProviders[domainID] = provider
+	managerUnderTest.registeredProviders[domainID] = provider
 	assert.True(t, managerUnderTest.IsFunctionRegistered(funcIdAPF))
 
 	result := testutil.NewRequest().Delete("/registrations/"+domainID).Go(t, requestHandler)
@@ -211,8 +211,8 @@ func TestGetExposedFunctionsForPublishingFunction(t *testing.T) {
 	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
 	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
 	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
-	managerUnderTest.onboardedProviders[domainID] = provider
-	managerUnderTest.onboardedProviders[otherDomainID] = getOtherProvider()
+	managerUnderTest.registeredProviders[domainID] = provider
+	managerUnderTest.registeredProviders[otherDomainID] = getOtherProvider()
 
 	exposedFuncs := managerUnderTest.GetAefsForPublisher(funcIdAPF)
 	assert.Equal(t, 1, len(exposedFuncs))
