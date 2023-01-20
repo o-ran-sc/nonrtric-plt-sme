@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "84236311_4a44d976",
+        "filename": "capifcore/internal/publishservice/publishservice_test.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 304,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-01-20T13:26:03Z",
+      "side": 1,
+      "message": "This should be the ID of the profile that was removed",
+      "range": {
+        "startLine": 304,
+        "startChar": 50,
+        "endLine": 304,
+        "endChar": 58
+      },
+      "revId": "041299bc89994fed241cd2ea7666cc2c5c6fbae8",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
