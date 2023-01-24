@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3b3d0ac3_f167f78f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1001589
+      },
+      "writtenOn": "2023-01-24T14:54:31Z",
+      "side": 1,
+      "message": "left a comment",
+      "revId": "05824d3b500ee2cc1a2f99f910f3c6d418d85070",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "8ba4e16d_dbd6ee49",
+        "filename": "capifcore/internal/providermanagementapi/misc.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1001589
+      },
+      "writtenOn": "2023-01-24T14:54:31Z",
+      "side": 1,
+      "message": "The name is a bit ambiguous, it might be better to call it something more descriptive",
+      "revId": "05824d3b500ee2cc1a2f99f910f3c6d418d85070",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
