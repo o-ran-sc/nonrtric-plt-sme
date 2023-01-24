@@ -22,6 +22,30 @@
       },
       "revId": "041299bc89994fed241cd2ea7666cc2c5c6fbae8",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8ca397cc_1ca5b0d7",
+        "filename": "capifcore/internal/publishservice/publishservice_test.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 304,
+      "author": {
+        "id": 1001867
+      },
+      "writtenOn": "2023-01-24T15:32:36Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "84236311_4a44d976",
+      "range": {
+        "startLine": 304,
+        "startChar": 50,
+        "endLine": 304,
+        "endChar": 58
+      },
+      "revId": "041299bc89994fed241cd2ea7666cc2c5c6fbae8",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
