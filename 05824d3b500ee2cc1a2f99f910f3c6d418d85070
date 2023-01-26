@@ -33,6 +33,24 @@
       "message": "The name is a bit ambiguous, it might be better to call it something more descriptive",
       "revId": "05824d3b500ee2cc1a2f99f910f3c6d418d85070",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "df896efb_554ff8ec",
+        "filename": "capifcore/internal/providermanagementapi/misc.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-01-26T10:19:51Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "8ba4e16d_dbd6ee49",
+      "revId": "05824d3b500ee2cc1a2f99f910f3c6d418d85070",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
