@@ -95,6 +95,9 @@ func TestUpdateValidProviderWithNewFunction(t *testing.T) {
 	testFuncs = append(testFuncs, provapi.APIProviderFunctionDetails{
 		ApiProvFuncInfo: &newFuncInfoAEF,
 		ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
+		RegInfo: provapi.RegistrationInformation{
+			ApiProvPubKey: "key",
+		},
 	})
 	updatedProvider.ApiProvFuncs = &testFuncs
 
@@ -190,7 +193,7 @@ func TestProviderHandlingValidation(t *testing.T) {
 
 	newProvider := provapi.APIProviderEnrolmentDetails{}
 
-	// Register a valid provider
+	// Register an invalid provider
 	result := testutil.NewRequest().Post("/registrations").WithJsonBody(newProvider).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
@@ -199,8 +202,8 @@ func TestProviderHandlingValidation(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	badRequest := http.StatusBadRequest
 	assert.Equal(t, &badRequest, problemDetails.Status)
-	errMsg := "Provider missing required ApiProvDomInfo"
-	assert.Equal(t, &errMsg, problemDetails.Cause)
+	assert.Contains(t, *problemDetails.Cause, "Provider not valid")
+	assert.Contains(t, *problemDetails.Cause, "regSec")
 }
 
 func TestGetExposedFunctionsForPublishingFunction(t *testing.T) {
@@ -224,17 +227,27 @@ func getProvider() provapi.APIProviderEnrolmentDetails {
 		{
 			ApiProvFuncInfo: &funcInfoAPF,
 			ApiProvFuncRole: provapi.ApiProviderFuncRoleAPF,
+			RegInfo: provapi.RegistrationInformation{
+				ApiProvPubKey: "key",
+			},
 		},
 		{
 			ApiProvFuncInfo: &funcInfoAMF,
 			ApiProvFuncRole: provapi.ApiProviderFuncRoleAMF,
+			RegInfo: provapi.RegistrationInformation{
+				ApiProvPubKey: "key",
+			},
 		},
 		{
 			ApiProvFuncInfo: &funcInfoAEF,
 			ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
+			RegInfo: provapi.RegistrationInformation{
+				ApiProvPubKey: "key",
+			},
 		},
 	}
 	return provapi.APIProviderEnrolmentDetails{
+		RegSec:         "sec",
 		ApiProvDomInfo: &domainInfo,
 		ApiProvFuncs:   &testFuncs,
 	}
