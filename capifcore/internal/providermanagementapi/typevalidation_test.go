@@ -88,55 +88,14 @@ func TestValidateAPIProviderEnrolmentDetails(t *testing.T) {
 		assert.Contains(t, err.Error(), "apiProvFuncs")
 		assert.Contains(t, err.Error(), "contains invalid")
 	}
-}
 
-func TestUpdateFuncs_addNewFunction(t *testing.T) {
-	providerUnderTest := getProvider()
-
-	newFuncInfoAEF := "new func as AEF"
-	newFuncs := append(*providerUnderTest.ApiProvFuncs, APIProviderFunctionDetails{
-		ApiProvFuncInfo: &newFuncInfoAEF,
+	(*providerDetailsUnderTest.ApiProvFuncs)[0] = APIProviderFunctionDetails{
 		ApiProvFuncRole: ApiProviderFuncRoleAEF,
-	})
-	providerUnderTest.ApiProvFuncs = &newFuncs
-
-	err := providerUnderTest.UpdateFuncs(getProvider())
-
-	assert.Nil(t, err)
-	assert.Len(t, *providerUnderTest.ApiProvFuncs, 4)
-	assert.True(t, providerUnderTest.IsFunctionRegistered("AEF_id_new_func_as_AEF"))
-}
-
-func TestUpdateFuncs_deleteFunction(t *testing.T) {
-	providerUnderTest := getProvider()
-
-	modFuncs := []APIProviderFunctionDetails{(*providerUnderTest.ApiProvFuncs)[0], (*providerUnderTest.ApiProvFuncs)[1]}
-	providerUnderTest.ApiProvFuncs = &modFuncs
-
-	err := providerUnderTest.UpdateFuncs(getProvider())
-
-	assert.Nil(t, err)
-	assert.Len(t, *providerUnderTest.ApiProvFuncs, 2)
-	assert.True(t, providerUnderTest.IsFunctionRegistered(funcIdAPF))
-	assert.True(t, providerUnderTest.IsFunctionRegistered(funcIdAMF))
-}
-
-func TestUpdateFuncs_unregisteredFunction(t *testing.T) {
-	providerUnderTest := getProvider()
-
-	unRegId := "unRegId"
-	modFuncs := []APIProviderFunctionDetails{
-		{
-			ApiProvFuncId: &unRegId,
+		RegInfo: RegistrationInformation{
+			ApiProvPubKey: "key",
 		},
 	}
-	providerUnderTest.ApiProvFuncs = &modFuncs
-
-	err := providerUnderTest.UpdateFuncs(getProvider())
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), unRegId)
-		assert.Contains(t, err.Error(), "not registered")
-	}
+	assert.Nil(t, providerDetailsUnderTest.Validate())
 }
 
 func getProvider() APIProviderEnrolmentDetails {
