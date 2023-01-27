@@ -21,10 +21,10 @@
 package invokermanagement
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
@@ -103,14 +103,13 @@ func (im *InvokerManager) GetInvokerApiList(invokerId string) *invokerapi.APILis
 // Creates a new individual API Invoker profile.
 func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	var newInvoker invokerapi.APIInvokerEnrolmentDetails
-	err := ctx.Bind(&newInvoker)
-	if err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for invoker")
+	errMsg := "Unable to onboard invoker due to %s"
+	if err := ctx.Bind(&newInvoker); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for invoker"))
 	}
 
-	shouldReturn, coreError := im.validateInvoker(newInvoker, ctx)
-	if shouldReturn {
-		return coreError
+	if err := im.validateInvoker(newInvoker, ctx); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
 	im.prepareNewInvoker(&newInvoker)
@@ -119,7 +118,7 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, *newInvoker.ApiInvokerId))
-	err = ctx.JSON(http.StatusCreated, newInvoker)
+	err := ctx.JSON(http.StatusCreated, newInvoker)
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
 		return err
@@ -129,26 +128,15 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 }
 
 func (im *InvokerManager) prepareNewInvoker(newInvoker *invokerapi.APIInvokerEnrolmentDetails) {
-	im.lock.Lock()
-	defer im.lock.Unlock()
-
-	newInvoker.ApiInvokerId = im.getId(newInvoker.ApiInvokerInformation)
-	newInvoker.OnboardingInformation.OnboardingSecret = getOnboardingSecret(*newInvoker)
-
 	var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
 	newInvoker.ApiList = &apiList
 
-	im.onboardedInvokers[*newInvoker.ApiInvokerId] = *newInvoker
-}
+	im.lock.Lock()
+	defer im.lock.Unlock()
 
-func getOnboardingSecret(newInvoker invokerapi.APIInvokerEnrolmentDetails) *string {
-	onboardingSecret := "onboarding_secret_"
-	if newInvoker.ApiInvokerInformation != nil {
-		onboardingSecret = onboardingSecret + strings.ReplaceAll(*newInvoker.ApiInvokerInformation, " ", "_")
-	} else {
-		onboardingSecret = onboardingSecret + *newInvoker.ApiInvokerId
-	}
-	return &onboardingSecret
+	newInvoker.PrepareNewInvoker()
+
+	im.onboardedInvokers[*newInvoker.ApiInvokerId] = *newInvoker
 }
 
 // Deletes an individual API Invoker.
@@ -171,18 +159,17 @@ func (im *InvokerManager) deleteInvoker(onboardingId string) {
 // Updates an individual API invoker details.
 func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
 	var invoker invokerapi.APIInvokerEnrolmentDetails
-	err := ctx.Bind(&invoker)
-	if err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for invoker")
+	errMsg := "Unable to update invoker due to %s"
+	if err := ctx.Bind(&invoker); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for invoker"))
 	}
 
 	if onboardingId != *invoker.ApiInvokerId {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invoker ApiInvokerId not matching")
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "ApiInvokerId not matching"))
 	}
 
-	shouldReturn, coreError := im.validateInvoker(invoker, ctx)
-	if shouldReturn {
-		return coreError
+	if err := im.validateInvoker(invoker, ctx); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
 	if _, ok := im.onboardedInvokers[onboardingId]; ok {
@@ -191,7 +178,7 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 		return sendCoreError(ctx, http.StatusNotFound, "The invoker to update has not been onboarded")
 	}
 
-	err = ctx.JSON(http.StatusOK, invoker)
+	err := ctx.JSON(http.StatusOK, invoker)
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
 		return err
@@ -210,20 +197,15 @@ func (im *InvokerManager) ModifyIndApiInvokeEnrolment(ctx echo.Context, onboardi
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) (bool, error) {
-	if invoker.NotificationDestination == "" {
-		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required NotificationDestination")
+func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) error {
+	if err := invoker.Validate(); err != nil {
+		return err
 	}
-
-	if invoker.OnboardingInformation.ApiInvokerPublicKey == "" {
-		return true, sendCoreError(ctx, http.StatusBadRequest, "Invoker missing required OnboardingInformation.ApiInvokerPublicKey")
-	}
-
 	if !im.areAPIsPublished(invoker.ApiList) {
-		return true, sendCoreError(ctx, http.StatusBadRequest, "Some APIs needed by invoker are not registered")
+		return errors.New("some APIs needed by invoker are not registered")
 	}
 
-	return false, nil
+	return nil
 }
 
 func (im *InvokerManager) areAPIsPublished(apis *invokerapi.APIList) bool {
@@ -231,17 +213,6 @@ func (im *InvokerManager) areAPIsPublished(apis *invokerapi.APIList) bool {
 		return true
 	}
 	return im.publishRegister.AreAPIsPublished((*[]publishapi.ServiceAPIDescription)(apis))
-}
-
-func (im *InvokerManager) getId(invokerInfo *string) *string {
-	idAsString := "api_invoker_id_"
-	if invokerInfo != nil {
-		idAsString = idAsString + strings.ReplaceAll(*invokerInfo, " ", "_")
-	} else {
-		idAsString = idAsString + strconv.FormatInt(im.nextId, 10)
-		im.nextId = im.nextId + 1
-	}
-	return &idAsString
 }
 
 func (im *InvokerManager) sendEvent(invokerId string, eventType eventsapi.CAPIFEvent) {

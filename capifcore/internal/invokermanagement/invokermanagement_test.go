@@ -80,7 +80,7 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.True(t, invokerUnderTest.VerifyInvokerSecret(wantedInvokerId, wantedInvokerSecret))
 	publishRegisterMock.AssertCalled(t, "GetAllPublishedServices")
 	assert.Equal(t, invokermanagementapi.APIList(publishedServices), *resultInvoker.ApiList)
-	if invokerEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+	if invokerEvent, timeout := waitForEvent(eventChannel, 1*time.Second); timeout {
 		assert.Fail(t, "No event sent")
 	} else {
 		assert.Equal(t, *resultInvoker.ApiInvokerId, (*invokerEvent.EventDetail.ApiInvokerIds)[0])
@@ -138,7 +138,7 @@ func TestDeleteInvoker(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
 	assert.False(t, invokerUnderTest.IsInvokerRegistered(invokerId))
-	if invokerEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+	if invokerEvent, timeout := waitForEvent(eventChannel, 1*time.Second); timeout {
 		assert.Fail(t, "No event sent")
 	} else {
 		assert.Equal(t, invokerId, (*invokerEvent.EventDetail.ApiInvokerIds)[0])
@@ -220,7 +220,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Contains(t, *problemDetails.Cause, "not matching")
 	assert.Contains(t, *problemDetails.Cause, "ApiInvokerId")
 
-	// Update an invoker that has not been onboarded, shold get 404 with problem details
+	// Update an invoker that has not been onboarded, should get 404 with problem details
 	missingId := "1"
 	invoker.ApiInvokerId = &missingId
 	result = testutil.NewRequest().Put("/onboardedInvokers/"+missingId).WithJsonBody(invoker).Go(t, requestHandler)
