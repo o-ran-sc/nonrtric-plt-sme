@@ -35,7 +35,14 @@ func TestValidateInvoker(t *testing.T) {
 		assert.Contains(t, err.Error(), "NotificationDestination")
 	}
 
-	invokerUnderTest.NotificationDestination = "destination"
+	invokerUnderTest.NotificationDestination = "invalid dest"
+	err = invokerUnderTest.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "invalid")
+		assert.Contains(t, err.Error(), "NotificationDestination")
+	}
+
+	invokerUnderTest.NotificationDestination = "http://golang.cafe/"
 	err = invokerUnderTest.Validate()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "missing")
