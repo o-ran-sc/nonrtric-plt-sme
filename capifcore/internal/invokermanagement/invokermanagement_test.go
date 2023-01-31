@@ -106,7 +106,7 @@ func TestOnboardInvoker(t *testing.T) {
 
 	// Onboard an invoker missing required OnboardingInformation.ApiInvokerPublicKey, should get 400 with problem details
 	invalidInvoker = invokermanagementapi.APIInvokerEnrolmentDetails{
-		NotificationDestination: "url",
+		NotificationDestination: "http://golang.cafe/",
 	}
 
 	result = testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, requestHandler)
@@ -154,7 +154,7 @@ func TestUpdateInvoker(t *testing.T) {
 	invokerId := "invokerId"
 	invoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		ApiInvokerId:            &invokerId,
-		NotificationDestination: "url",
+		NotificationDestination: "http://golang.cafe/",
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
 			ApiInvokerPublicKey: "key",
 		},
@@ -162,7 +162,7 @@ func TestUpdateInvoker(t *testing.T) {
 	serviceUnderTest.onboardedInvokers[invokerId] = invoker
 
 	// Update the invoker with valid invoker, should return 200 with updated invoker details
-	newNotifURL := "newUrl"
+	newNotifURL := "http://golang.org/"
 	invoker.NotificationDestination = common29122.Uri(newNotifURL)
 	newPublicKey := "newPublicKey"
 	invoker.OnboardingInformation.ApiInvokerPublicKey = newPublicKey
@@ -196,7 +196,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Contains(t, *problemDetails.Cause, "NotificationDestination")
 
 	// Update with an invoker missing required OnboardingInformation.ApiInvokerPublicKey, should get 400 with problem details
-	invalidInvoker.NotificationDestination = "url"
+	invalidInvoker.NotificationDestination = "http://golang.org/"
 	invalidInvoker.OnboardingInformation = invokermanagementapi.OnboardingInformation{}
 	result = testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
@@ -312,7 +312,7 @@ func getAefProfile(aefId string) publishserviceapi.AefProfile {
 func getInvoker(invokerInfo string) invokermanagementapi.APIInvokerEnrolmentDetails {
 	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		ApiInvokerInformation:   &invokerInfo,
-		NotificationDestination: "url",
+		NotificationDestination: "http://golang.cafe/",
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
 			ApiInvokerPublicKey: "key",
 		},
