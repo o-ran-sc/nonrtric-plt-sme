@@ -74,6 +74,11 @@ func (es *EventService) PostSubscriberIdSubscriptions(ctx echo.Context, subscrib
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
+
+	if err := newSubscription.Validate(); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	subId := es.getSubscriptionId(subscriberId)
 	es.addSubscription(subId, newSubscription)
@@ -166,8 +171,9 @@ func matchesFilters(eventIds *[]string, filters []eventsapi.CAPIFEventFilter, ge
 		filterIds := getIds(filter)
 		if filterIds == nil || len(*filterIds) == 0 {
 			return matchesFilters(eventIds, filters[1:], getIds)
+		} else {
+			return slices.Contains(*getIds(filter), id) && matchesFilters(eventIds, filters[1:], getIds)
 		}
-		return slices.Contains(*getIds(filter), id) && matchesFilters(eventIds, filters[1:], getIds)
 	}
 	return true
 }
