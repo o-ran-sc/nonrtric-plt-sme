@@ -59,6 +59,14 @@ func TestValidateAPIProviderFunctionDetails(t *testing.T) {
 		assert.Contains(t, err.Error(), "apiProvFuncRole")
 	}
 
+	var invalidFuncRole ApiProviderFuncRole = "invalid"
+	funcDetailsUnderTest.ApiProvFuncRole = invalidFuncRole
+	err = funcDetailsUnderTest.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "invalid")
+		assert.Contains(t, err.Error(), "apiProvFuncRole")
+	}
+
 	funcDetailsUnderTest.ApiProvFuncRole = ApiProviderFuncRoleAEF
 	err = funcDetailsUnderTest.Validate()
 	if assert.Error(t, err) {

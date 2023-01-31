@@ -34,12 +34,15 @@ func (ri RegistrationInformation) Validate() error {
 }
 
 func (fd APIProviderFunctionDetails) Validate() error {
+	if len(strings.TrimSpace(string(fd.ApiProvFuncRole))) == 0 {
+		return errors.New("APIProviderFunctionDetails missing required apiProvFuncRole")
+	}
 	switch role := fd.ApiProvFuncRole; role {
 	case ApiProviderFuncRoleAEF:
 	case ApiProviderFuncRoleAPF:
 	case ApiProviderFuncRoleAMF:
 	default:
-		return errors.New("APIProviderFunctionDetails missing required apiProvFuncRole")
+		return errors.New("APIProviderFunctionDetails has invalid apiProvFuncRole")
 	}
 
 	return fd.RegInfo.Validate()
