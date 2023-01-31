@@ -22,11 +22,17 @@ package invokermanagementapi
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
 )
 
 func (ied *APIInvokerEnrolmentDetails) Validate() error {
 	if ied.NotificationDestination == "" {
 		return errors.New("APIInvokerEnrolmentDetails missing required NotificationDestination")
+	}
+
+	if _, err := url.ParseRequestURI(string(ied.NotificationDestination)); err != nil {
+		return fmt.Errorf("APIInvokerEnrolmentDetails has invalid NotificationDestination, err=%s", err)
 	}
 
 	if ied.OnboardingInformation.ApiInvokerPublicKey == "" {
