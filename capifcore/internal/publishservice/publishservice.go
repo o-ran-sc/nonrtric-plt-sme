@@ -158,18 +158,22 @@ func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) er
 // Publish a new API.
 func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) error {
 	var newServiceAPIDescription publishapi.ServiceAPIDescription
+	errorMsg := "Unable to register the service due to: %s "
 	err := ctx.Bind(&newServiceAPIDescription)
 	if err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for service "+apfId)
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errorMsg, "invalid format for service "+apfId))
 	}
 
+	if err := newServiceAPIDescription.Validate(); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errorMsg, err))
+	}
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
 
 	registeredFuncs := ps.serviceRegister.GetAefsForPublisher(apfId)
 	for _, profile := range *newServiceAPIDescription.AefProfiles {
 		if !slices.Contains(registeredFuncs, profile.AefId) {
-			return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Function %s not registered", profile.AefId))
+			return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf(errorMsg, fmt.Sprintf("function %s not registered", profile.AefId)))
 		}
 	}
 
@@ -344,7 +348,6 @@ func (ps *PublishService) sendEvent(service publishapi.ServiceAPIDescription, ev
 }
 
 func (ps *PublishService) checkProfilesRegistered(apfId string, updatedProfiles []publishapi.AefProfile) error {
-
 	registeredFuncs := ps.serviceRegister.GetAefsForPublisher(apfId)
 	for _, profile := range updatedProfiles {
 		if !slices.Contains(registeredFuncs, profile.AefId) {
@@ -352,7 +355,6 @@ func (ps *PublishService) checkProfilesRegistered(apfId string, updatedProfiles 
 		}
 	}
 	return nil
-
 }
 
 // This function wraps sending of an error in the Error format, and

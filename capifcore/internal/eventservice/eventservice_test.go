@@ -24,7 +24,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -48,7 +48,7 @@ func TestRegisterSubscriptions(t *testing.T) {
 		Events: []eventsapi.CAPIFEvent{
 			eventsapi.CAPIFEventSERVICEAPIAVAILABLE,
 		},
-		NotificationDestination: common29122.Uri("notificationUrl"),
+		NotificationDestination: common29122.Uri("http://golang.cafe/"),
 	}
 	serviceUnderTest, requestHandler := getEcho(nil)
 	subscriberId := "subscriberId"
@@ -75,6 +75,27 @@ func TestRegisterSubscriptions(t *testing.T) {
 	assert.Equal(t, subscription1, *registeredSub1)
 	registeredSub2 := serviceUnderTest.getSubscription(subscriptionId2)
 	assert.Equal(t, subscription2, *registeredSub2)
+}
+
+func TestRegisterInvalidSubscription(t *testing.T) {
+	subscription1 := eventsapi.EventSubscription{
+		Events: []eventsapi.CAPIFEvent{eventsapi.CAPIFEventACCESSCONTROLPOLICYUNAVAILABLE},
+	}
+	serviceUnderTest, requestHandler := getEcho(nil)
+	subscriberId := "subscriberId"
+
+	result := testutil.NewRequest().Post("/"+subscriberId+"/subscriptions").WithJsonBody(subscription1).Go(t, requestHandler)
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "missing")
+	assert.Contains(t, *problemDetails.Cause, "notificationDestination")
+	subscriptionId := path.Base(result.Recorder.Header().Get(echo.HeaderLocation))
+	registeredSub := serviceUnderTest.getSubscription(subscriptionId)
+	assert.Nil(t, registeredSub)
 }
 
 func TestDeregisterSubscription(t *testing.T) {
@@ -113,7 +134,7 @@ func TestSendEvent(t *testing.T) {
 			wg.Done()
 			return &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Body:       io.NopCloser(bytes.NewBufferString(`OK`)),
 				Header:     make(http.Header), // Must be set to non-nil value or it panics
 			}
 		}
@@ -143,7 +164,7 @@ func TestSendEvent(t *testing.T) {
 	}()
 
 	if waitTimeout(&wg, 1*time.Second) {
-		t.Error("Not all calls to server were made")
+		t.Error("No event notification was sent")
 		t.Fail()
 	}
 }

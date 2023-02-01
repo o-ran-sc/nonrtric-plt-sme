@@ -77,7 +77,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	err := result.UnmarshalBodyToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
 	newApiId := "api_id_" + apiName
-	assert.Equal(t, *resultService.ApiId, newApiId)
+	assert.Equal(t, newApiId, *resultService.ApiId)
 	assert.Equal(t, "http://example.com/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 	newServiceDescription.ApiId = &newApiId
 	wantedAPILIst := []publishapi.ServiceAPIDescription{newServiceDescription}
@@ -356,6 +356,23 @@ func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Len(t, (*resultService.AefProfiles), 1)
 	assert.False(t, serviceUnderTest.IsAPIPublished("aefId", "path"))
+
+}
+
+func TestPublishInvalidService(t *testing.T) {
+	_, _, requestHandler := getEcho(nil, nil)
+	newServiceDescription := getServiceAPIDescription("aefId", " ", "description")
+
+	// Publish a service
+	result := testutil.NewRequest().Post("/apfId/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var resultError common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&resultError)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Contains(t, *resultError.Cause, "missing")
+	assert.Contains(t, *resultError.Cause, "apiName")
+	assert.Equal(t, http.StatusBadRequest, *resultError.Status)
 
 }
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, chan eventsapi.EventNotification, *echo.Echo) {
