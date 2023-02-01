@@ -54,9 +54,13 @@ var repoName string
 
 func main() {
 	var port = flag.Int("port", 8090, "Port for CAPIF Core Function HTTP server")
+	var secPort = flag.Int("secPort", 4433, "Port for CAPIF Core Function HTTPS server")
 	flag.StringVar(&url, "chartMuseumUrl", "", "ChartMuseum URL")
 	flag.StringVar(&repoName, "repoName", "capifcore", "Repository name")
 	var logLevelStr = flag.String("loglevel", "Info", "Log level")
+	var certPath = flag.String("certPath", "certs/cert.pem", "Path for server certificate")
+	var keyPath = flag.String("keyPath", "certs/key.pem", "Path for server private key")
+
 	flag.Parse()
 
 	if loglevel, err := log.ParseLevel(*logLevelStr); err == nil {
@@ -71,6 +75,7 @@ func main() {
 	}
 
 	go startWebServer(getEcho(), *port)
+	go startHttpsWebServer(getEcho(), *secPort, *certPath, *keyPath)
 
 	log.Info("Server started and listening on port: ", *port)
 
@@ -162,13 +167,17 @@ func startWebServer(e *echo.Echo, port int) {
 	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", port)))
 }
 
+func startHttpsWebServer(e *echo.Echo, port int, certPath string, keyPath string) {
+	e.Logger.Fatal(e.StartTLS(fmt.Sprintf("0.0.0.0:%d", port), certPath, keyPath))
+}
+
 func keepServerAlive() {
 	forever := make(chan int)
 	<-forever
 }
 
 func hello(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!\n")
+	return c.String(http.StatusOK, "Hello, World!")
 }
 
 func getSwagger(c echo.Context) error {
