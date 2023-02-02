@@ -94,6 +94,6 @@ The application can also be built as a Docker image, by using the following comm
 
 To run the Core Function from the command line, run the following commands from this folder. For the parameter `chartMuseumUrl`, if it is not provided CAPIF Core will not do any Helm integration, i.e. try to start any Halm chart when publishing a service.
 
-    ./capifcore [-port <port (default 8090)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>]
+    ./capifcore [-port <port (default 8090)>] [-secPort <Secure port (default 4433)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>] [-certPath <Path to certificate>] [-keyPath <Path to private key>]
 
 To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available on port `31570`.

@@ -21,8 +21,12 @@
 package main
 
 import (
+	"crypto/tls"
+	"fmt"
+	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/testutil"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -188,4 +192,33 @@ func TestGetSwagger(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Contains(t, *errorResponse.Cause, "Invalid API")
 	assert.Contains(t, *errorResponse.Cause, invalidApi)
+}
+
+func TestHTTPSServer(t *testing.T) {
+	e = getEcho()
+	var port = 44333
+	go startHttpsWebServer(e, 44333, "certs/cert.pem", "certs/key.pem") //"certs/test/cert.pem", "certs/test/key.pem"
+
+	time.Sleep(100 * time.Millisecond)
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	client := &http.Client{Transport: tr}
+	res, err := client.Get(fmt.Sprintf("https://localhost:%d", port))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer res.Body.Close()
+	assert.Equal(t, res.StatusCode, res.StatusCode)
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []byte("Hello, World!")
+	assert.Equal(t, expected, body)
 }
