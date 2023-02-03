@@ -68,6 +68,15 @@ func TestRegisterValidProvider(t *testing.T) {
 	assert.Empty(t, resultProvider.FailReason)
 	assert.Equal(t, "http://example.com/registrations/"+*resultProvider.ApiProvDomId, result.Recorder.Header().Get(echo.HeaderLocation))
 	assert.True(t, managerUnderTest.IsFunctionRegistered("APF_id_rApp_as_APF"))
+
+	// Register same provider again should result in BadRequest
+	result = testutil.NewRequest().Post("/registrations").WithJsonBody(newProvider).Go(t, requestHandler)
+	var errorObj common29122.ProblemDetails
+	assert.Equal(t, http.StatusForbidden, result.Code())
+	err = result.UnmarshalBodyToObject(&errorObj)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusForbidden, *errorObj.Status)
+	assert.Contains(t, *errorObj.Cause, "already registered")
 }
 
 func TestUpdateValidProviderWithNewFunction(t *testing.T) {
@@ -170,6 +179,7 @@ func TestUpdateMissingFunction(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err := result.UnmarshalBodyToObject(&errorObj)
 	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusBadRequest, *errorObj.Status)
 	assert.Contains(t, *errorObj.Cause, funcIdAPF)
 	assert.Contains(t, *errorObj.Cause, "not registered")
 }
@@ -200,9 +210,8 @@ func TestProviderHandlingValidation(t *testing.T) {
 	var problemDetails common29122.ProblemDetails
 	err := result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
-	assert.Contains(t, *problemDetails.Cause, "Provider not valid")
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "regSec")
 }
 

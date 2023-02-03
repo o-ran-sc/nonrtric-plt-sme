@@ -71,12 +71,17 @@ func (pm *ProviderManager) GetAefsForPublisher(apfId string) []string {
 
 func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 	var newProvider provapi.APIProviderEnrolmentDetails
+	errMsg := "Unable to register provider due to %s"
 	if err := ctx.Bind(&newProvider); err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invalid format for provider")
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for provider"))
+	}
+
+	if pm.isProviderRegistered(newProvider) {
+		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errMsg, "provider already registered"))
 	}
 
 	if err := newProvider.Validate(); err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf("Provider not valid due to %s", err))
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
 	pm.prepareNewProvider(&newProvider)
@@ -88,6 +93,15 @@ func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (pm *ProviderManager) isProviderRegistered(newProvider provapi.APIProviderEnrolmentDetails) bool {
+	for _, prov := range pm.registeredProviders {
+		if newProvider.RegSec == prov.RegSec {
+			return true
+		}
+	}
+	return false
 }
 
 func (pm *ProviderManager) prepareNewProvider(newProvider *provapi.APIProviderEnrolmentDetails) {
