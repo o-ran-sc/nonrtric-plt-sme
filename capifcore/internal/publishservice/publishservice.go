@@ -158,10 +158,14 @@ func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) er
 // Publish a new API.
 func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) error {
 	var newServiceAPIDescription publishapi.ServiceAPIDescription
-	errorMsg := "Unable to register the service due to: %s "
+	errorMsg := "Unable to publish the service due to %s "
 	err := ctx.Bind(&newServiceAPIDescription)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errorMsg, "invalid format for service "+apfId))
+	}
+
+	if ps.isServicePublished(newServiceAPIDescription) {
+		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errorMsg, "service already published"))
 	}
 
 	if err := newServiceAPIDescription.Validate(); err != nil {
@@ -202,6 +206,17 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	}
 
 	return nil
+}
+
+func (ps *PublishService) isServicePublished(newService publishapi.ServiceAPIDescription) bool {
+	for _, services := range ps.publishedServices {
+		for _, service := range services {
+			if newService.ApiName == service.ApiName {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (ps *PublishService) installHelmChart(newServiceAPIDescription publishapi.ServiceAPIDescription, ctx echo.Context) (bool, error) {
