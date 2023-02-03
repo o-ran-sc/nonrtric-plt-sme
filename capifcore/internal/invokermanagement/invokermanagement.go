@@ -108,6 +108,10 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for invoker"))
 	}
 
+	if im.isInvokerOnboarded(newInvoker) {
+		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errMsg, "invoker already onboarded"))
+	}
+
 	if err := im.validateInvoker(newInvoker, ctx); err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
@@ -125,6 +129,15 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 	}
 
 	return nil
+}
+
+func (im *InvokerManager) isInvokerOnboarded(newInvoker invokerapi.APIInvokerEnrolmentDetails) bool {
+	for _, invoker := range im.onboardedInvokers {
+		if newInvoker.OnboardingInformation.ApiInvokerPublicKey == invoker.OnboardingInformation.ApiInvokerPublicKey {
+			return true
+		}
+	}
+	return false
 }
 
 func (im *InvokerManager) prepareNewInvoker(newInvoker *invokerapi.APIInvokerEnrolmentDetails) {
