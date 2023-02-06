@@ -38,3 +38,18 @@ func TestValidate(t *testing.T) {
 	assert.Nil(t, err)
 
 }
+
+func TestIsServicePublished(t *testing.T) {
+	apiName := "apiName"
+	serviceUnderTest := ServiceAPIDescription{
+		ApiName: apiName,
+	}
+
+	otherService := ServiceAPIDescription{
+		ApiName: "otherApiName",
+	}
+	assert.False(t, serviceUnderTest.IsPublished(otherService))
+
+	otherService.ApiName = apiName
+	assert.True(t, serviceUnderTest.IsPublished(otherService))
+}

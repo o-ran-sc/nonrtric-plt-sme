@@ -211,7 +211,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 func (ps *PublishService) isServicePublished(newService publishapi.ServiceAPIDescription) bool {
 	for _, services := range ps.publishedServices {
 		for _, service := range services {
-			if newService.ApiName == service.ApiName {
+			if service.IsPublished(newService) {
 				return true
 			}
 		}

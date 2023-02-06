@@ -133,7 +133,7 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 
 func (im *InvokerManager) isInvokerOnboarded(newInvoker invokerapi.APIInvokerEnrolmentDetails) bool {
 	for _, invoker := range im.onboardedInvokers {
-		if newInvoker.OnboardingInformation.ApiInvokerPublicKey == invoker.OnboardingInformation.ApiInvokerPublicKey {
+		if invoker.IsOnboarded(newInvoker) {
 			return true
 		}
 	}
