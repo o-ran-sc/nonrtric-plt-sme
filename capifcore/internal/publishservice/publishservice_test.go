@@ -101,6 +101,16 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, *resultService.ApiId, newApiId)
 
+	// Publish the same service again should result in Forbidden
+	result = testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusForbidden, result.Code())
+	var resultError common29122.ProblemDetails
+	err = result.UnmarshalBodyToObject(&resultError)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Contains(t, *resultError.Cause, "already published")
+	assert.Equal(t, http.StatusForbidden, *resultError.Status)
+
 	// Delete the service
 	helmManagerMock.On("UninstallHelmChart", mock.Anything, mock.Anything).Return(nil)
 
@@ -141,8 +151,7 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Contains(t, *resultError.Cause, aefId)
 	assert.Contains(t, *resultError.Cause, "not registered")
-	notFound := http.StatusNotFound
-	assert.Equal(t, &notFound, resultError.Status)
+	assert.Equal(t, http.StatusNotFound, *resultError.Status)
 }
 
 func TestGetServices(t *testing.T) {

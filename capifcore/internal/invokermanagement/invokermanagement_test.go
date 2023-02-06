@@ -87,20 +87,28 @@ func TestOnboardInvoker(t *testing.T) {
 		assert.Equal(t, eventsapi.CAPIFEventAPIINVOKERONBOARDED, invokerEvent.Events)
 	}
 
+	// Onboarding the same invoker should result in Forbidden
+	result = testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusForbidden, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err = result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusForbidden, *problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "already onboarded")
+
 	// Onboard an invoker missing required NotificationDestination, should get 400 with problem details
 	invalidInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
-			ApiInvokerPublicKey: "key",
+			ApiInvokerPublicKey: "newKey",
 		},
 	}
 	result = testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
-	var problemDetails common29122.ProblemDetails
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "NotificationDestination")
 
@@ -114,7 +122,7 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "OnboardingInformation.ApiInvokerPublicKey")
 }
@@ -190,8 +198,7 @@ func TestUpdateInvoker(t *testing.T) {
 	var problemDetails common29122.ProblemDetails
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "NotificationDestination")
 
@@ -203,7 +210,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "OnboardingInformation.ApiInvokerPublicKey")
 
@@ -216,7 +223,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "not matching")
 	assert.Contains(t, *problemDetails.Cause, "ApiInvokerId")
 
@@ -228,8 +235,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	notFound := http.StatusNotFound
-	assert.Equal(t, &notFound, problemDetails.Status)
+	assert.Equal(t, http.StatusNotFound, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "not been onboarded")
 	assert.Contains(t, *problemDetails.Cause, "invoker")
 }
