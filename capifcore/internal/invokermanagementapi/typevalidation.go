@@ -41,3 +41,7 @@ func (ied *APIInvokerEnrolmentDetails) Validate() error {
 
 	return nil
 }
+
+func (ied *APIInvokerEnrolmentDetails) IsOnboarded(otherInvoker APIInvokerEnrolmentDetails) bool {
+	return ied.OnboardingInformation.ApiInvokerPublicKey == otherInvoker.OnboardingInformation.ApiInvokerPublicKey
+}

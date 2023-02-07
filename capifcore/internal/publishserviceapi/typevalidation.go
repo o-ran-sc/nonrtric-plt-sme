@@ -31,3 +31,7 @@ func (sd ServiceAPIDescription) Validate() error {
 	}
 	return nil
 }
+
+func (sd ServiceAPIDescription) IsPublished(otherService ServiceAPIDescription) bool {
+	return sd.ApiName == otherService.ApiName
+}
