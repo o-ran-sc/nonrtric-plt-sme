@@ -44,7 +44,7 @@ import (
 type PublishRegister interface {
 	// Checks if the provided APIs are published.
 	// Returns true if all provided APIs have been published, false otherwise.
-	AreAPIsPublished(serviceDescriptions *[]publishapi.ServiceAPIDescription) bool
+	//AreAPIsPublished(serviceDescriptions *[]publishapi.ServiceAPIDescription) bool
 	// Checks if the provided API is published.
 	// Returns true if the provided API has been published, false otherwise.
 	IsAPIPublished(aefId, path string) bool
@@ -71,15 +71,6 @@ func NewPublishService(serviceRegister providermanagement.ServiceRegister, hm he
 	}
 }
 
-func (ps *PublishService) AreAPIsPublished(serviceDescriptions *[]publishapi.ServiceAPIDescription) bool {
-
-	if serviceDescriptions != nil {
-		registeredApis := ps.getAllAefIds()
-		return checkNewDescriptions(*serviceDescriptions, registeredApis)
-	}
-	return true
-}
-
 func (ps *PublishService) getAllAefIds() []string {
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
@@ -87,45 +78,35 @@ func (ps *PublishService) getAllAefIds() []string {
 	allIds := []string{}
 	for _, descriptions := range ps.publishedServices {
 		for _, description := range descriptions {
-			allIds = append(allIds, getIdsFromDescription(description)...)
+			allIds = append(allIds, description.GetIdsFromDescription()...)
 		}
 	}
 	return allIds
 }
 
-func getIdsFromDescription(description publishapi.ServiceAPIDescription) []string {
-	allIds := []string{}
-	if description.AefProfiles != nil {
-		for _, aefProfile := range *description.AefProfiles {
-			allIds = append(allIds, aefProfile.AefId)
-		}
-	}
-	return allIds
-}
+// func checkNewDescriptions(newDescriptions []publishapi.ServiceAPIDescription, registeredAefIds []string) bool {
+// 	registered := true
+// 	for _, newApi := range newDescriptions {
+// 		if !checkProfiles(newApi.AefProfiles, registeredAefIds) {
+// 			registered = false
+// 			break
+// 		}
+// 	}
+// 	return registered
+// }
 
-func checkNewDescriptions(newDescriptions []publishapi.ServiceAPIDescription, registeredAefIds []string) bool {
-	registered := true
-	for _, newApi := range newDescriptions {
-		if !checkProfiles(newApi.AefProfiles, registeredAefIds) {
-			registered = false
-			break
-		}
-	}
-	return registered
-}
-
-func checkProfiles(newProfiles *[]publishapi.AefProfile, registeredAefIds []string) bool {
-	allRegistered := true
-	if newProfiles != nil {
-		for _, profile := range *newProfiles {
-			if !slices.Contains(registeredAefIds, profile.AefId) {
-				allRegistered = false
-				break
-			}
-		}
-	}
-	return allRegistered
-}
+// func checkProfiles(newProfiles *[]publishapi.AefProfile, registeredAefIds []string) bool {
+// 	allRegistered := true
+// 	if newProfiles != nil {
+// 		for _, profile := range *newProfiles {
+// 			if !slices.Contains(registeredAefIds, profile.AefId) {
+// 				allRegistered = false
+// 				break
+// 			}
+// 		}
+// 	}
+// 	return allRegistered
+// }
 
 func (ps *PublishService) IsAPIPublished(aefId, path string) bool {
 	return slices.Contains(ps.getAllAefIds(), aefId)
@@ -181,8 +162,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 		}
 	}
 
-	newId := "api_id_" + newServiceAPIDescription.ApiName
-	newServiceAPIDescription.ApiId = &newId
+	newServiceAPIDescription.PrepareNewService()
 
 	shouldReturn, returnValue := ps.installHelmChart(newServiceAPIDescription, ctx)
 	if shouldReturn {
@@ -307,11 +287,11 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
-	ps.updateDescription(pos, apfId, &updatedServiceDescription, &publishedService)
 	err = ps.checkProfilesRegistered(apfId, *updatedServiceDescription.AefProfiles)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
+	ps.updateDescription(pos, apfId, &updatedServiceDescription, &publishedService)
 	publishedService.AefProfiles = updatedServiceDescription.AefProfiles
 	ps.publishedServices[apfId][pos] = publishedService
 	err = ctx.JSON(http.StatusOK, publishedService)
