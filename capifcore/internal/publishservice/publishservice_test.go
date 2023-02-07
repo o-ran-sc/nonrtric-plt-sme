@@ -80,8 +80,6 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.Equal(t, newApiId, *resultService.ApiId)
 	assert.Equal(t, "http://example.com/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 	newServiceDescription.ApiId = &newApiId
-	wantedAPILIst := []publishapi.ServiceAPIDescription{newServiceDescription}
-	assert.True(t, serviceUnderTest.AreAPIsPublished(&wantedAPILIst))
 	assert.True(t, serviceUnderTest.IsAPIPublished(aefId, apiName))
 	serviceRegisterMock.AssertCalled(t, "GetAefsForPublisher", apfId)
 	helmManagerMock.AssertCalled(t, "InstallHelmChart", namespace, repoName, chartName, releaseName)

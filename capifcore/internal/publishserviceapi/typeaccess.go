@@ -19,37 +19,12 @@
 //	========================LICENSE_END===================================
 package publishserviceapi
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestValidate(t *testing.T) {
-	serviceDescriptionUnderTest := ServiceAPIDescription{}
-	err := serviceDescriptionUnderTest.Validate()
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "missing")
-		assert.Contains(t, err.Error(), "apiName")
+func (sd ServiceAPIDescription) GetIdsFromDescription() []string {
+	allIds := []string{}
+	if sd.AefProfiles != nil {
+		for _, aefProfile := range *sd.AefProfiles {
+			allIds = append(allIds, aefProfile.AefId)
+		}
 	}
-
-	serviceDescriptionUnderTest.ApiName = "apiName"
-	err = serviceDescriptionUnderTest.Validate()
-	assert.Nil(t, err)
-
-}
-
-func TestIsServicePublished(t *testing.T) {
-	apiName := "apiName"
-	serviceUnderTest := ServiceAPIDescription{
-		ApiName: apiName,
-	}
-
-	otherService := ServiceAPIDescription{
-		ApiName: "otherApiName",
-	}
-	assert.False(t, serviceUnderTest.IsPublished(otherService))
-
-	otherService.ApiName = apiName
-	assert.True(t, serviceUnderTest.IsPublished(otherService))
+	return allIds
 }

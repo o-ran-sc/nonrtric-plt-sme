@@ -21,14 +21,12 @@
 package invokermanagement
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"path"
 	"sync"
 
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
-	publishapi "oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	invokerapi "oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
@@ -133,7 +131,7 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 
 func (im *InvokerManager) isInvokerOnboarded(newInvoker invokerapi.APIInvokerEnrolmentDetails) bool {
 	for _, invoker := range im.onboardedInvokers {
-		if newInvoker.OnboardingInformation.ApiInvokerPublicKey == invoker.OnboardingInformation.ApiInvokerPublicKey {
+		if invoker.IsOnboarded(newInvoker) {
 			return true
 		}
 	}
@@ -214,18 +212,8 @@ func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolment
 	if err := invoker.Validate(); err != nil {
 		return err
 	}
-	if !im.areAPIsPublished(invoker.ApiList) {
-		return errors.New("some APIs needed by invoker are not registered")
-	}
 
 	return nil
-}
-
-func (im *InvokerManager) areAPIsPublished(apis *invokerapi.APIList) bool {
-	if apis == nil {
-		return true
-	}
-	return im.publishRegister.AreAPIsPublished((*[]publishapi.ServiceAPIDescription)(apis))
 }
 
 func (im *InvokerManager) sendEvent(invokerId string, eventType eventsapi.CAPIFEvent) {

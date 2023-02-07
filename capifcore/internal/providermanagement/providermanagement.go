@@ -97,7 +97,7 @@ func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 
 func (pm *ProviderManager) isProviderRegistered(newProvider provapi.APIProviderEnrolmentDetails) bool {
 	for _, prov := range pm.registeredProviders {
-		if newProvider.RegSec == prov.RegSec {
+		if prov.IsRegistered(newProvider) {
 			return true
 		}
 	}
