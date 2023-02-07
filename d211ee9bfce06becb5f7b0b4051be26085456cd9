@@ -1,0 +1,67 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4f544527_da4b125e",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-07T15:27:37Z",
+      "side": 1,
+      "message": "Please remove",
+      "range": {
+        "startLine": 45,
+        "startChar": 1,
+        "endLine": 47,
+        "endChar": 81
+      },
+      "revId": "d211ee9bfce06becb5f7b0b4051be26085456cd9",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f208f99d_9be48d48",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-07T15:27:37Z",
+      "side": 1,
+      "message": "Please remove",
+      "revId": "d211ee9bfce06becb5f7b0b4051be26085456cd9",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1357c4b5_dd046b56",
+        "filename": "capifcore/internal/publishserviceapi/typeaccess.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-07T15:27:37Z",
+      "side": 1,
+      "message": "Maybe rename to GetAefIds?",
+      "range": {
+        "startLine": 22,
+        "startChar": 32,
+        "endLine": 22,
+        "endChar": 53
+      },
+      "revId": "d211ee9bfce06becb5f7b0b4051be26085456cd9",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
