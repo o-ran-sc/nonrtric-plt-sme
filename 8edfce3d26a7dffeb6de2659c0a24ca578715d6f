@@ -1,0 +1,96 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "42339365_d2cee212",
+        "filename": "capifcore/internal/securityservice/security.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-08T12:23:01Z",
+      "side": 1,
+      "message": "Maybe this could be broken out to a method that retunrs an error?",
+      "range": {
+        "startLine": 84,
+        "startChar": 2,
+        "endLine": 87,
+        "endChar": 3
+      },
+      "revId": "8edfce3d26a7dffeb6de2659c0a24ca578715d6f",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "49d82745_88d110cf",
+        "filename": "capifcore/internal/securityservice/security.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 97,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-08T12:23:01Z",
+      "side": 1,
+      "message": "Maybe this could be broken out to a method that retunrs an error?",
+      "range": {
+        "startLine": 94,
+        "startChar": 3,
+        "endLine": 97,
+        "endChar": 4
+      },
+      "revId": "8edfce3d26a7dffeb6de2659c0a24ca578715d6f",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "9659da18_a1d85458",
+        "filename": "capifcore/internal/securityservice/security.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 100,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-08T12:23:01Z",
+      "side": 1,
+      "message": "Maybe this could be broken out to a method that retunrs an error?",
+      "range": {
+        "startLine": 98,
+        "startChar": 3,
+        "endLine": 100,
+        "endChar": 4
+      },
+      "revId": "8edfce3d26a7dffeb6de2659c0a24ca578715d6f",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "eee7962a_0b39c418",
+        "filename": "capifcore/internal/securityservice/security.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 1000201
+      },
+      "writtenOn": "2023-02-08T12:23:01Z",
+      "side": 1,
+      "message": "Maybe this could be broken out to a method that retunrs an error?",
+      "range": {
+        "startLine": 101,
+        "startChar": 3,
+        "endLine": 105,
+        "endChar": 4
+      },
+      "revId": "8edfce3d26a7dffeb6de2659c0a24ca578715d6f",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
