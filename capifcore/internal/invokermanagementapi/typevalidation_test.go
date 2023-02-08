@@ -54,7 +54,7 @@ func TestValidateInvoker(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestIsOnboarded(t *testing.T) {
+func TestValidateAlreadyOnboarded(t *testing.T) {
 	publicKey := "publicKey"
 	invokerUnderTest := APIInvokerEnrolmentDetails{
 		OnboardingInformation: OnboardingInformation{
@@ -67,8 +67,8 @@ func TestIsOnboarded(t *testing.T) {
 			ApiInvokerPublicKey: "otherPublicKey",
 		},
 	}
-	assert.False(t, invokerUnderTest.IsOnboarded(otherInvoker))
+	assert.Nil(t, invokerUnderTest.ValidateAlreadyOnboarded(otherInvoker))
 
 	otherInvoker.OnboardingInformation.ApiInvokerPublicKey = publicKey
-	assert.True(t, invokerUnderTest.IsOnboarded(otherInvoker))
+	assert.NotNil(t, invokerUnderTest.ValidateAlreadyOnboarded(otherInvoker))
 }

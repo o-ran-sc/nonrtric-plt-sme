@@ -42,6 +42,9 @@ func (ied *APIInvokerEnrolmentDetails) Validate() error {
 	return nil
 }
 
-func (ied *APIInvokerEnrolmentDetails) IsOnboarded(otherInvoker APIInvokerEnrolmentDetails) bool {
-	return ied.OnboardingInformation.ApiInvokerPublicKey == otherInvoker.OnboardingInformation.ApiInvokerPublicKey
+func (ied *APIInvokerEnrolmentDetails) ValidateAlreadyOnboarded(otherInvoker APIInvokerEnrolmentDetails) error {
+	if ied.OnboardingInformation.ApiInvokerPublicKey == otherInvoker.OnboardingInformation.ApiInvokerPublicKey {
+		return errors.New("invoker with identical public key already onboarded")
+	}
+	return nil
 }

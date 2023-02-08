@@ -68,6 +68,9 @@ func (pd APIProviderEnrolmentDetails) validateFunctions() error {
 	return nil
 }
 
-func (pd APIProviderEnrolmentDetails) IsRegistered(otherProvider APIProviderEnrolmentDetails) bool {
-	return pd.RegSec == otherProvider.RegSec
+func (pd APIProviderEnrolmentDetails) ValidateAlreadyRegistered(otherProvider APIProviderEnrolmentDetails) error {
+	if pd.RegSec == otherProvider.RegSec {
+		return errors.New("provider with identical regSec already registered")
+	}
+	return nil
 }

@@ -106,7 +106,7 @@ func TestValidateAPIProviderEnrolmentDetails(t *testing.T) {
 	assert.Nil(t, providerDetailsUnderTest.Validate())
 }
 
-func TestIsRegistered(t *testing.T) {
+func TestValidateAlreadyRegistered(t *testing.T) {
 	regSec := "regSec"
 	providerUnderTest := APIProviderEnrolmentDetails{
 		RegSec: regSec,
@@ -115,10 +115,10 @@ func TestIsRegistered(t *testing.T) {
 	otherProvider := APIProviderEnrolmentDetails{
 		RegSec: "otherRegSec",
 	}
-	assert.False(t, providerUnderTest.IsRegistered(otherProvider))
+	assert.Nil(t, providerUnderTest.ValidateAlreadyRegistered(otherProvider))
 
 	otherProvider.RegSec = regSec
-	assert.True(t, providerUnderTest.IsRegistered(otherProvider))
+	assert.NotNil(t, providerUnderTest.ValidateAlreadyRegistered(otherProvider))
 }
 
 func getProvider() APIProviderEnrolmentDetails {

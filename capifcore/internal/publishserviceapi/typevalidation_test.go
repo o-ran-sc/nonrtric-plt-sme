@@ -39,7 +39,7 @@ func TestValidate(t *testing.T) {
 
 }
 
-func TestIsServicePublished(t *testing.T) {
+func TestValidateAlreadyPublished(t *testing.T) {
 	apiName := "apiName"
 	serviceUnderTest := ServiceAPIDescription{
 		ApiName: apiName,
@@ -48,8 +48,8 @@ func TestIsServicePublished(t *testing.T) {
 	otherService := ServiceAPIDescription{
 		ApiName: "otherApiName",
 	}
-	assert.False(t, serviceUnderTest.IsPublished(otherService))
+	assert.Nil(t, serviceUnderTest.ValidateAlreadyPublished(otherService))
 
 	otherService.ApiName = apiName
-	assert.True(t, serviceUnderTest.IsPublished(otherService))
+	assert.NotNil(t, serviceUnderTest.ValidateAlreadyPublished(otherService))
 }

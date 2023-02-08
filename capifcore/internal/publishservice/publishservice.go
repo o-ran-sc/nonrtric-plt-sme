@@ -118,8 +118,8 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errorMsg, "invalid format for service "+apfId))
 	}
 
-	if ps.isServicePublished(newServiceAPIDescription) {
-		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errorMsg, "service already published"))
+	if err := ps.isServicePublished(newServiceAPIDescription); err != nil {
+		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errorMsg, err))
 	}
 
 	if err := newServiceAPIDescription.Validate(); err != nil {
@@ -161,15 +161,15 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 	return nil
 }
 
-func (ps *PublishService) isServicePublished(newService publishapi.ServiceAPIDescription) bool {
+func (ps *PublishService) isServicePublished(newService publishapi.ServiceAPIDescription) error {
 	for _, services := range ps.publishedServices {
 		for _, service := range services {
-			if service.IsPublished(newService) {
-				return true
+			if err := service.ValidateAlreadyPublished(newService); err != nil {
+				return err
 			}
 		}
 	}
-	return false
+	return nil
 }
 
 func (ps *PublishService) installHelmChart(newServiceAPIDescription publishapi.ServiceAPIDescription, ctx echo.Context) (bool, error) {

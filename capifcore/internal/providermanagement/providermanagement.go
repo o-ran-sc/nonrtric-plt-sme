@@ -76,8 +76,8 @@ func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for provider"))
 	}
 
-	if pm.isProviderRegistered(newProvider) {
-		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errMsg, "provider already registered"))
+	if err := pm.isProviderRegistered(newProvider); err != nil {
+		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errMsg, err))
 	}
 
 	if err := newProvider.Validate(); err != nil {
@@ -95,13 +95,13 @@ func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {
 	return nil
 }
 
-func (pm *ProviderManager) isProviderRegistered(newProvider provapi.APIProviderEnrolmentDetails) bool {
+func (pm *ProviderManager) isProviderRegistered(newProvider provapi.APIProviderEnrolmentDetails) error {
 	for _, prov := range pm.registeredProviders {
-		if prov.IsRegistered(newProvider) {
-			return true
+		if err := prov.ValidateAlreadyRegistered(newProvider); err != nil {
+			return err
 		}
 	}
-	return false
+	return nil
 }
 
 func (pm *ProviderManager) prepareNewProvider(newProvider *provapi.APIProviderEnrolmentDetails) {

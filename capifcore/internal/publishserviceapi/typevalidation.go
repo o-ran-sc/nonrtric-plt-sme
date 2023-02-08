@@ -32,6 +32,9 @@ func (sd ServiceAPIDescription) Validate() error {
 	return nil
 }
 
-func (sd ServiceAPIDescription) IsPublished(otherService ServiceAPIDescription) bool {
-	return sd.ApiName == otherService.ApiName
+func (sd ServiceAPIDescription) ValidateAlreadyPublished(otherService ServiceAPIDescription) error {
+	if sd.ApiName == otherService.ApiName {
+		return errors.New("service with identical apiName is already published")
+	}
+	return nil
 }
