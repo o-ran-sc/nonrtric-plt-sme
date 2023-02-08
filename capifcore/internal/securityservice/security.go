@@ -23,7 +23,9 @@ package security
 import (
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
@@ -33,6 +35,8 @@ import (
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
 	"oransc.org/nonrtric/capifcore/internal/publishservice"
 )
+
+var jwtKey = "my-secret-key"
 
 type Security struct {
 	serviceRegister providermanagement.ServiceRegister
@@ -49,34 +53,62 @@ func NewSecurity(serviceRegister providermanagement.ServiceRegister, publishRegi
 }
 
 func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId string) error {
-	clientId := ctx.FormValue("client_id")
-	clientSecret := ctx.FormValue("client_secret")
-	scope := ctx.FormValue("scope")
+	var accessTokenReq securityapi.AccessTokenReq
+	accessTokenReq.GetAccessTokenReq(ctx)
 
-	if !s.invokerRegister.IsInvokerRegistered(clientId) {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invoker not registered")
+	if valid, err := accessTokenReq.Validate(); !valid {
+		return ctx.JSON(http.StatusBadRequest, err)
 	}
-	if !s.invokerRegister.VerifyInvokerSecret(clientId, clientSecret) {
-		return sendCoreError(ctx, http.StatusBadRequest, "Invoker secret not valid")
+
+	if !s.invokerRegister.IsInvokerRegistered(accessTokenReq.ClientId) {
+		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorInvalidClient, "Invoker not registered")
 	}
-	if scope != "" {
-		scopeData := strings.Split(strings.Split(scope, "#")[1], ":")
-		if !s.serviceRegister.IsFunctionRegistered(scopeData[0]) {
-			return sendCoreError(ctx, http.StatusBadRequest, "Function not registered")
+
+	if !s.invokerRegister.VerifyInvokerSecret(accessTokenReq.ClientId, *accessTokenReq.ClientSecret) {
+		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, "Invoker secret not valid")
+	}
+
+	if accessTokenReq.Scope != nil {
+		scope := strings.Split(*accessTokenReq.Scope, "#")
+		aefList := strings.Split(scope[1], ";")
+		for _, aef := range aefList {
+			apiList := strings.Split(aef, ":")
+			if !s.serviceRegister.IsFunctionRegistered(apiList[0]) {
+				return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorInvalidScope, "AEF Function not registered")
+			}
+			for _, api := range strings.Split(apiList[1], ",") {
+				if !s.publishRegister.IsAPIPublished(apiList[0], api) {
+					return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorInvalidScope, "API not published")
+				}
+			}
 		}
-		if !s.publishRegister.IsAPIPublished(scopeData[0], scopeData[1]) {
-			return sendCoreError(ctx, http.StatusBadRequest, "API not published")
-		}
+	}
+
+	expirationTime := time.Now().Add(time.Hour).Unix()
+
+	claims := &jwt.MapClaims{
+		"iss": accessTokenReq.ClientId,
+		"exp": expirationTime,
+		"data": map[string]interface{}{
+			"scope": accessTokenReq.Scope,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(jwtKey))
+	if err != nil {
+		// If there is an error in creating the JWT return an internal server error
+		return err
 	}
 
 	accessTokenResp := securityapi.AccessTokenRsp{
-		AccessToken: "asdadfsrt dsr t5",
-		ExpiresIn:   0,
-		Scope:       &scope,
+		AccessToken: tokenString,
+		ExpiresIn:   common29122.DurationSec(expirationTime),
+		Scope:       accessTokenReq.Scope,
 		TokenType:   "Bearer",
 	}
 
-	err := ctx.JSON(http.StatusCreated, accessTokenResp)
+	err = ctx.JSON(http.StatusCreated, accessTokenResp)
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
 		return err
@@ -105,11 +137,10 @@ func (s *Security) PostTrustedInvokersApiInvokerIdUpdate(ctx echo.Context, apiIn
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func sendCoreError(ctx echo.Context, code int, message string) error {
-	pd := common29122.ProblemDetails{
-		Cause:  &message,
-		Status: &code,
+func sendAccessTokenError(ctx echo.Context, code int, err securityapi.AccessTokenErrError, message string) error {
+	accessTokenErr := securityapi.AccessTokenErr{
+		Error:            err,
+		ErrorDescription: &message,
 	}
-	err := ctx.JSON(code, pd)
-	return err
+	return ctx.JSON(code, accessTokenErr)
 }
