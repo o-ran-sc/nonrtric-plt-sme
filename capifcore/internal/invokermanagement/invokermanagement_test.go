@@ -80,33 +80,41 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.True(t, invokerUnderTest.VerifyInvokerSecret(wantedInvokerId, wantedInvokerSecret))
 	publishRegisterMock.AssertCalled(t, "GetAllPublishedServices")
 	assert.Equal(t, invokermanagementapi.APIList(publishedServices), *resultInvoker.ApiList)
-	if invokerEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+	if invokerEvent, timeout := waitForEvent(eventChannel, 1*time.Second); timeout {
 		assert.Fail(t, "No event sent")
 	} else {
 		assert.Equal(t, *resultInvoker.ApiInvokerId, (*invokerEvent.EventDetail.ApiInvokerIds)[0])
 		assert.Equal(t, eventsapi.CAPIFEventAPIINVOKERONBOARDED, invokerEvent.Events)
 	}
 
+	// Onboarding the same invoker should result in Forbidden
+	result = testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusForbidden, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err = result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusForbidden, *problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "already onboarded")
+
 	// Onboard an invoker missing required NotificationDestination, should get 400 with problem details
 	invalidInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
-			ApiInvokerPublicKey: "key",
+			ApiInvokerPublicKey: "newKey",
 		},
 	}
 	result = testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
-	var problemDetails common29122.ProblemDetails
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "NotificationDestination")
 
 	// Onboard an invoker missing required OnboardingInformation.ApiInvokerPublicKey, should get 400 with problem details
 	invalidInvoker = invokermanagementapi.APIInvokerEnrolmentDetails{
-		NotificationDestination: "url",
+		NotificationDestination: "http://golang.cafe/",
 	}
 
 	result = testutil.NewRequest().Post("/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, requestHandler)
@@ -114,7 +122,7 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "OnboardingInformation.ApiInvokerPublicKey")
 }
@@ -138,7 +146,7 @@ func TestDeleteInvoker(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
 	assert.False(t, invokerUnderTest.IsInvokerRegistered(invokerId))
-	if invokerEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
+	if invokerEvent, timeout := waitForEvent(eventChannel, 1*time.Second); timeout {
 		assert.Fail(t, "No event sent")
 	} else {
 		assert.Equal(t, invokerId, (*invokerEvent.EventDetail.ApiInvokerIds)[0])
@@ -154,7 +162,7 @@ func TestUpdateInvoker(t *testing.T) {
 	invokerId := "invokerId"
 	invoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		ApiInvokerId:            &invokerId,
-		NotificationDestination: "url",
+		NotificationDestination: "http://golang.cafe/",
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
 			ApiInvokerPublicKey: "key",
 		},
@@ -162,7 +170,7 @@ func TestUpdateInvoker(t *testing.T) {
 	serviceUnderTest.onboardedInvokers[invokerId] = invoker
 
 	// Update the invoker with valid invoker, should return 200 with updated invoker details
-	newNotifURL := "newUrl"
+	newNotifURL := "http://golang.org/"
 	invoker.NotificationDestination = common29122.Uri(newNotifURL)
 	newPublicKey := "newPublicKey"
 	invoker.OnboardingInformation.ApiInvokerPublicKey = newPublicKey
@@ -190,20 +198,19 @@ func TestUpdateInvoker(t *testing.T) {
 	var problemDetails common29122.ProblemDetails
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "NotificationDestination")
 
 	// Update with an invoker missing required OnboardingInformation.ApiInvokerPublicKey, should get 400 with problem details
-	invalidInvoker.NotificationDestination = "url"
+	invalidInvoker.NotificationDestination = "http://golang.org/"
 	invalidInvoker.OnboardingInformation = invokermanagementapi.OnboardingInformation{}
 	result = testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "missing")
 	assert.Contains(t, *problemDetails.Cause, "OnboardingInformation.ApiInvokerPublicKey")
 
@@ -216,11 +223,11 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "not matching")
 	assert.Contains(t, *problemDetails.Cause, "ApiInvokerId")
 
-	// Update an invoker that has not been onboarded, shold get 404 with problem details
+	// Update an invoker that has not been onboarded, should get 404 with problem details
 	missingId := "1"
 	invoker.ApiInvokerId = &missingId
 	result = testutil.NewRequest().Put("/onboardedInvokers/"+missingId).WithJsonBody(invoker).Go(t, requestHandler)
@@ -228,8 +235,7 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, result.Code())
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	notFound := http.StatusNotFound
-	assert.Equal(t, &notFound, problemDetails.Status)
+	assert.Equal(t, http.StatusNotFound, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "not been onboarded")
 	assert.Contains(t, *problemDetails.Cause, "invoker")
 }
@@ -312,7 +318,7 @@ func getAefProfile(aefId string) publishserviceapi.AefProfile {
 func getInvoker(invokerInfo string) invokermanagementapi.APIInvokerEnrolmentDetails {
 	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
 		ApiInvokerInformation:   &invokerInfo,
-		NotificationDestination: "url",
+		NotificationDestination: "http://golang.cafe/",
 		OnboardingInformation: invokermanagementapi.OnboardingInformation{
 			ApiInvokerPublicKey: "key",
 		},

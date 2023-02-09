@@ -74,6 +74,11 @@ func (es *EventService) PostSubscriberIdSubscriptions(ctx echo.Context, subscrib
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
+
+	if err := newSubscription.Validate(); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	subId := es.getSubscriptionId(subscriberId)
 	es.addSubscription(subId, newSubscription)
@@ -88,16 +93,20 @@ func (es *EventService) PostSubscriberIdSubscriptions(ctx echo.Context, subscrib
 }
 
 func (es *EventService) DeleteSubscriberIdSubscriptionsSubscriptionId(ctx echo.Context, subscriberId string, subscriptionId string) error {
-	es.lock.Lock()
-	defer es.lock.Unlock()
 
 	log.Debug(es.subscriptions)
 	if _, ok := es.subscriptions[subscriptionId]; ok {
-		log.Debug("Deleting subscription", subscriptionId)
-		delete(es.subscriptions, subscriptionId)
+		es.deleteSubscription(subscriptionId)
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (es *EventService) deleteSubscription(subscriptionId string) {
+	log.Debug("Deleting subscription", subscriptionId)
+	es.lock.Lock()
+	defer es.lock.Unlock()
+	delete(es.subscriptions, subscriptionId)
 }
 
 func getEventSubscriptionFromRequest(ctx echo.Context) (eventsapi.EventSubscription, error) {
@@ -162,8 +171,9 @@ func matchesFilters(eventIds *[]string, filters []eventsapi.CAPIFEventFilter, ge
 		filterIds := getIds(filter)
 		if filterIds == nil || len(*filterIds) == 0 {
 			return matchesFilters(eventIds, filters[1:], getIds)
+		} else {
+			return slices.Contains(*getIds(filter), id) && matchesFilters(eventIds, filters[1:], getIds)
 		}
-		return slices.Contains(*getIds(filter), id) && matchesFilters(eventIds, filters[1:], getIds)
 	}
 	return true
 }
@@ -211,8 +221,8 @@ func (es *EventService) getSubscriptionId(subscriberId string) string {
 
 func (es *EventService) addSubscription(subId string, subscription eventsapi.EventSubscription) {
 	es.lock.Lock()
+	defer es.lock.Unlock()
 	es.subscriptions[subId] = subscription
-	es.lock.Unlock()
 }
 
 func (es *EventService) getSubscription(subId string) *eventsapi.EventSubscription {
