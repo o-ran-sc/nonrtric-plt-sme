@@ -83,7 +83,6 @@ func main() {
 }
 
 func getEcho() *echo.Echo {
-	// This is how you set up a basic Echo router
 	e := echo.New()
 	// Log all requests
 	e.Use(echomiddleware.Logger())
