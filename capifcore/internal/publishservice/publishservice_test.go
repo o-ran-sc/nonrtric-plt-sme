@@ -47,6 +47,7 @@ import (
 )
 
 func TestPublishUnpublishService(t *testing.T) {
+
 	apfId := "apfId"
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
@@ -76,11 +77,9 @@ func TestPublishUnpublishService(t *testing.T) {
 	err := result.UnmarshalBodyToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
 	newApiId := "api_id_" + apiName
-	assert.Equal(t, *resultService.ApiId, newApiId)
+	assert.Equal(t, newApiId, *resultService.ApiId)
 	assert.Equal(t, "http://example.com/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 	newServiceDescription.ApiId = &newApiId
-	wantedAPILIst := []publishapi.ServiceAPIDescription{newServiceDescription}
-	assert.True(t, serviceUnderTest.AreAPIsPublished(&wantedAPILIst))
 	assert.True(t, serviceUnderTest.IsAPIPublished(aefId, apiName))
 	serviceRegisterMock.AssertCalled(t, "GetAefsForPublisher", apfId)
 	helmManagerMock.AssertCalled(t, "InstallHelmChart", namespace, repoName, chartName, releaseName)
@@ -100,8 +99,19 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, *resultService.ApiId, newApiId)
 
+	// Publish the same service again should result in Forbidden
+	result = testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusForbidden, result.Code())
+	var resultError common29122.ProblemDetails
+	err = result.UnmarshalBodyToObject(&resultError)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Contains(t, *resultError.Cause, "already published")
+	assert.Equal(t, http.StatusForbidden, *resultError.Status)
+
 	// Delete the service
 	helmManagerMock.On("UninstallHelmChart", mock.Anything, mock.Anything).Return(nil)
+
 	result = testutil.NewRequest().Delete("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNoContent, result.Code())
@@ -139,8 +149,7 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Contains(t, *resultError.Cause, aefId)
 	assert.Contains(t, *resultError.Cause, "not registered")
-	notFound := http.StatusNotFound
-	assert.Equal(t, &notFound, resultError.Status)
+	assert.Equal(t, http.StatusNotFound, *resultError.Status)
 }
 
 func TestGetServices(t *testing.T) {
@@ -258,6 +267,7 @@ func TestUpdateDescription(t *testing.T) {
 	assert.Equal(t, newDescription, *resultService.Description)
 	assert.Equal(t, newDomainName, *(*resultService.AefProfiles)[0].DomainName)
 	assert.Equal(t, "aefIdNew", (*resultService.AefProfiles)[1].AefId)
+	assert.True(t, serviceUnderTest.IsAPIPublished("aefIdNew", "path"))
 
 	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
 		assert.Fail(t, "No event sent")
@@ -267,6 +277,111 @@ func TestUpdateDescription(t *testing.T) {
 	}
 }
 
+func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
+	apfId := "apfId"
+	serviceApiId := "serviceApiId"
+	aefId := "aefId"
+	apiName := "apiName"
+	description := "description"
+
+	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId", "aefIdNew"})
+	helmManagerMock := helmMocks.HelmManager{}
+	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	serviceUnderTest, _, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
+
+	serviceDescription := getServiceAPIDescription(aefId, apiName, description)
+	serviceDescription.ApiId = &serviceApiId
+	(*serviceDescription.AefProfiles)[0].AefId = aefId
+
+	newProfileDomain := "new profile Domain name"
+	var protocol publishapi.Protocol = "HTTP_1_1"
+	test := make([]publishapi.AefProfile, 1)
+	test = *serviceDescription.AefProfiles
+	test = append(test, publishapi.AefProfile{
+
+		AefId:      "aefIdNew",
+		DomainName: &newProfileDomain,
+		Protocol:   &protocol,
+		Versions: []publishapi.Version{
+			{
+				ApiVersion: "v1",
+				Resources: &[]publishapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+						Operations: &[]publishapi.Operation{
+							"POST",
+						},
+						ResourceName: "app",
+						Uri:          "app",
+					},
+				},
+			},
+		},
+	},
+	)
+	serviceDescription.AefProfiles = &test
+	serviceUnderTest.publishedServices[apfId] = []publishapi.ServiceAPIDescription{serviceDescription}
+
+	//Modify the service
+	updatedServiceDescription := getServiceAPIDescription(aefId, apiName, description)
+	updatedServiceDescription.ApiId = &serviceApiId
+	test1 := make([]publishapi.AefProfile, 1)
+	test1 = *updatedServiceDescription.AefProfiles
+	test1 = append(test1, publishapi.AefProfile{
+
+		AefId:      "aefIdNew",
+		DomainName: &newProfileDomain,
+		Protocol:   &protocol,
+		Versions: []publishapi.Version{
+			{
+				ApiVersion: "v1",
+				Resources: &[]publishapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+						Operations: &[]publishapi.Operation{
+							"POST",
+						},
+						ResourceName: "app",
+						Uri:          "app",
+					},
+				},
+			},
+		},
+	},
+	)
+	updatedServiceDescription.AefProfiles = &test1
+	testFunc := []publishapi.AefProfile{
+		(*updatedServiceDescription.AefProfiles)[1],
+	}
+
+	updatedServiceDescription.AefProfiles = &testFunc
+	result := testutil.NewRequest().Put("/"+apfId+"/service-apis/"+serviceApiId).WithJsonBody(updatedServiceDescription).Go(t, requestHandler)
+	var resultService publishapi.ServiceAPIDescription
+	assert.Equal(t, http.StatusOK, result.Code())
+	err := result.UnmarshalBodyToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Len(t, (*resultService.AefProfiles), 1)
+	assert.False(t, serviceUnderTest.IsAPIPublished("aefId", "path"))
+
+}
+
+func TestPublishInvalidService(t *testing.T) {
+	_, _, requestHandler := getEcho(nil, nil)
+	newServiceDescription := getServiceAPIDescription("aefId", " ", "description")
+
+	// Publish a service
+	result := testutil.NewRequest().Post("/apfId/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var resultError common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&resultError)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Contains(t, *resultError.Cause, "missing")
+	assert.Contains(t, *resultError.Cause, "apiName")
+	assert.Equal(t, http.StatusBadRequest, *resultError.Status)
+
+}
 func getEcho(serviceRegister providermanagement.ServiceRegister, helmManager helmmanagement.HelmManager) (*PublishService, chan eventsapi.EventNotification, *echo.Echo) {
 	swagger, err := publishapi.GetSwagger()
 	if err != nil {

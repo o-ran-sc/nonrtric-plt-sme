@@ -13,20 +13,6 @@ type PublishRegister struct {
 	mock.Mock
 }
 
-// AreAPIsPublished provides a mock function with given fields: serviceDescriptions
-func (_m *PublishRegister) AreAPIsPublished(serviceDescriptions *[]publishserviceapi.ServiceAPIDescription) bool {
-	ret := _m.Called(serviceDescriptions)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(*[]publishserviceapi.ServiceAPIDescription) bool); ok {
-		r0 = rf(serviceDescriptions)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
 // GetAllPublishedServices provides a mock function with given fields:
 func (_m *PublishRegister) GetAllPublishedServices() []publishserviceapi.ServiceAPIDescription {
 	ret := _m.Called()
