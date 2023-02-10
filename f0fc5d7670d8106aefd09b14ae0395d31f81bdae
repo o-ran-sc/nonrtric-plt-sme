@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c300e266_6ff504d8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2023-02-10T16:54:14Z",
+      "side": 1,
+      "message": "Do you want to include https://gerrit.o-ran-sc.org/r/c/nonrtric/plt/sme/+/10400 in cherry pick? ",
+      "revId": "f0fc5d7670d8106aefd09b14ae0395d31f81bdae",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
