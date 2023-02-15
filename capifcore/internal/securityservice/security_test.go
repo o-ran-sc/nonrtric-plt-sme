@@ -35,8 +35,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"oransc.org/nonrtric/capifcore/internal/common29122"
-
 	invokermocks "oransc.org/nonrtric/capifcore/internal/invokermanagement/mocks"
 	servicemocks "oransc.org/nonrtric/capifcore/internal/providermanagement/mocks"
 	publishmocks "oransc.org/nonrtric/capifcore/internal/publishservice/mocks"
@@ -65,9 +63,10 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	aefId := "aefId"
 	path := "path"
 	data.Set("client_id", clientId)
-	data.Add("client_secret", clientSecret)
-	data.Add("grant_type", "client_credentials")
-	data.Add("scope", "scope#"+aefId+":"+path)
+	data.Set("client_secret", clientSecret)
+	data.Set("grant_type", "client_credentials")
+	data.Set("scope", "3gpp#"+aefId+":"+path)
+
 	encodedData := data.Encode()
 
 	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
@@ -77,9 +76,8 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	err := result.UnmarshalBodyToObject(&resultResponse)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.NotEmpty(t, resultResponse.AccessToken)
-	assert.Equal(t, "scope#"+aefId+":"+path, *resultResponse.Scope)
+	assert.Equal(t, "3gpp#"+aefId+":"+path, *resultResponse.Scope)
 	assert.Equal(t, securityapi.AccessTokenRspTokenTypeBearer, resultResponse.TokenType)
-	assert.Equal(t, common29122.DurationSec(0), resultResponse.ExpiresIn)
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", clientId)
 	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", clientId, clientSecret)
 	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
@@ -96,19 +94,18 @@ func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {
 	data.Set("client_id", "id")
 	data.Add("client_secret", "secret")
 	data.Add("grant_type", "client_credentials")
-	data.Add("scope", "scope#aefId:path")
+	data.Add("scope", "3gpp#aefId:path")
 	encodedData := data.Encode()
 
 	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
-	var problemDetails common29122.ProblemDetails
-	err := result.UnmarshalBodyToObject(&problemDetails)
+	var errDetails securityapi.AccessTokenErr
+	err := result.UnmarshalBodyToObject(&errDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, securityapi.AccessTokenErrErrorInvalidClient, errDetails.Error)
 	errMsg := "Invoker not registered"
-	assert.Equal(t, &errMsg, problemDetails.Cause)
+	assert.Equal(t, &errMsg, errDetails.ErrorDescription)
 }
 
 func TestPostSecurityIdTokenInvokerSecretNotValid(t *testing.T) {
@@ -122,19 +119,18 @@ func TestPostSecurityIdTokenInvokerSecretNotValid(t *testing.T) {
 	data.Set("client_id", "id")
 	data.Add("client_secret", "secret")
 	data.Add("grant_type", "client_credentials")
-	data.Add("scope", "scope#aefId:path")
+	data.Add("scope", "3gpp#aefId:path")
 	encodedData := data.Encode()
 
 	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
-	var problemDetails common29122.ProblemDetails
-	err := result.UnmarshalBodyToObject(&problemDetails)
+	var errDetails securityapi.AccessTokenErr
+	err := result.UnmarshalBodyToObject(&errDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, securityapi.AccessTokenErrErrorUnauthorizedClient, errDetails.Error)
 	errMsg := "Invoker secret not valid"
-	assert.Equal(t, &errMsg, problemDetails.Cause)
+	assert.Equal(t, &errMsg, errDetails.ErrorDescription)
 }
 
 func TestPostSecurityIdTokenFunctionNotRegistered(t *testing.T) {
@@ -150,19 +146,18 @@ func TestPostSecurityIdTokenFunctionNotRegistered(t *testing.T) {
 	data.Set("client_id", "id")
 	data.Add("client_secret", "secret")
 	data.Add("grant_type", "client_credentials")
-	data.Add("scope", "scope#aefId:path")
+	data.Add("scope", "3gpp#aefId:path")
 	encodedData := data.Encode()
 
 	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
-	var problemDetails common29122.ProblemDetails
-	err := result.UnmarshalBodyToObject(&problemDetails)
+	var errDetails securityapi.AccessTokenErr
+	err := result.UnmarshalBodyToObject(&errDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
-	errMsg := "Function not registered"
-	assert.Equal(t, &errMsg, problemDetails.Cause)
+	assert.Equal(t, securityapi.AccessTokenErrErrorInvalidScope, errDetails.Error)
+	errMsg := "AEF Function not registered"
+	assert.Equal(t, &errMsg, errDetails.ErrorDescription)
 }
 
 func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
@@ -180,19 +175,18 @@ func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
 	data.Set("client_id", "id")
 	data.Add("client_secret", "secret")
 	data.Add("grant_type", "client_credentials")
-	data.Add("scope", "scope#aefId:path")
+	data.Add("scope", "3gpp#aefId:path")
 	encodedData := data.Encode()
 
 	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
-	var problemDetails common29122.ProblemDetails
-	err := result.UnmarshalBodyToObject(&problemDetails)
+	var errDetails securityapi.AccessTokenErr
+	err := result.UnmarshalBodyToObject(&errDetails)
 	assert.NoError(t, err, "error unmarshaling response")
-	badRequest := http.StatusBadRequest
-	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Equal(t, securityapi.AccessTokenErrErrorInvalidScope, errDetails.Error)
 	errMsg := "API not published"
-	assert.Equal(t, &errMsg, problemDetails.Cause)
+	assert.Equal(t, &errMsg, errDetails.ErrorDescription)
 }
 
 func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister) *echo.Echo {
