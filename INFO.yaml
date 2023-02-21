@@ -33,10 +33,10 @@ repositories:
     - 'nonrtric/plt/sme'
 committers:
     - <<: *oran_nonrtric_ptl
-    - name: 'Henrik Andersson'
-      email: 'henrik.b.andersson@est.tech'
+    - name: 'Yennifer Chacon'
+      email: 'yennifer.chacon@est.tech'
       company: 'Ericsson Software Technology'
-      id: 'elinuxhenrik'
+      id: 'ychacon'
       timezone: 'Sweden/Stockholm'
     - name: 'Patrik Buhr'
       email: 'patrik.buhr@est.tech'
