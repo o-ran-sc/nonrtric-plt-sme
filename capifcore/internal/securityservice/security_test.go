@@ -21,12 +21,14 @@
 package security
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 
+	"oransc.org/nonrtric/capifcore/internal/keycloak"
 	"oransc.org/nonrtric/capifcore/internal/securityapi"
 
 	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
@@ -36,6 +38,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	invokermocks "oransc.org/nonrtric/capifcore/internal/invokermanagement/mocks"
+	keycloackmocks "oransc.org/nonrtric/capifcore/internal/keycloak/mocks"
 	servicemocks "oransc.org/nonrtric/capifcore/internal/providermanagement/mocks"
 	publishmocks "oransc.org/nonrtric/capifcore/internal/publishservice/mocks"
 
@@ -55,7 +58,15 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("IsAPIPublished", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
 
-	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock)
+	jwt := keycloak.Jwttoken{
+		AccessToken: "eyJhbGNIn0.e3YTQ0xLjEifQ.FcqCwCy7iJiOmw",
+		ExpiresIn:   300,
+		Scope:       "3gpp#aefIdpath",
+	}
+	accessMgmMock := keycloackmocks.AccessManagement{}
+	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(jwt, nil)
+
+	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
 	data := url.Values{}
 	clientId := "id"
@@ -76,19 +87,19 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	err := result.UnmarshalBodyToObject(&resultResponse)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.NotEmpty(t, resultResponse.AccessToken)
-	assert.Equal(t, "3gpp#"+aefId+":"+path, *resultResponse.Scope)
 	assert.Equal(t, securityapi.AccessTokenRspTokenTypeBearer, resultResponse.TokenType)
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", clientId)
 	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", clientId, clientSecret)
 	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
 	publishRegisterMock.AssertCalled(t, "IsAPIPublished", aefId, path)
+	accessMgmMock.AssertCalled(t, "GetToken", clientId, clientSecret, "3gpp#"+aefId+":"+path, "invokerrealm")
 }
 
 func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {
 	invokerRegisterMock := invokermocks.InvokerRegister{}
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(nil, nil, &invokerRegisterMock)
+	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -113,7 +124,7 @@ func TestPostSecurityIdTokenInvokerSecretNotValid(t *testing.T) {
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
 	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(nil, nil, &invokerRegisterMock)
+	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -140,7 +151,7 @@ func TestPostSecurityIdTokenFunctionNotRegistered(t *testing.T) {
 	serviceRegisterMock := servicemocks.ServiceRegister{}
 	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(&serviceRegisterMock, nil, &invokerRegisterMock)
+	requestHandler := getEcho(&serviceRegisterMock, nil, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -169,7 +180,7 @@ func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("IsAPIPublished", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock)
+	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -189,7 +200,47 @@ func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
 	assert.Equal(t, &errMsg, errDetails.ErrorDescription)
 }
 
-func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister) *echo.Echo {
+func TestPostSecurityIdTokenInvokerInvalidCredentials(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
+	serviceRegisterMock := servicemocks.ServiceRegister{}
+	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(true)
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("IsAPIPublished", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true)
+
+	jwt := keycloak.Jwttoken{}
+	accessMgmMock := keycloackmocks.AccessManagement{}
+	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(jwt, errors.New("invalid_credentials"))
+
+	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
+
+	data := url.Values{}
+	clientId := "id"
+	clientSecret := "secret"
+	aefId := "aefId"
+	path := "path"
+	data.Set("client_id", clientId)
+	data.Set("client_secret", clientSecret)
+	data.Set("grant_type", "client_credentials")
+	data.Set("scope", "3gpp#"+aefId+":"+path)
+
+	encodedData := data.Encode()
+
+	result := testutil.NewRequest().Post("/securities/invokerId/token").WithContentType("application/x-www-form-urlencoded").WithBody([]byte(encodedData)).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var resultResponse securityapi.AccessTokenErr
+	err := result.UnmarshalBodyToObject(&resultResponse)
+	assert.NoError(t, err, "error unmarshaling response")
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", clientId)
+	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", clientId, clientSecret)
+	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
+	publishRegisterMock.AssertCalled(t, "IsAPIPublished", aefId, path)
+	accessMgmMock.AssertCalled(t, "GetToken", clientId, clientSecret, "3gpp#"+aefId+":"+path, "invokerrealm")
+}
+
+func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, keycloakMgm keycloak.AccessManagement) *echo.Echo {
 	swagger, err := securityapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -198,7 +249,7 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister
 
 	swagger.Servers = nil
 
-	s := NewSecurity(serviceRegister, publishRegister, invokerRegister)
+	s := NewSecurity(serviceRegister, publishRegister, invokerRegister, keycloakMgm)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())

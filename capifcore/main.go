@@ -32,12 +32,14 @@ import (
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
+	"oransc.org/nonrtric/capifcore/internal/keycloak"
 	"oransc.org/nonrtric/capifcore/internal/providermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/securityapi"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
+	config "oransc.org/nonrtric/capifcore/internal/config"
 	"oransc.org/nonrtric/capifcore/internal/discoverservice"
 	"oransc.org/nonrtric/capifcore/internal/eventservice"
 	"oransc.org/nonrtric/capifcore/internal/helmmanagement"
@@ -86,6 +88,13 @@ func getEcho() *echo.Echo {
 	e := echo.New()
 	// Log all requests
 	e.Use(echomiddleware.Logger())
+
+	// Read configuration file
+	cfg, err := config.ReadKeycloakConfigFile("configs")
+	if err != nil {
+		log.Fatalf("Error loading configuration file\n: %s", err)
+	}
+	km := keycloak.NewKeycloakManager(cfg)
 
 	var group *echo.Group
 	// Register ProviderManagement
@@ -150,7 +159,7 @@ func getEcho() *echo.Echo {
 		log.Fatalf("Error loading Security swagger spec\n: %s", err)
 	}
 	securitySwagger.Servers = nil
-	securityService := security.NewSecurity(providerManager, publishService, invokerManager)
+	securityService := security.NewSecurity(providerManager, publishService, invokerManager, km)
 	group = e.Group("/capif-security/v1")
 	group.Use(middleware.OapiRequestValidator(securitySwagger))
 	securityapi.RegisterHandlersWithBaseURL(e, securityService, "/capif-security/v1")

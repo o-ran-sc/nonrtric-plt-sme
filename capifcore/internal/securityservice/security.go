@@ -23,32 +23,31 @@ package security
 import (
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	securityapi "oransc.org/nonrtric/capifcore/internal/securityapi"
 
 	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
+	"oransc.org/nonrtric/capifcore/internal/keycloak"
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
 	"oransc.org/nonrtric/capifcore/internal/publishservice"
 )
-
-var jwtKey = "my-secret-key"
 
 type Security struct {
 	serviceRegister providermanagement.ServiceRegister
 	publishRegister publishservice.PublishRegister
 	invokerRegister invokermanagement.InvokerRegister
+	keycloak        keycloak.AccessManagement
 }
 
-func NewSecurity(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister) *Security {
+func NewSecurity(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, km keycloak.AccessManagement) *Security {
 	return &Security{
 		serviceRegister: serviceRegister,
 		publishRegister: publishRegister,
 		invokerRegister: invokerRegister,
+		keycloak:        km,
 	}
 }
 
@@ -68,7 +67,7 @@ func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId st
 		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, "Invoker secret not valid")
 	}
 
-	if accessTokenReq.Scope != nil {
+	if accessTokenReq.Scope != nil && *accessTokenReq.Scope != "" {
 		scope := strings.Split(*accessTokenReq.Scope, "#")
 		aefList := strings.Split(scope[1], ";")
 		for _, aef := range aefList {
@@ -83,27 +82,14 @@ func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId st
 			}
 		}
 	}
-
-	expirationTime := time.Now().Add(time.Hour).Unix()
-
-	claims := &jwt.MapClaims{
-		"iss": accessTokenReq.ClientId,
-		"exp": expirationTime,
-		"data": map[string]interface{}{
-			"scope": accessTokenReq.Scope,
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(jwtKey))
+	jwtToken, err := s.keycloak.GetToken(accessTokenReq.ClientId, *accessTokenReq.ClientSecret, *accessTokenReq.Scope, "invokerrealm")
 	if err != nil {
-		// If there is an error in creating the JWT return an internal server error
-		return err
+		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, err.Error())
 	}
 
 	accessTokenResp := securityapi.AccessTokenRsp{
-		AccessToken: tokenString,
-		ExpiresIn:   common29122.DurationSec(expirationTime),
+		AccessToken: jwtToken.AccessToken,
+		ExpiresIn:   common29122.DurationSec(jwtToken.ExpiresIn),
 		Scope:       accessTokenReq.Scope,
 		TokenType:   "Bearer",
 	}

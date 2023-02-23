@@ -35,7 +35,7 @@ func (tokenReq AccessTokenReq) Validate() (bool, AccessTokenErr) {
 	}
 
 	//3gpp#aefId1:apiName1,apiName2,…apiNameX;aefId2:apiName1,apiName2,…apiNameY;…aefIdN:apiName1,apiName2,…apiNameZ
-	if tokenReq.Scope != nil {
+	if tokenReq.Scope != nil && *tokenReq.Scope != "" {
 		scope := strings.Split(*tokenReq.Scope, "#")
 		if len(scope) < 2 {
 			return false, createAccessTokenError(AccessTokenErrErrorInvalidScope, "Malformed scope")
