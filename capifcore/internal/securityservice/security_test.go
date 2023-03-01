@@ -28,7 +28,9 @@ import (
 	"os"
 	"testing"
 
+	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/keycloak"
+	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/securityapi"
 
 	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
@@ -240,6 +242,181 @@ func TestPostSecurityIdTokenInvokerInvalidCredentials(t *testing.T) {
 	accessMgmMock.AssertCalled(t, "GetToken", clientId, clientSecret, "3gpp#"+aefId+":"+path, "invokerrealm")
 }
 
+func TestPutTrustedInvokerSuccessfully(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+
+	aefProfile := getAefProfile("aefId")
+	aefProfile.SecurityMethods = &[]publishserviceapi.SecurityMethod{
+		publishserviceapi.SecurityMethodPKI,
+	}
+	aefProfiles := []publishserviceapi.AefProfile{
+		aefProfile,
+	}
+	apiId := "apiId"
+	publishedServices := []publishserviceapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId,
+			AefProfiles: &aefProfiles,
+		},
+	}
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
+
+	requestHandler := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+
+	invokerId := "invokerId"
+	serviceSecurityUnderTest := getServiceSecurity()
+	serviceSecurityUnderTest.SecurityInfo[0].ApiId = &apiId
+
+	result := testutil.NewRequest().Put("/trustedInvokers/"+invokerId).WithJsonBody(serviceSecurityUnderTest).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusCreated, result.Code())
+	var resultResponse securityapi.ServiceSecurity
+	err := result.UnmarshalBodyToObject(&resultResponse)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.NotEmpty(t, resultResponse.NotificationDestination)
+
+	for _, security := range resultResponse.SecurityInfo {
+		assert.Equal(t, *security.ApiId, apiId)
+		assert.Equal(t, *security.SelSecurityMethod, publishserviceapi.SecurityMethodPKI)
+	}
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
+
+}
+
+func TestPutTrustedInkoverNotRegistered(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(false)
+
+	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
+
+	invokerId := "invokerId"
+	serviceSecurityUnderTest := getServiceSecurity()
+
+	result := testutil.NewRequest().Put("/trustedInvokers/"+invokerId).WithJsonBody(serviceSecurityUnderTest).Go(t, requestHandler)
+
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, badRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "Invoker not registered")
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
+}
+
+func TestPutTrustedInkoverInvalidInputServiceSecurity(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+
+	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
+
+	invokerId := "invokerId"
+	notificationUrl := "url"
+	serviceSecurityUnderTest := getServiceSecurity()
+	serviceSecurityUnderTest.NotificationDestination = common29122.Uri(notificationUrl)
+
+	result := testutil.NewRequest().Put("/trustedInvokers/"+invokerId).WithJsonBody(serviceSecurityUnderTest).Go(t, requestHandler)
+
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, badRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "ServiceSecurity has invalid notificationDestination")
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
+}
+
+func TestPutTrustedInvokerInterfaceDetailsNotNil(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+
+	aefProfile := getAefProfile("aefId")
+	aefProfile.SecurityMethods = &[]publishserviceapi.SecurityMethod{
+		publishserviceapi.SecurityMethodPKI,
+	}
+	aefProfiles := []publishserviceapi.AefProfile{
+		aefProfile,
+	}
+	apiId := "apiId"
+	publishedServices := []publishserviceapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId,
+			AefProfiles: &aefProfiles,
+		},
+	}
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
+
+	requestHandler := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+
+	invokerId := "invokerId"
+	serviceSecurityUnderTest := getServiceSecurity()
+	serviceSecurityUnderTest.SecurityInfo[0] = securityapi.SecurityInformation{
+		ApiId: &apiId,
+		PrefSecurityMethods: []publishserviceapi.SecurityMethod{
+			publishserviceapi.SecurityMethodOAUTH,
+		},
+		InterfaceDetails: &publishserviceapi.InterfaceDescription{
+			SecurityMethods: &[]publishserviceapi.SecurityMethod{
+				publishserviceapi.SecurityMethodPSK,
+			},
+		},
+	}
+
+	result := testutil.NewRequest().Put("/trustedInvokers/"+invokerId).WithJsonBody(serviceSecurityUnderTest).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusCreated, result.Code())
+	var resultResponse securityapi.ServiceSecurity
+	err := result.UnmarshalBodyToObject(&resultResponse)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.NotEmpty(t, resultResponse.NotificationDestination)
+
+	for _, security := range resultResponse.SecurityInfo {
+		assert.Equal(t, apiId, *security.ApiId)
+		assert.Equal(t, publishserviceapi.SecurityMethodPSK, *security.SelSecurityMethod)
+	}
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
+
+}
+
+func TestPutTrustedInvokerNotFoundSecurityMethod(t *testing.T) {
+	invokerRegisterMock := invokermocks.InvokerRegister{}
+	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
+
+	aefProfiles := []publishserviceapi.AefProfile{
+		getAefProfile("aefId"),
+	}
+	apiId := "apiId"
+	publishedServices := []publishserviceapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId,
+			AefProfiles: &aefProfiles,
+		},
+	}
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
+
+	requestHandler := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+
+	invokerId := "invokerId"
+	serviceSecurityUnderTest := getServiceSecurity()
+
+	result := testutil.NewRequest().Put("/trustedInvokers/"+invokerId).WithJsonBody(serviceSecurityUnderTest).Go(t, requestHandler)
+
+	badRequest := http.StatusBadRequest
+	assert.Equal(t, badRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, &badRequest, problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "not found")
+	assert.Contains(t, *problemDetails.Cause, "security method")
+	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
+}
+
 func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, keycloakMgm keycloak.AccessManagement) *echo.Echo {
 	swagger, err := securityapi.GetSwagger()
 	if err != nil {
@@ -257,4 +434,32 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister
 
 	securityapi.RegisterHandlers(e, s)
 	return e
+}
+
+func getServiceSecurity() securityapi.ServiceSecurity {
+	return securityapi.ServiceSecurity{
+		NotificationDestination: common29122.Uri("http://golang.cafe/"),
+		SecurityInfo: []securityapi.SecurityInformation{
+			{
+				PrefSecurityMethods: []publishserviceapi.SecurityMethod{
+					publishserviceapi.SecurityMethodOAUTH,
+				},
+			},
+		},
+	}
+}
+
+func getAefProfile(aefId string) publishserviceapi.AefProfile {
+	return publishserviceapi.AefProfile{
+		AefId: aefId,
+		Versions: []publishserviceapi.Version{
+			{
+				Resources: &[]publishserviceapi.Resource{
+					{
+						CommType: "REQUEST_RESPONSE",
+					},
+				},
+			},
+		},
+	}
 }
