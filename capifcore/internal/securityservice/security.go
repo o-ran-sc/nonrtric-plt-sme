@@ -21,8 +21,11 @@
 package security
 
 import (
+	"fmt"
 	"net/http"
+	"path"
 	"strings"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 
@@ -40,6 +43,8 @@ type Security struct {
 	publishRegister publishservice.PublishRegister
 	invokerRegister invokermanagement.InvokerRegister
 	keycloak        keycloak.AccessManagement
+	trustedInvokers map[string]securityapi.ServiceSecurity
+	lock            sync.Mutex
 }
 
 func NewSecurity(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, km keycloak.AccessManagement) *Security {
@@ -48,6 +53,7 @@ func NewSecurity(serviceRegister providermanagement.ServiceRegister, publishRegi
 		publishRegister: publishRegister,
 		invokerRegister: invokerRegister,
 		keycloak:        km,
+		trustedInvokers: make(map[string]securityapi.ServiceSecurity),
 	}
 }
 
@@ -112,7 +118,57 @@ func (s *Security) GetTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId
 }
 
 func (s *Security) PutTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId string) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+	errMsg := "Unable to update security context due to %s."
+
+	if !s.invokerRegister.IsInvokerRegistered(apiInvokerId) {
+		return sendCoreError(ctx, http.StatusBadRequest, "Unable to update security context due to Invoker not registered")
+	}
+	serviceSecurity, err := getServiceSecurityFromRequest(ctx)
+	if err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
+	if err := serviceSecurity.Validate(); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
+	err = s.prepareNewSecurityContext(&serviceSecurity, apiInvokerId)
+	if err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
+	uri := ctx.Request().Host + ctx.Request().URL.String()
+	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, apiInvokerId))
+
+	err = ctx.JSON(http.StatusCreated, s.trustedInvokers[apiInvokerId])
+	if err != nil {
+		// Something really bad happened, tell Echo that our handler failed
+		return err
+	}
+
+	return nil
+}
+
+func getServiceSecurityFromRequest(ctx echo.Context) (securityapi.ServiceSecurity, error) {
+	var serviceSecurity securityapi.ServiceSecurity
+	err := ctx.Bind(&serviceSecurity)
+	if err != nil {
+		return securityapi.ServiceSecurity{}, fmt.Errorf("invalid format for service security")
+	}
+	return serviceSecurity, nil
+}
+
+func (s *Security) prepareNewSecurityContext(newContext *securityapi.ServiceSecurity, apiInvokerId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	err := newContext.PrepareNewSecurityContext(s.publishRegister.GetAllPublishedServices())
+	if err != nil {
+		return err
+	}
+
+	s.trustedInvokers[apiInvokerId] = *newContext
+	return nil
 }
 
 func (s *Security) PostTrustedInvokersApiInvokerIdDelete(ctx echo.Context, apiInvokerId string) error {
@@ -129,4 +185,15 @@ func sendAccessTokenError(ctx echo.Context, code int, err securityapi.AccessToke
 		ErrorDescription: &message,
 	}
 	return ctx.JSON(code, accessTokenErr)
+}
+
+// This function wraps sending of an error in the Error format, and
+// handling the failure to marshal that.
+func sendCoreError(ctx echo.Context, code int, message string) error {
+	pd := common29122.ProblemDetails{
+		Cause:  &message,
+		Status: &code,
+	}
+	err := ctx.JSON(code, pd)
+	return err
 }

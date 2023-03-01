@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 )
 
 func TestValidateClientIdNotPresent(t *testing.T) {
@@ -94,4 +95,51 @@ func TestValidateScopeMalformed(t *testing.T) {
 	accessTokenUnderTest.Scope = &scope
 	valid, err = accessTokenUnderTest.Validate()
 	assert.Equal(t, true, valid)
+}
+
+func TestValidateServiceSecurity(t *testing.T) {
+	serviceSecurityUnderTest := ServiceSecurity{}
+
+	err := serviceSecurityUnderTest.Validate()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "missing")
+	assert.Contains(t, err.Error(), "notificationDestination")
+
+	serviceSecurityUnderTest.NotificationDestination = "invalid dest"
+	err = serviceSecurityUnderTest.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "invalid")
+		assert.Contains(t, err.Error(), "notificationDestination")
+	}
+
+	serviceSecurityUnderTest.NotificationDestination = "http://golang.cafe/"
+	err = serviceSecurityUnderTest.Validate()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "missing")
+	assert.Contains(t, err.Error(), "SecurityInfo")
+
+	serviceSecurityUnderTest.SecurityInfo = []SecurityInformation{
+		{
+			PrefSecurityMethods: []publishserviceapi.SecurityMethod{
+				publishserviceapi.SecurityMethodOAUTH,
+			},
+		},
+	}
+	err = serviceSecurityUnderTest.Validate()
+	assert.Nil(t, err)
+}
+
+func TestValidatePrefSecurityMethodsNotPresent(t *testing.T) {
+	securityInfoUnderTest := SecurityInformation{}
+	err := securityInfoUnderTest.Validate()
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "missing")
+	assert.Contains(t, err.Error(), "PrefSecurityMethods")
+
+	securityInfoUnderTest.PrefSecurityMethods = []publishserviceapi.SecurityMethod{
+		publishserviceapi.SecurityMethodOAUTH,
+	}
+	err = securityInfoUnderTest.Validate()
+	assert.Nil(t, err)
 }
