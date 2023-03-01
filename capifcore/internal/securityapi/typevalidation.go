@@ -21,6 +21,9 @@
 package securityapi
 
 import (
+	"errors"
+	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -52,6 +55,32 @@ func (tokenReq AccessTokenReq) Validate() (bool, AccessTokenErr) {
 		}
 	}
 	return true, AccessTokenErr{}
+}
+
+func (ss ServiceSecurity) Validate() error {
+
+	if len(strings.TrimSpace(string(ss.NotificationDestination))) == 0 {
+		return errors.New("ServiceSecurity missing required notificationDestination")
+	}
+
+	if _, err := url.ParseRequestURI(string(ss.NotificationDestination)); err != nil {
+		return fmt.Errorf("ServiceSecurity has invalid notificationDestination, err=%s", err)
+	}
+
+	if len(ss.SecurityInfo) == 0 {
+		return errors.New("ServiceSecurity missing required SecurityInfo")
+	}
+	for _, securityInfo := range ss.SecurityInfo {
+		securityInfo.Validate()
+	}
+	return nil
+}
+
+func (si SecurityInformation) Validate() error {
+	if len(si.PrefSecurityMethods) == 0 {
+		return errors.New("SecurityInformation missing required PrefSecurityMethods")
+	}
+	return nil
 }
 
 func createAccessTokenError(err AccessTokenErrError, message string) AccessTokenErr {

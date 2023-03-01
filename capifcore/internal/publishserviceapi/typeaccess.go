@@ -28,3 +28,14 @@ func (sd ServiceAPIDescription) GetAefIds() []string {
 	}
 	return allIds
 }
+
+func (sd ServiceAPIDescription) GetAefProfileById(id *string) *AefProfile {
+	if sd.AefProfiles != nil {
+		for _, aefProfile := range *sd.AefProfiles {
+			if aefProfile.AefId == *id {
+				return &aefProfile
+			}
+		}
+	}
+	return nil
+}
