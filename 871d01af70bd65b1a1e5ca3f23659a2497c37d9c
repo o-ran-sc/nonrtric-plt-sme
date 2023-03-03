@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "92eff72f_da25b1ce",
+        "filename": "capifcore/internal/securityapi/typeupdate.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2023-03-03T16:29:34Z",
+      "side": 1,
+      "message": "pretty deep nesting here ...",
+      "range": {
+        "startLine": 51,
+        "startChar": 7,
+        "endLine": 51,
+        "endChar": 23
+      },
+      "revId": "871d01af70bd65b1a1e5ca3f23659a2497c37d9c",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
