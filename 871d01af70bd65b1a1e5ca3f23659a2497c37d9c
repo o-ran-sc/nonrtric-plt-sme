@@ -22,6 +22,30 @@
       },
       "revId": "871d01af70bd65b1a1e5ca3f23659a2497c37d9c",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "047808e0_2a09512a",
+        "filename": "capifcore/internal/securityapi/typeupdate.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1001106
+      },
+      "writtenOn": "2023-03-06T15:15:16Z",
+      "side": 1,
+      "message": "refactor in progress, I will push a new patch set",
+      "parentUuid": "92eff72f_da25b1ce",
+      "range": {
+        "startLine": 51,
+        "startChar": 7,
+        "endLine": 51,
+        "endChar": 23
+      },
+      "revId": "871d01af70bd65b1a1e5ca3f23659a2497c37d9c",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
