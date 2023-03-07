@@ -28,7 +28,7 @@ import (
 	"sync"
 
 	"github.com/labstack/echo/v4"
-
+	copystructure "github.com/mitchellh/copystructure"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	securityapi "oransc.org/nonrtric/capifcore/internal/securityapi"
 
@@ -110,11 +110,63 @@ func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId st
 }
 
 func (s *Security) DeleteTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId string) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+	if _, ok := s.trustedInvokers[apiInvokerId]; ok {
+		s.deleteTrustedInvoker(apiInvokerId)
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (s *Security) deleteTrustedInvoker(apiInvokerId string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	delete(s.trustedInvokers, apiInvokerId)
 }
 
 func (s *Security) GetTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId string, params securityapi.GetTrustedInvokersApiInvokerIdParams) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+
+	if trustedInvoker, ok := s.trustedInvokers[apiInvokerId]; ok {
+		updatedInvoker := s.checkParams(trustedInvoker, params)
+		if updatedInvoker != nil {
+			err := ctx.JSON(http.StatusOK, updatedInvoker)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("invoker %s not registered as trusted invoker", apiInvokerId))
+	}
+
+	return nil
+}
+
+func (s *Security) checkParams(trustedInvoker securityapi.ServiceSecurity, params securityapi.GetTrustedInvokersApiInvokerIdParams) *securityapi.ServiceSecurity {
+	emptyString := ""
+
+	var sendAuthenticationInfo = (params.AuthenticationInfo != nil) && *params.AuthenticationInfo
+	var sendAuthorizationInfo = (params.AuthorizationInfo != nil) && *params.AuthorizationInfo
+
+	if sendAuthenticationInfo && sendAuthorizationInfo {
+		return &trustedInvoker
+	}
+
+	data, _ := copystructure.Copy(trustedInvoker)
+	updatedInvoker, ok := data.(securityapi.ServiceSecurity)
+	if !ok {
+		return nil
+	}
+
+	if !sendAuthenticationInfo {
+		for i := range updatedInvoker.SecurityInfo {
+			updatedInvoker.SecurityInfo[i].AuthenticationInfo = &emptyString
+		}
+	}
+	if !sendAuthorizationInfo {
+		for i := range updatedInvoker.SecurityInfo {
+			updatedInvoker.SecurityInfo[i].AuthorizationInfo = &emptyString
+		}
+	}
+	return &updatedInvoker
 }
 
 func (s *Security) PutTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId string) error {

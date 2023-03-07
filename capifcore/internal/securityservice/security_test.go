@@ -68,7 +68,7 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	accessMgmMock := keycloackmocks.AccessManagement{}
 	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(jwt, nil)
 
-	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
+	requestHandler, _ := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
 	data := url.Values{}
 	clientId := "id"
@@ -101,7 +101,7 @@ func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {
 	invokerRegisterMock := invokermocks.InvokerRegister{}
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, nil, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -126,7 +126,7 @@ func TestPostSecurityIdTokenInvokerSecretNotValid(t *testing.T) {
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
 	invokerRegisterMock.On("VerifyInvokerSecret", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, nil, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -153,7 +153,7 @@ func TestPostSecurityIdTokenFunctionNotRegistered(t *testing.T) {
 	serviceRegisterMock := servicemocks.ServiceRegister{}
 	serviceRegisterMock.On("IsFunctionRegistered", mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(&serviceRegisterMock, nil, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(&serviceRegisterMock, nil, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -182,7 +182,7 @@ func TestPostSecurityIdTokenAPINotPublished(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("IsAPIPublished", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	data := url.Values{}
 	data.Set("client_id", "id")
@@ -215,7 +215,7 @@ func TestPostSecurityIdTokenInvokerInvalidCredentials(t *testing.T) {
 	accessMgmMock := keycloackmocks.AccessManagement{}
 	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(jwt, errors.New("invalid_credentials"))
 
-	requestHandler := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
+	requestHandler, _ := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
 	data := url.Values{}
 	clientId := "id"
@@ -263,7 +263,7 @@ func TestPutTrustedInvokerSuccessfully(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	requestHandler := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
@@ -289,7 +289,7 @@ func TestPutTrustedInkoverNotRegistered(t *testing.T) {
 	invokerRegisterMock := invokermocks.InvokerRegister{}
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(false)
 
-	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, nil, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity("aefId", "apiId")
@@ -310,7 +310,7 @@ func TestPutTrustedInkoverInvalidInputServiceSecurity(t *testing.T) {
 	invokerRegisterMock := invokermocks.InvokerRegister{}
 	invokerRegisterMock.On("IsInvokerRegistered", mock.AnythingOfType("string")).Return(true)
 
-	requestHandler := getEcho(nil, nil, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, nil, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	notificationUrl := "url"
@@ -350,7 +350,7 @@ func TestPutTrustedInvokerInterfaceDetailsNotNil(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	requestHandler := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
@@ -399,7 +399,7 @@ func TestPutTrustedInvokerNotFoundSecurityMethod(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	requestHandler := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity("aefId", "apiId")
@@ -417,7 +417,78 @@ func TestPutTrustedInvokerNotFoundSecurityMethod(t *testing.T) {
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
 }
 
-func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, keycloakMgm keycloak.AccessManagement) *echo.Echo {
+func TestDeleteSecurityContext(t *testing.T) {
+
+	requestHandler, securityUnderTest := getEcho(nil, nil, nil, nil)
+
+	aefId := "aefId"
+	apiId := "apiId"
+	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
+	serviceSecurityUnderTest.SecurityInfo[0].ApiId = &apiId
+
+	invokerId := "invokerId"
+	securityUnderTest.trustedInvokers[invokerId] = serviceSecurityUnderTest
+
+	// Delete the security context
+	result := testutil.NewRequest().Delete("/trustedInvokers/"+invokerId).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNoContent, result.Code())
+	_, ok := securityUnderTest.trustedInvokers[invokerId]
+	assert.False(t, ok)
+}
+
+func TestGetSecurityContextByInvokerId(t *testing.T) {
+
+	requestHandler, securityUnderTest := getEcho(nil, nil, nil, nil)
+
+	aefId := "aefId"
+	apiId := "apiId"
+	authenticationInfo := "authenticationInfo"
+	authorizationInfo := "authorizationInfo"
+	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
+	serviceSecurityUnderTest.SecurityInfo[0].AuthenticationInfo = &authenticationInfo
+	serviceSecurityUnderTest.SecurityInfo[0].AuthorizationInfo = &authorizationInfo
+
+	invokerId := "invokerId"
+	securityUnderTest.trustedInvokers[invokerId] = serviceSecurityUnderTest
+
+	// Get security context
+	result := testutil.NewRequest().Get("/trustedInvokers/"+invokerId).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusOK, result.Code())
+	var resultService securityapi.ServiceSecurity
+	err := result.UnmarshalBodyToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+
+	for _, secInfo := range resultService.SecurityInfo {
+		assert.Equal(t, apiId, *secInfo.ApiId)
+		assert.Equal(t, aefId, *secInfo.AefId)
+		assert.Equal(t, "", *secInfo.AuthenticationInfo)
+		assert.Equal(t, "", *secInfo.AuthorizationInfo)
+	}
+
+	result = testutil.NewRequest().Get("/trustedInvokers/"+invokerId+"?authenticationInfo=true&authorizationInfo=false").Go(t, requestHandler)
+	assert.Equal(t, http.StatusOK, result.Code())
+	err = result.UnmarshalBodyToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+
+	for _, secInfo := range resultService.SecurityInfo {
+		assert.Equal(t, authenticationInfo, *secInfo.AuthenticationInfo)
+		assert.Equal(t, "", *secInfo.AuthorizationInfo)
+	}
+
+	result = testutil.NewRequest().Get("/trustedInvokers/"+invokerId+"?authenticationInfo=true&authorizationInfo=true").Go(t, requestHandler)
+	assert.Equal(t, http.StatusOK, result.Code())
+	err = result.UnmarshalBodyToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+
+	for _, secInfo := range resultService.SecurityInfo {
+		assert.Equal(t, authenticationInfo, *secInfo.AuthenticationInfo)
+		assert.Equal(t, authorizationInfo, *secInfo.AuthorizationInfo)
+	}
+}
+
+func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, keycloakMgm keycloak.AccessManagement) (*echo.Echo, *Security) {
 	swagger, err := securityapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -433,7 +504,7 @@ func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister
 	e.Use(middleware.OapiRequestValidator(swagger))
 
 	securityapi.RegisterHandlers(e, s)
-	return e
+	return e, s
 }
 
 func getServiceSecurity(aefId string, apiId string) securityapi.ServiceSecurity {

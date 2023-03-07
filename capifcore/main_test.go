@@ -101,7 +101,7 @@ func Test_routing(t *testing.T) {
 			name: "Security path",
 			args: args{
 				url:          "/capif-security/v1/trustedInvokers/apiInvokerId",
-				returnStatus: http.StatusNotImplemented,
+				returnStatus: http.StatusNotFound,
 				method:       "GET",
 			},
 		},
