@@ -1,0 +1,9 @@
+Verified+1: ORAN Jobbuilder <releng+oran-jobbuilder@linuxfoundation.org>
+Code-Review+2: Patrik Buhr <patrik.buhr@est.tech>
+Code-Review+1: Kevin Timoney <kevin.timoney@est.tech>
+Code-Review+1: Aravindhan Ayyanathan <aravindhan.a@est.tech>
+Submitted-by: Patrik Buhr <patrik.buhr@est.tech>
+Submitted-at: Wed, 08 Mar 2023 13:59:16 +0000
+Reviewed-on: https://gerrit.o-ran-sc.org/r/c/nonrtric/plt/sme/+/10693
+Project: nonrtric/plt/sme
+Branch: refs/heads/master
