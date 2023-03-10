@@ -29,6 +29,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	copystructure "github.com/mitchellh/copystructure"
+	"k8s.io/utils/strings/slices"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	securityapi "oransc.org/nonrtric/capifcore/internal/securityapi"
 
@@ -224,11 +225,86 @@ func (s *Security) prepareNewSecurityContext(newContext *securityapi.ServiceSecu
 }
 
 func (s *Security) PostTrustedInvokersApiInvokerIdDelete(ctx echo.Context, apiInvokerId string) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+	var notification securityapi.SecurityNotification
+
+	errMsg := "Unable to revoke invoker due to %s"
+
+	if err := ctx.Bind(&notification); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for security notification"))
+	}
+
+	if err := notification.Validate(); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
+	if ss, ok := s.trustedInvokers[apiInvokerId]; ok {
+		securityInfoCopy := s.revokeTrustedInvoker(&ss, notification, apiInvokerId)
+
+		if len(securityInfoCopy) == 0 {
+			s.deleteTrustedInvoker(apiInvokerId)
+		} else {
+			ss.SecurityInfo = securityInfoCopy
+			s.updateTrustedInvoker(ss, apiInvokerId)
+		}
+
+	} else {
+		return sendCoreError(ctx, http.StatusNotFound, "the invoker is not register as a trusted invoker")
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
+
+}
+
+func (s *Security) revokeTrustedInvoker(ss *securityapi.ServiceSecurity, notification securityapi.SecurityNotification, apiInvokerId string) []securityapi.SecurityInformation {
+
+	data, _ := copystructure.Copy(ss.SecurityInfo)
+	securityInfoCopy, _ := data.([]securityapi.SecurityInformation)
+
+	for i, context := range ss.SecurityInfo {
+		if notification.AefId == context.AefId || slices.Contains(notification.ApiIds, *context.ApiId) {
+			securityInfoCopy = append(securityInfoCopy[:i], securityInfoCopy[i+1:]...)
+		}
+	}
+
+	return securityInfoCopy
+
 }
 
 func (s *Security) PostTrustedInvokersApiInvokerIdUpdate(ctx echo.Context, apiInvokerId string) error {
-	return ctx.NoContent(http.StatusNotImplemented)
+	var serviceSecurity securityapi.ServiceSecurity
+
+	errMsg := "Unable to update service security context due to %s"
+
+	if err := ctx.Bind(&serviceSecurity); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for service security context"))
+	}
+
+	if err := serviceSecurity.Validate(); err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
+	if _, ok := s.trustedInvokers[apiInvokerId]; ok {
+		s.updateTrustedInvoker(serviceSecurity, apiInvokerId)
+	} else {
+		return sendCoreError(ctx, http.StatusNotFound, "the invoker is not register as a trusted invoker")
+	}
+
+	uri := ctx.Request().Host + ctx.Request().URL.String()
+	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, apiInvokerId))
+
+	err := ctx.JSON(http.StatusOK, s.trustedInvokers[apiInvokerId])
+	if err != nil {
+		// Something really bad happened, tell Echo that our handler failed
+		return err
+	}
+
+	return nil
+}
+
+func (s *Security) updateTrustedInvoker(serviceSecurity securityapi.ServiceSecurity, invokerId string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.trustedInvokers[invokerId] = serviceSecurity
 }
 
 func sendAccessTokenError(ctx echo.Context, code int, err securityapi.AccessTokenErrError, message string) error {

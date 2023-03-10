@@ -83,6 +83,27 @@ func (si SecurityInformation) Validate() error {
 	return nil
 }
 
+func (sn SecurityNotification) Validate() error {
+
+	if len(strings.TrimSpace(string(sn.ApiInvokerId))) == 0 {
+		return errors.New("SecurityNotification missing required ApiInvokerId")
+	}
+
+	if len(sn.ApiIds) < 1 {
+		return errors.New("SecurityNotification missing required ApiIds")
+	}
+
+	if len(strings.TrimSpace(string(sn.Cause))) == 0 {
+		return errors.New("SecurityNotification missing required Cause")
+	}
+
+	if sn.Cause != CauseOVERLIMITUSAGE && sn.Cause != CauseUNEXPECTEDREASON {
+		return errors.New("SecurityNotification unexpected value for Cause")
+	}
+
+	return nil
+}
+
 func createAccessTokenError(err AccessTokenErrError, message string) AccessTokenErr {
 	return AccessTokenErr{
 		Error:            err,

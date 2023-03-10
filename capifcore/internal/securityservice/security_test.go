@@ -488,6 +488,108 @@ func TestGetSecurityContextByInvokerId(t *testing.T) {
 	}
 }
 
+func TestUpdateTrustedInvoker(t *testing.T) {
+
+	requestHandler, securityUnderTest := getEcho(nil, nil, nil, nil)
+
+	aefId := "aefId"
+	apiId := "apiId"
+	invokerId := "invokerId"
+	serviceSecurityTest := getServiceSecurity(aefId, apiId)
+	serviceSecurityTest.SecurityInfo[0].ApiId = &apiId
+	securityUnderTest.trustedInvokers[invokerId] = serviceSecurityTest
+
+	// Update the service security with valid invoker, should return 200 with updated service security
+	newNotifURL := "http://golang.org/"
+	serviceSecurityTest.NotificationDestination = common29122.Uri(newNotifURL)
+	result := testutil.NewRequest().Post("/trustedInvokers/"+invokerId+"/update").WithJsonBody(serviceSecurityTest).Go(t, requestHandler)
+
+	var resultResponse securityapi.ServiceSecurity
+	assert.Equal(t, http.StatusOK, result.Code())
+	err := result.UnmarshalBodyToObject(&resultResponse)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, newNotifURL, string(resultResponse.NotificationDestination))
+
+	// Update with an service security missing required NotificationDestination, should get 400 with problem details
+	invalidServiceSecurity := securityapi.ServiceSecurity{
+		SecurityInfo: []securityapi.SecurityInformation{
+			{
+				AefId: &aefId,
+				ApiId: &apiId,
+				PrefSecurityMethods: []publishserviceapi.SecurityMethod{
+					publishserviceapi.SecurityMethodOAUTH,
+				},
+			},
+		},
+	}
+
+	result = testutil.NewRequest().Post("/trustedInvokers/"+invokerId+"/update").WithJsonBody(invalidServiceSecurity).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+	var problemDetails common29122.ProblemDetails
+	err = result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "missing")
+	assert.Contains(t, *problemDetails.Cause, "notificationDestination")
+
+	// Update a service security that has not been registered, should get 404 with problem details
+	missingId := "1"
+	result = testutil.NewRequest().Post("/trustedInvokers/"+missingId+"/update").WithJsonBody(serviceSecurityTest).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNotFound, result.Code())
+	err = result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusNotFound, *problemDetails.Status)
+	assert.Contains(t, *problemDetails.Cause, "not register")
+	assert.Contains(t, *problemDetails.Cause, "trusted invoker")
+}
+
+func TestRevokeAuthorizationToInvoker(t *testing.T) {
+	aefId := "aefId"
+	apiId := "apiId"
+	invokerId := "invokerId"
+
+	notification := securityapi.SecurityNotification{
+		AefId:        &aefId,
+		ApiInvokerId: invokerId,
+		ApiIds:       []string{apiId},
+		Cause:        securityapi.CauseUNEXPECTEDREASON,
+	}
+
+	requestHandler, securityUnderTest := getEcho(nil, nil, nil, nil)
+
+	serviceSecurityTest := getServiceSecurity(aefId, apiId)
+	serviceSecurityTest.SecurityInfo[0].ApiId = &apiId
+
+	apiIdTwo := "apiIdTwo"
+	secInfo := securityapi.SecurityInformation{
+		AefId: &aefId,
+		ApiId: &apiIdTwo,
+		PrefSecurityMethods: []publishserviceapi.SecurityMethod{
+			publishserviceapi.SecurityMethodPKI,
+		},
+	}
+
+	serviceSecurityTest.SecurityInfo = append(serviceSecurityTest.SecurityInfo, secInfo)
+
+	securityUnderTest.trustedInvokers[invokerId] = serviceSecurityTest
+
+	// Revoke apiId
+	result := testutil.NewRequest().Post("/trustedInvokers/"+invokerId+"/delete").WithJsonBody(notification).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNoContent, result.Code())
+	assert.Equal(t, 1, len(securityUnderTest.trustedInvokers[invokerId].SecurityInfo))
+
+	notification.ApiIds = []string{apiIdTwo}
+	// Revoke apiIdTwo
+	result = testutil.NewRequest().Post("/trustedInvokers/"+invokerId+"/delete").WithJsonBody(notification).Go(t, requestHandler)
+
+	assert.Equal(t, http.StatusNoContent, result.Code())
+	_, ok := securityUnderTest.trustedInvokers[invokerId]
+	assert.False(t, ok)
+}
+
 func getEcho(serviceRegister providermanagement.ServiceRegister, publishRegister publishservice.PublishRegister, invokerRegister invokermanagement.InvokerRegister, keycloakMgm keycloak.AccessManagement) (*echo.Echo, *Security) {
 	swagger, err := securityapi.GetSwagger()
 	if err != nil {
