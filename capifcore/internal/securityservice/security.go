@@ -23,6 +23,7 @@ package security
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 	"sync"
@@ -89,7 +90,8 @@ func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId st
 			}
 		}
 	}
-	jwtToken, err := s.keycloak.GetToken(accessTokenReq.ClientId, *accessTokenReq.ClientSecret, *accessTokenReq.Scope, "invokerrealm")
+	data := url.Values{"grant_type": {"client_credentials"}, "client_id": {accessTokenReq.ClientId}, "client_secret": {*accessTokenReq.ClientSecret}}
+	jwtToken, err := s.keycloak.GetToken("invokerrealm", data)
 	if err != nil {
 		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, err.Error())
 	}
@@ -186,6 +188,11 @@ func (s *Security) PutTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId
 	}
 
 	err = s.prepareNewSecurityContext(&serviceSecurity, apiInvokerId)
+	if err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
+	}
+
+	err = s.keycloak.AddClient(apiInvokerId, "invokerrealm")
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}

@@ -31,7 +31,6 @@ var securityMethods []publishserviceapi.SecurityMethod
 func (newContext *ServiceSecurity) PrepareNewSecurityContext(services []publishserviceapi.ServiceAPIDescription) error {
 	securityMethods = []publishserviceapi.SecurityMethod{}
 	for i, securityInfo := range newContext.SecurityInfo {
-
 		if securityInfo.InterfaceDetails != nil {
 			addSecurityMethodsFromInterfaceDetails(securityInfo.InterfaceDetails.SecurityMethods, &securityInfo.PrefSecurityMethods)
 
@@ -39,9 +38,11 @@ func (newContext *ServiceSecurity) PrepareNewSecurityContext(services []publishs
 			checkNil := securityInfo.ApiId != nil && securityInfo.AefId != nil
 			if checkNil {
 				service := getServiceByApiId(&services, securityInfo.ApiId)
-				afpProfile := service.GetAefProfileById(securityInfo.AefId)
+				if service != nil {
+					afpProfile := service.GetAefProfileById(securityInfo.AefId)
+					addSecurityMethodsFromAefProfile(afpProfile)
+				}
 
-				addSecurityMethodsFromAefProfile(afpProfile)
 			}
 		}
 

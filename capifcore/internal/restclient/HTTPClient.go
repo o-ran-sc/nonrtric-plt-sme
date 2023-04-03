@@ -45,12 +45,19 @@ func (pe RequestError) Error() string {
 }
 
 func Put(url string, body []byte, client HTTPClient) error {
-	return do(http.MethodPut, url, body, ContentTypeJSON, client)
+	var header = map[string]string{"Content-Type": ContentTypeJSON}
+	return do(http.MethodPut, url, body, header, client)
 }
 
-func do(method string, url string, body []byte, contentType string, client HTTPClient) error {
+func Post(url string, body []byte, header map[string]string, client HTTPClient) error {
+	return do(http.MethodPost, url, body, header, client)
+}
+
+func do(method string, url string, body []byte, header map[string]string, client HTTPClient) error {
 	if req, reqErr := http.NewRequest(method, url, bytes.NewBuffer(body)); reqErr == nil {
-		req.Header.Set("Content-Type", contentType)
+		if len(header) > 0 {
+			setHeader(req, header)
+		}
 		if response, respErr := client.Do(req); respErr == nil {
 			if isResponseSuccess(response.StatusCode) {
 				return nil
@@ -62,6 +69,12 @@ func do(method string, url string, body []byte, contentType string, client HTTPC
 		}
 	} else {
 		return reqErr
+	}
+}
+
+func setHeader(req *http.Request, header map[string]string) {
+	for key, element := range header {
+		req.Header.Set(key, element)
 	}
 }
 

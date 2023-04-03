@@ -94,7 +94,7 @@ func getEcho() *echo.Echo {
 	if err != nil {
 		log.Fatalf("Error loading configuration file\n: %s", err)
 	}
-	km := keycloak.NewKeycloakManager(cfg)
+	km := keycloak.NewKeycloakManager(cfg, &http.Client{})
 
 	var group *echo.Group
 	// Register ProviderManagement

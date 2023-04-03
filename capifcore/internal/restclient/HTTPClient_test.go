@@ -109,7 +109,7 @@ func Test_doErrorCases(t *testing.T) {
 				StatusCode: tt.args.mockReturnStatus,
 				Body:       io.NopCloser(bytes.NewReader(tt.args.mockReturnBody)),
 			}, tt.args.mockReturnError)
-			err := do("PUT", tt.args.url, nil, "", &clientMock)
+			err := do("PUT", tt.args.url, nil, map[string]string{}, &clientMock)
 			assertions.Equal(tt.wantErr, err, tt.name)
 		})
 	}

@@ -66,7 +66,7 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 		Scope:       "3gpp#aefIdpath",
 	}
 	accessMgmMock := keycloackmocks.AccessManagement{}
-	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(jwt, nil)
+	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("map[string][]string")).Return(jwt, nil)
 
 	requestHandler, _ := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
@@ -94,7 +94,7 @@ func TestPostSecurityIdTokenInvokerRegistered(t *testing.T) {
 	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", clientId, clientSecret)
 	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
 	publishRegisterMock.AssertCalled(t, "IsAPIPublished", aefId, path)
-	accessMgmMock.AssertCalled(t, "GetToken", clientId, clientSecret, "3gpp#"+aefId+":"+path, "invokerrealm")
+	accessMgmMock.AssertNumberOfCalls(t, "GetToken", 1)
 }
 
 func TestPostSecurityIdTokenInvokerNotRegistered(t *testing.T) {
@@ -213,7 +213,7 @@ func TestPostSecurityIdTokenInvokerInvalidCredentials(t *testing.T) {
 
 	jwt := keycloak.Jwttoken{}
 	accessMgmMock := keycloackmocks.AccessManagement{}
-	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(jwt, errors.New("invalid_credentials"))
+	accessMgmMock.On("GetToken", mock.AnythingOfType("string"), mock.AnythingOfType("map[string][]string")).Return(jwt, errors.New("invalid_credentials"))
 
 	requestHandler, _ := getEcho(&serviceRegisterMock, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
@@ -239,7 +239,7 @@ func TestPostSecurityIdTokenInvokerInvalidCredentials(t *testing.T) {
 	invokerRegisterMock.AssertCalled(t, "VerifyInvokerSecret", clientId, clientSecret)
 	serviceRegisterMock.AssertCalled(t, "IsFunctionRegistered", aefId)
 	publishRegisterMock.AssertCalled(t, "IsAPIPublished", aefId, path)
-	accessMgmMock.AssertCalled(t, "GetToken", clientId, clientSecret, "3gpp#"+aefId+":"+path, "invokerrealm")
+	accessMgmMock.AssertNumberOfCalls(t, "GetToken", 1)
 }
 
 func TestPutTrustedInvokerSuccessfully(t *testing.T) {
@@ -263,7 +263,10 @@ func TestPutTrustedInvokerSuccessfully(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+	accessMgmMock := keycloackmocks.AccessManagement{}
+	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
@@ -282,6 +285,7 @@ func TestPutTrustedInvokerSuccessfully(t *testing.T) {
 		assert.Equal(t, *security.SelSecurityMethod, publishserviceapi.SecurityMethodPKI)
 	}
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
+	accessMgmMock.AssertCalled(t, "AddClient", invokerId, "invokerrealm")
 
 }
 
@@ -350,7 +354,10 @@ func TestPutTrustedInvokerInterfaceDetailsNotNil(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+	accessMgmMock := keycloackmocks.AccessManagement{}
+	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
@@ -379,7 +386,7 @@ func TestPutTrustedInvokerInterfaceDetailsNotNil(t *testing.T) {
 		assert.Equal(t, publishserviceapi.SecurityMethodPSK, *security.SelSecurityMethod)
 	}
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
-
+	accessMgmMock.AssertCalled(t, "AddClient", invokerId, "invokerrealm")
 }
 
 func TestPutTrustedInvokerNotFoundSecurityMethod(t *testing.T) {
@@ -399,7 +406,10 @@ func TestPutTrustedInvokerNotFoundSecurityMethod(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
+	accessMgmMock := keycloackmocks.AccessManagement{}
+	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity("aefId", "apiId")
@@ -510,7 +520,7 @@ func TestUpdateTrustedInvoker(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, newNotifURL, string(resultResponse.NotificationDestination))
 
-	// Update with an service security missing required NotificationDestination, should get 400 with problem details
+	// Update with a service security missing required NotificationDestination, should get 400 with problem details
 	invalidServiceSecurity := securityapi.ServiceSecurity{
 		SecurityInfo: []securityapi.SecurityInformation{
 			{

@@ -27,10 +27,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type AdminUser struct {
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+}
+
 type AuthorizationServer struct {
-	Port   string            `yaml:"port"`
-	Host   string            `yaml:"host"`
-	Realms map[string]string `yaml:"realms"`
+	Port      string            `yaml:"port"`
+	Host      string            `yaml:"host"`
+	AdminUser AdminUser         `yaml:"admin"`
+	Realms    map[string]string `yaml:"realms"`
 }
 
 type Config struct {

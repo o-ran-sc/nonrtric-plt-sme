@@ -27,28 +27,44 @@ import (
 	"net/http"
 	"net/url"
 
+	log "github.com/sirupsen/logrus"
 	"oransc.org/nonrtric/capifcore/internal/config"
+	"oransc.org/nonrtric/capifcore/internal/restclient"
 )
 
 //go:generate mockery --name AccessManagement
 type AccessManagement interface {
 	// Get JWT token for a client.
 	// Returns JWT token if client exits and credentials are correct otherwise returns error.
-	GetToken(clientId, clientPassword, scope string, realm string) (Jwttoken, error)
+	GetToken(realm string, data map[string][]string) (Jwttoken, error)
+	// Add new client in keycloak
+	AddClient(clientId string, realm string) error
+}
+
+type AdminUser struct {
+	User     string
+	Password string
 }
 
 type KeycloakManager struct {
 	keycloakServerUrl string
+	admin             AdminUser
 	realms            map[string]string
+	client            restclient.HTTPClient
 }
 
-func NewKeycloakManager(cfg *config.Config) *KeycloakManager {
+func NewKeycloakManager(cfg *config.Config, c restclient.HTTPClient) *KeycloakManager {
 
 	keycloakUrl := "http://" + cfg.AuthorizationServer.Host + ":" + cfg.AuthorizationServer.Port
 
 	return &KeycloakManager{
 		keycloakServerUrl: keycloakUrl,
-		realms:            cfg.AuthorizationServer.Realms,
+		client:            c,
+		admin: AdminUser{
+			User:     cfg.AuthorizationServer.AdminUser.User,
+			Password: cfg.AuthorizationServer.AdminUser.Password,
+		},
+		realms: cfg.AuthorizationServer.Realms,
 	}
 }
 
@@ -64,12 +80,11 @@ type Jwttoken struct {
 	Scope            string `json:"scope"`
 }
 
-func (km *KeycloakManager) GetToken(clientId, clientPassword, scope string, realm string) (Jwttoken, error) {
+func (km *KeycloakManager) GetToken(realm string, data map[string][]string) (Jwttoken, error) {
 	var jwt Jwttoken
 	getTokenUrl := km.keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token"
 
-	resp, err := http.PostForm(getTokenUrl,
-		url.Values{"grant_type": {"client_credentials"}, "client_id": {clientId}, "client_secret": {clientPassword}})
+	resp, err := http.PostForm(getTokenUrl, data)
 
 	if err != nil {
 		return jwt, err
@@ -87,4 +102,43 @@ func (km *KeycloakManager) GetToken(clientId, clientPassword, scope string, real
 
 	json.Unmarshal([]byte(body), &jwt)
 	return jwt, nil
+}
+
+type Client struct {
+	AdminURL               string `json:"adminUrl,omitempty"`
+	BearerOnly             bool   `json:"bearerOnly,omitempty"`
+	ClientID               string `json:"clientId,omitempty"`
+	Enabled                bool   `json:"enabled,omitempty"`
+	PublicClient           bool   `json:"publicClient,omitempty"`
+	RootURL                string `json:"rootUrl,omitempty"`
+	ServiceAccountsEnabled bool   `json:"serviceAccountsEnabled,omitempty"`
+}
+
+func (km *KeycloakManager) AddClient(clientId string, realm string) error {
+	data := url.Values{"grant_type": {"password"}, "username": {km.admin.User}, "password": {km.admin.Password}, "client_id": {"admin-cli"}}
+	token, err := km.GetToken("master", data)
+	if err != nil {
+		log.Errorf("error wrong credentials or url %v\n", err)
+		return err
+	}
+
+	createClientUrl := km.keycloakServerUrl + "/admin/realms/" + realm + "/clients"
+	newClient := Client{
+		ClientID:               clientId,
+		Enabled:                true,
+		ServiceAccountsEnabled: true,
+		BearerOnly:             false,
+		PublicClient:           false,
+	}
+
+	body, _ := json.Marshal(newClient)
+	var headers = map[string]string{"Content-Type": "application/json", "Authorization": "Bearer " + token.AccessToken}
+	if error := restclient.Post(createClientUrl, body, headers, km.client); error != nil {
+		log.Errorf("error with http request: %+v\n", err)
+		return err
+	}
+
+	log.Info("Created new client")
+	return nil
+
 }
