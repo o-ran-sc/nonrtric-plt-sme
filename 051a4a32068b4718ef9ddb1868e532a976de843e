@@ -1,0 +1,10 @@
+Verified+1: ORAN Jobbuilder <releng+oran-jobbuilder@linuxfoundation.org>
+Code-Review+1: John  Keeney <john.keeney@est.tech>
+Code-Review+1: Sonia Sangari <sonia.sangari@est.tech>
+Code-Review+1: Kevin Timoney <kevin.timoney@est.tech>
+Code-Review+2: Yennifer Chacon <yennifer.chacon@est.tech>
+Submitted-by: Yennifer Chacon <yennifer.chacon@est.tech>
+Submitted-at: Tue, 04 Apr 2023 09:23:39 +0000
+Reviewed-on: https://gerrit.o-ran-sc.org/r/c/nonrtric/plt/sme/+/10831
+Project: nonrtric/plt/sme
+Branch: refs/heads/master
