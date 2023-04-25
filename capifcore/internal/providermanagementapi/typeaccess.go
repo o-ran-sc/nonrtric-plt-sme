@@ -22,7 +22,7 @@ package providermanagementapi
 
 func (ed APIProviderEnrolmentDetails) GetExposingFunctionIdsForPublisher(apfId string) []string {
 	for _, registeredFunc := range *ed.ApiProvFuncs {
-		if *registeredFunc.ApiProvFuncId == apfId && registeredFunc.isProvidingFunction() {
+		if *registeredFunc.ApiProvFuncId == apfId {
 			return ed.getExposingFunctionIds()
 		}
 	}
