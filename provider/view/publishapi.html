@@ -1,0 +1,110 @@
+<!--
+   ========================LICENSE_START=================================
+   O-RAN-SC
+   %%
+   Copyright (C) 2023: Nordix Foundation
+   %%
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+   ========================LICENSE_END===================================
+-->
+{{define "title"}}
+  CAPIF Provider
+{{end}}
+
+{{define "body"}}
+  {{if .isResponse}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      <h4 class="card-subtitle mb-3 text-body-secondary">Response from CAPIF core</h4>
+      <div class="callout callout-info"> 
+        <h5 class="card-subtitle mb-3 text-body-secondary">ServiceAPIDescription</h5>
+        <div id="response"> 
+          <h6>
+            ApiId:
+            <small id="ApiId" class="text-muted"></small>
+          </h6>
+          <h6>
+            ApiName:
+            <small id="ApiName" class="text-muted"></small>
+          </h6>
+          <h6>
+            Description:
+            <small id="Description" class="text-muted"></small>
+          </h6>
+          
+          <h6>AefProfiles:</h6>
+          <div id="responseTable" class="table-responsive">
+            <table class="table accordion">
+              <thead>
+                 <tr>
+                    <th scope="col">AefId</th>
+                    <th scope="col">AefLocation</th>
+                    <th scope="col">DomainName</th>
+                    <th scope="col">SecurityMethods</th>
+                 </tr>
+              </thead>
+              <tbody id="data-output">
+                 <!-- Prodcuts from javascript file in here. -->
+              </tbody>
+           </table>
+          </div>
+        </div>
+      </div>  
+
+      <div class="btns col-md-12 text-center">
+        <form action="/" method="GET">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Return to main page">
+          </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    var htmlResponse = "{{.response}}"
+    const strData = JSON.parse(htmlResponse);
+    document.getElementById("ApiId").innerHTML = strData.apiId;
+    document.getElementById("ApiName").innerHTML = strData.apiName;
+    document.getElementById("Description").innerHTML = strData.description;
+
+    let aefProfiles = Object.values(checkValue(strData.aefProfiles));
+    document.querySelector("#data-output").innerHTML = printAefProfiles(aefProfiles);
+  </script>
+  {{- else}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        {{if .isError}}
+            <div class="alert alert-danger" role="alert">
+                {{.response}}
+            </div>
+        {{end}}
+      <h5 class="card-subtitle mb-3 text-body-secondary">API publishing functions> Publish API</h5>
+      <form action="/publishapi" method="POST">
+        <div class="mb-3">
+          <label for="apfId" class="form-label">ApfId:</label>
+          <input type="text" class="form-control" id="apfId" name="apfId" placeholder="apfId" required>
+        </div>
+        <div class="mb-3">
+            <label for="apiDescription" class="form-label">ServiceAPIDescription:</label>
+            <textarea id="apiDescription"  class="form-control" name="apiDescription" rows="10" cols="60"></textarea>
+          </div>
+        
+        <div class="btns col-md-12 text-center">
+            <input class="btn btn-primary" type="submit" value="Submit">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Cancel" formnovalidate>
+        </div>
+      </form>
+    </div>
+  </div>
+  {{- end}}
+{{end}}
+
+
