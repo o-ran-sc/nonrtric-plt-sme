@@ -1,0 +1,119 @@
+<!--
+   ========================LICENSE_START=================================
+   O-RAN-SC
+   %%
+   Copyright (C) 2023: Nordix Foundation
+   %%
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+   ========================LICENSE_END===================================
+-->
+{{define "title"}}
+  CAPIF Provider | {{index . "name"}}
+{{end}}
+
+{{define "body"}}
+{{if .isResponse}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      <h4 class="card-subtitle mb-3 text-body-secondary">Response from CAPIF core</h4>
+      <div class="callout callout-info"> 
+        <h5 class="card-subtitle mb-3 text-body-secondary">APIProviderEnrolmentDetails</h5>
+        <div id="response"> 
+          <h6>
+            ApiProvDomId:
+            <small id="ApiProvDomId" class="text-muted"></small>
+          </h6>
+          <h6>
+            ApiProvDomInfo:
+            <small id="ApiProvDomInfo" class="text-muted"></small>
+          </h6>
+          <h6>
+            RegSec:
+            <small id="RegSec" class="text-muted"></small>
+          </h6>
+          <h6>APIProviderFunctionDetails:</h6>
+          
+          <div id="responseTable">
+            <table class="table table-striped">
+              <thead>
+                 <tr>
+                    <th scope="col">ApiProvFuncId</th>
+                    <th scope="col">ApiProvFuncInfo</th>
+                    <th scope="col">ApiProvFuncRole</th>
+                    <th scope="col">RegistrationInformation</th>
+                 </tr>
+              </thead>
+              <tbody id="data-output">
+                 <!-- Prodcuts from javascript file in here. -->
+              </tbody>
+           </table>
+          </div>
+        </div>
+      </div>  
+
+      <div class="btns col-md-12 text-center">
+        <form action="/" method="GET">
+          <input class="btn btn-secondary" formaction="/" type="submit" value="Return to main page">
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+
+    var htmlResponse = "{{.response}}"
+    const strData = JSON.parse(htmlResponse);
+    document.getElementById("ApiProvDomId").innerHTML = strData.apiProvDomId;
+    document.getElementById("ApiProvDomInfo").innerHTML = strData.apiProvDomInfo;
+    document.getElementById("RegSec").innerHTML = strData.regSec;
+
+    let functionsV = Object.values(strData.apiProvFuncs);
+    let out = "";
+    functionsV.forEach((f) => {
+      out += `
+         <tr>
+            <td>${f.apiProvFuncId}</td>
+            <td>${f.apiProvFuncInfo}</td>
+            <td>${f.apiProvFuncRole}</td>
+            <td>${Object.values(f.regInfo)}</td>
+         </tr>
+      `;
+    }); 
+
+    document.querySelector("#data-output").innerHTML = out;
+  </script>
+{{- else}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      {{if .isError}}
+        <div class="alert alert-danger" role="alert">
+          {{.response}}
+        </div>
+      {{end}}
+      <h5 class="card-subtitle mb-3 text-body-secondary">API management functions> Registrations</h5>
+      <form action="/registration" method="POST">
+        <div class="mb-3">
+          <label for="enrolmentDetails" class="form-label">APIProviderEnrolmentDetails:</label>
+          <textarea id="enrolmentDetails"  class="form-control" name="enrolmentDetails" rows="10" cols="60" required></textarea>
+        </div>
+        
+        <div class="btns col-md-12 text-center">
+            <input class="btn btn-primary" type="submit" value="Submit">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Cancel" formnovalidate>
+        </div>
+      </form>
+    </div>
+  </div>
+{{- end}}
+{{end}}
+
+
