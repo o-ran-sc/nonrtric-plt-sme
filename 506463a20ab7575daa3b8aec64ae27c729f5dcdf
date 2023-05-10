@@ -18,6 +18,24 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "e99611a6_da0e2339",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1001106
+      },
+      "writtenOn": "2023-05-10T08:21:52Z",
+      "side": 1,
+      "message": "no those files shouldn\u0027t be checked in, I removed them from the commit, thanks!",
+      "parentUuid": "5c78cace_04acc5d3",
+      "revId": "506463a20ab7575daa3b8aec64ae27c729f5dcdf",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "624df848_9acc2cf9",
@@ -31,6 +49,24 @@
       "writtenOn": "2023-05-04T14:12:27Z",
       "side": 1,
       "message": "If you just save all html files with VS code, then unneeded spaces will be removed. \nGeneric comment.",
+      "revId": "506463a20ab7575daa3b8aec64ae27c729f5dcdf",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3c8e7be2_d0c574d4",
+        "filename": "provider/view/getapi.html",
+        "patchSetId": 2
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1001106
+      },
+      "writtenOn": "2023-05-10T08:21:52Z",
+      "side": 1,
+      "message": "Yes, I was missing a configuration in VS code, (Files: Trim Trailing Whitespaces) hope now it works, thanks!",
+      "parentUuid": "624df848_9acc2cf9",
       "revId": "506463a20ab7575daa3b8aec64ae27c729f5dcdf",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
