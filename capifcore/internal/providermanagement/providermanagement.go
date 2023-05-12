@@ -38,6 +38,7 @@ import (
 type ServiceRegister interface {
 	IsFunctionRegistered(functionId string) bool
 	GetAefsForPublisher(apfId string) []string
+	IsPublishingFunctionRegistered(apiProvFuncId string) bool
 }
 
 type ProviderManager struct {
@@ -67,6 +68,15 @@ func (pm *ProviderManager) GetAefsForPublisher(apfId string) []string {
 		}
 	}
 	return nil
+}
+
+func (pm *ProviderManager) IsPublishingFunctionRegistered(apiProvFuncId string) bool {
+	for _, provider := range pm.registeredProviders {
+		if provider.IsPublishingFunctionRegistered(apiProvFuncId) {
+			return true
+		}
+	}
+	return false
 }
 
 func (pm *ProviderManager) PostRegistrations(ctx echo.Context) error {

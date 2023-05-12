@@ -137,7 +137,7 @@ func getEcho() *echo.Echo {
 		log.Fatalf("Error loading InvokerManagement swagger spec\n: %s", err)
 	}
 	invokerManagerSwagger.Servers = nil
-	invokerManager := invokermanagement.NewInvokerManager(publishService, eventChannel)
+	invokerManager := invokermanagement.NewInvokerManager(publishService, km, eventChannel)
 	group = e.Group("/api-invoker-management/v1")
 	group.Use(middleware.OapiRequestValidator(invokerManagerSwagger))
 	invokermanagementapi.RegisterHandlersWithBaseURL(e, invokerManager, "/api-invoker-management/v1")

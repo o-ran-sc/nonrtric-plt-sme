@@ -29,12 +29,14 @@ import (
 
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
+	"oransc.org/nonrtric/capifcore/internal/keycloak"
 
 	"github.com/labstack/echo/v4"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 
+	keycloackmocks "oransc.org/nonrtric/capifcore/internal/keycloak/mocks"
 	"oransc.org/nonrtric/capifcore/internal/publishservice"
 	publishmocks "oransc.org/nonrtric/capifcore/internal/publishservice/mocks"
 
@@ -42,6 +44,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/testutil"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestOnboardInvoker(t *testing.T) {
@@ -55,11 +58,20 @@ func TestOnboardInvoker(t *testing.T) {
 			AefProfiles: &aefProfiles,
 		},
 	}
-	publishRegisterMock := publishmocks.PublishRegister{}
-	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
-	invokerUnderTest, eventChannel, requestHandler := getEcho(&publishRegisterMock)
 
 	invokerInfo := "invoker a"
+	wantedInvokerSecret := "onboarding_secret_" + strings.Replace(invokerInfo, " ", "_", 1)
+	var client keycloak.Client
+	client.Secret = &wantedInvokerSecret
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
+
+	accessMgmMock := keycloackmocks.AccessManagement{}
+	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+	accessMgmMock.On("GetClientRepresentation", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(&client, nil)
+
+	invokerUnderTest, eventChannel, requestHandler := getEcho(&publishRegisterMock, &accessMgmMock)
+
 	newInvoker := getInvoker(invokerInfo)
 
 	// Onboard a valid invoker
@@ -73,7 +85,7 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.Equal(t, wantedInvokerId, *resultInvoker.ApiInvokerId)
 	assert.Equal(t, newInvoker.NotificationDestination, resultInvoker.NotificationDestination)
 	assert.Equal(t, newInvoker.OnboardingInformation.ApiInvokerPublicKey, resultInvoker.OnboardingInformation.ApiInvokerPublicKey)
-	wantedInvokerSecret := "onboarding_secret_" + strings.Replace(invokerInfo, " ", "_", 1)
+
 	assert.Equal(t, wantedInvokerSecret, *resultInvoker.OnboardingInformation.OnboardingSecret)
 	assert.Equal(t, "http://example.com/onboardedInvokers/"+*resultInvoker.ApiInvokerId, result.Recorder.Header().Get(echo.HeaderLocation))
 	assert.True(t, invokerUnderTest.IsInvokerRegistered(wantedInvokerId))
@@ -128,7 +140,7 @@ func TestOnboardInvoker(t *testing.T) {
 }
 
 func TestDeleteInvoker(t *testing.T) {
-	invokerUnderTest, eventChannel, requestHandler := getEcho(nil)
+	invokerUnderTest, eventChannel, requestHandler := getEcho(nil, nil)
 
 	invokerId := "invokerId"
 	newInvoker := invokermanagementapi.APIInvokerEnrolmentDetails{
@@ -157,7 +169,7 @@ func TestDeleteInvoker(t *testing.T) {
 func TestUpdateInvoker(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return([]publishserviceapi.ServiceAPIDescription{})
-	serviceUnderTest, _, requestHandler := getEcho(&publishRegisterMock)
+	serviceUnderTest, _, requestHandler := getEcho(&publishRegisterMock, nil)
 
 	invokerId := "invokerId"
 	invoker := invokermanagementapi.APIInvokerEnrolmentDetails{
@@ -261,7 +273,7 @@ func TestGetInvokerApiList(t *testing.T) {
 	})
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(apiList)
-	invokerUnderTest, _, _ := getEcho(&publishRegisterMock)
+	invokerUnderTest, _, _ := getEcho(&publishRegisterMock, nil)
 
 	invokerInfo := "invoker a"
 	newInvoker := getInvoker(invokerInfo)
@@ -280,7 +292,7 @@ func TestGetInvokerApiList(t *testing.T) {
 	assert.Equal(t, apiId, *(*wantedApiList)[0].ApiId)
 }
 
-func getEcho(publishRegister publishservice.PublishRegister) (*InvokerManager, chan eventsapi.EventNotification, *echo.Echo) {
+func getEcho(publishRegister publishservice.PublishRegister, keycloakMgm keycloak.AccessManagement) (*InvokerManager, chan eventsapi.EventNotification, *echo.Echo) {
 	swagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading swagger spec\n: %s", err)
@@ -290,7 +302,7 @@ func getEcho(publishRegister publishservice.PublishRegister) (*InvokerManager, c
 	swagger.Servers = nil
 
 	eventChannel := make(chan eventsapi.EventNotification)
-	im := NewInvokerManager(publishRegister, eventChannel)
+	im := NewInvokerManager(publishRegister, keycloakMgm, eventChannel)
 
 	e := echo.New()
 	e.Use(echomiddleware.Logger())

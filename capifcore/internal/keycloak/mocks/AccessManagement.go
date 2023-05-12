@@ -26,6 +26,32 @@ func (_m *AccessManagement) AddClient(clientId string, realm string) error {
 	return r0
 }
 
+// GetClientRepresentation provides a mock function with given fields: clientId, realm
+func (_m *AccessManagement) GetClientRepresentation(clientId string, realm string) (*keycloak.Client, error) {
+	ret := _m.Called(clientId, realm)
+
+	var r0 *keycloak.Client
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string) (*keycloak.Client, error)); ok {
+		return rf(clientId, realm)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) *keycloak.Client); ok {
+		r0 = rf(clientId, realm)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*keycloak.Client)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(clientId, realm)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetToken provides a mock function with given fields: realm, data
 func (_m *AccessManagement) GetToken(realm string, data map[string][]string) (keycloak.Jwttoken, error) {
 	ret := _m.Called(realm, data)

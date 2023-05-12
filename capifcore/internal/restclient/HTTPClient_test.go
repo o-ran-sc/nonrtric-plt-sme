@@ -47,6 +47,7 @@ func TestPutOk(t *testing.T) {
 
 	clientMock.On("Do", mock.Anything).Return(&http.Response{
 		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader([]byte("body"))),
 	}, nil)
 
 	if err := Put("http://localhost:9990", []byte("body"), &clientMock); err != nil {
@@ -58,6 +59,36 @@ func TestPutOk(t *testing.T) {
 		return true
 	}))
 	assertions.Equal(http.MethodPut, actualRequest.Method)
+	assertions.Equal("http", actualRequest.URL.Scheme)
+	assertions.Equal("localhost:9990", actualRequest.URL.Host)
+	assertions.Equal("application/json", actualRequest.Header.Get("Content-Type"))
+	body, _ := io.ReadAll(actualRequest.Body)
+	expectedBody := []byte("body")
+	assertions.Equal(expectedBody, body)
+	clientMock.AssertNumberOfCalls(t, "Do", 1)
+}
+
+func TestPostOk(t *testing.T) {
+	assertions := require.New(t)
+	clientMock := mocks.HTTPClient{}
+
+	clientMock.On("Do", mock.Anything).Return(&http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader([]byte("body"))),
+	}, nil)
+
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	if err := Post("http://localhost:9990", []byte("body"), headers, &clientMock); err != nil {
+		t.Errorf("Post() error = %v, did not want error", err)
+	}
+	var actualRequest *http.Request
+	clientMock.AssertCalled(t, "Do", mock.MatchedBy(func(req *http.Request) bool {
+		actualRequest = req
+		return true
+	}))
+	assertions.Equal(http.MethodPost, actualRequest.Method)
 	assertions.Equal("http", actualRequest.URL.Scheme)
 	assertions.Equal("localhost:9990", actualRequest.URL.Host)
 	assertions.Equal("application/json", actualRequest.Header.Get("Content-Type"))
@@ -109,7 +140,7 @@ func Test_doErrorCases(t *testing.T) {
 				StatusCode: tt.args.mockReturnStatus,
 				Body:       io.NopCloser(bytes.NewReader(tt.args.mockReturnBody)),
 			}, tt.args.mockReturnError)
-			err := do("PUT", tt.args.url, nil, map[string]string{}, &clientMock)
+			_, err := do("PUT", tt.args.url, nil, map[string]string{}, &clientMock)
 			assertions.Equal(tt.wantErr, err, tt.name)
 		})
 	}

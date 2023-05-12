@@ -33,6 +33,7 @@ const ContentTypePlain = "text/plain"
 //go:generate mockery --name HTTPClient
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
+	Get(url string) (*http.Response, error)
 }
 
 type RequestError struct {
@@ -44,31 +45,49 @@ func (pe RequestError) Error() string {
 	return fmt.Sprintf("Request failed due to error response with status: %v and body: %v", pe.StatusCode, string(pe.Body))
 }
 
+func Get(url string, header map[string]string, client HTTPClient) ([]byte, error) {
+	return do(http.MethodGet, url, nil, header, client)
+}
+
 func Put(url string, body []byte, client HTTPClient) error {
 	var header = map[string]string{"Content-Type": ContentTypeJSON}
-	return do(http.MethodPut, url, body, header, client)
+	_, err := do(http.MethodPut, url, body, header, client)
+	return err
 }
 
 func Post(url string, body []byte, header map[string]string, client HTTPClient) error {
-	return do(http.MethodPost, url, body, header, client)
+	_, err := do(http.MethodPost, url, body, header, client)
+	return err
 }
 
-func do(method string, url string, body []byte, header map[string]string, client HTTPClient) error {
-	if req, reqErr := http.NewRequest(method, url, bytes.NewBuffer(body)); reqErr == nil {
+func do(method string, url string, body []byte, header map[string]string, client HTTPClient) ([]byte, error) {
+	if req, reqErr := http.NewRequest(method, url, nil); reqErr == nil {
 		if len(header) > 0 {
 			setHeader(req, header)
 		}
+		if body != nil {
+			req.Body = io.NopCloser(bytes.NewReader(body))
+		}
+
 		if response, respErr := client.Do(req); respErr == nil {
 			if isResponseSuccess(response.StatusCode) {
-				return nil
+				fmt.Printf("HTTP client:: response statuscode:: %v body:: %v\n", response.StatusCode, response.Body)
+				defer response.Body.Close()
+
+				// Read the response body
+				respBody, err := io.ReadAll(response.Body)
+				if err != nil {
+					return nil, err
+				}
+				return respBody, nil
 			} else {
-				return getRequestError(response)
+				return nil, getRequestError(response)
 			}
 		} else {
-			return respErr
+			return nil, respErr
 		}
 	} else {
-		return reqErr
+		return nil, reqErr
 	}
 }
 

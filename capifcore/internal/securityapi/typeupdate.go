@@ -59,7 +59,6 @@ func isSecuryMethodsEmpty() bool {
 }
 
 func addSecurityMethodsFromInterfaceDetails(methodsFromInterface *[]publishserviceapi.SecurityMethod, prefMethods *[]publishserviceapi.SecurityMethod) {
-
 	if methodsFromInterface != nil {
 		securityMethods = append(securityMethods, *methodsFromInterface...)
 	}
@@ -68,9 +67,9 @@ func addSecurityMethodsFromInterfaceDetails(methodsFromInterface *[]publishservi
 	}
 }
 
-func addSecurityMethodsFromAefProfile(afpProfile *publishserviceapi.AefProfile) {
-	if afpProfile.SecurityMethods != nil {
-		securityMethods = append(securityMethods, *afpProfile.SecurityMethods...)
+func addSecurityMethodsFromAefProfile(aefProfile *publishserviceapi.AefProfile) {
+	if aefProfile.SecurityMethods != nil {
+		securityMethods = append(securityMethods, *aefProfile.SecurityMethods...)
 	}
 }
 

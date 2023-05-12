@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
+	"oransc.org/nonrtric/capifcore/internal/keycloak"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	invokerapi "oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
@@ -53,16 +54,18 @@ type InvokerManager struct {
 	onboardedInvokers map[string]invokerapi.APIInvokerEnrolmentDetails
 	publishRegister   publishservice.PublishRegister
 	nextId            int64
+	keycloak          keycloak.AccessManagement
 	eventChannel      chan<- eventsapi.EventNotification
 	lock              sync.Mutex
 }
 
 // Creates a manager that implements both the InvokerRegister and the invokermanagementapi.ServerInterface interfaces.
-func NewInvokerManager(publishRegister publishservice.PublishRegister, eventChannel chan<- eventsapi.EventNotification) *InvokerManager {
+func NewInvokerManager(publishRegister publishservice.PublishRegister, km keycloak.AccessManagement, eventChannel chan<- eventsapi.EventNotification) *InvokerManager {
 	return &InvokerManager{
 		onboardedInvokers: make(map[string]invokerapi.APIInvokerEnrolmentDetails),
 		publishRegister:   publishRegister,
 		nextId:            1000,
+		keycloak:          km,
 		eventChannel:      eventChannel,
 	}
 }
@@ -147,7 +150,22 @@ func (im *InvokerManager) prepareNewInvoker(newInvoker *invokerapi.APIInvokerEnr
 
 	newInvoker.PrepareNewInvoker()
 
+	im.addClientInKeycloak(newInvoker)
+
 	im.onboardedInvokers[*newInvoker.ApiInvokerId] = *newInvoker
+}
+
+func (im *InvokerManager) addClientInKeycloak(newInvoker *invokerapi.APIInvokerEnrolmentDetails) error {
+	if err := im.keycloak.AddClient(*newInvoker.ApiInvokerId, "invokerrealm"); err != nil {
+		return err
+	}
+
+	if body, err := im.keycloak.GetClientRepresentation(*newInvoker.ApiInvokerId, "invokerrealm"); err != nil {
+		return err
+	} else {
+		newInvoker.OnboardingInformation.OnboardingSecret = body.Secret
+	}
+	return nil
 }
 
 // Deletes an individual API Invoker.
