@@ -263,10 +263,7 @@ func TestPutTrustedInvokerSuccessfully(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	accessMgmMock := keycloackmocks.AccessManagement{}
-	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-
-	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
@@ -285,8 +282,6 @@ func TestPutTrustedInvokerSuccessfully(t *testing.T) {
 		assert.Equal(t, *security.SelSecurityMethod, publishserviceapi.SecurityMethodPKI)
 	}
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
-	accessMgmMock.AssertCalled(t, "AddClient", invokerId, "invokerrealm")
-
 }
 
 func TestPutTrustedInkoverNotRegistered(t *testing.T) {
@@ -354,10 +349,7 @@ func TestPutTrustedInvokerInterfaceDetailsNotNil(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
 
-	accessMgmMock := keycloackmocks.AccessManagement{}
-	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-
-	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, &accessMgmMock)
+	requestHandler, _ := getEcho(nil, &publishRegisterMock, &invokerRegisterMock, nil)
 
 	invokerId := "invokerId"
 	serviceSecurityUnderTest := getServiceSecurity(aefId, apiId)
@@ -386,7 +378,6 @@ func TestPutTrustedInvokerInterfaceDetailsNotNil(t *testing.T) {
 		assert.Equal(t, publishserviceapi.SecurityMethodPSK, *security.SelSecurityMethod)
 	}
 	invokerRegisterMock.AssertCalled(t, "IsInvokerRegistered", invokerId)
-	accessMgmMock.AssertCalled(t, "AddClient", invokerId, "invokerrealm")
 }
 
 func TestPutTrustedInvokerNotFoundSecurityMethod(t *testing.T) {

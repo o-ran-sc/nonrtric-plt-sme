@@ -48,7 +48,16 @@ func (ed APIProviderEnrolmentDetails) IsFunctionRegistered(functionId string) bo
 	return false
 }
 
-func (fd APIProviderFunctionDetails) isProvidingFunction() bool {
+func (ed APIProviderEnrolmentDetails) IsPublishingFunctionRegistered(functionId string) bool {
+	for _, registeredFunc := range *ed.ApiProvFuncs {
+		if *registeredFunc.ApiProvFuncId == functionId && registeredFunc.isPublishingFunction() {
+			return true
+		}
+	}
+	return false
+}
+
+func (fd APIProviderFunctionDetails) isPublishingFunction() bool {
 	return fd.ApiProvFuncRole == ApiProviderFuncRoleAPF
 }
 

@@ -34,11 +34,9 @@ func TestPrepareNewInvoker(t *testing.T) {
 
 	invokerUnderTest.PrepareNewInvoker()
 	assert.Equal(t, "api_invoker_id_1", *invokerUnderTest.ApiInvokerId)
-	assert.Equal(t, "onboarding_secret_api_invoker_id_1", *invokerUnderTest.OnboardingInformation.OnboardingSecret)
 
 	invokerInfo := "invoker info"
 	invokerUnderTest.ApiInvokerInformation = &invokerInfo
 	invokerUnderTest.PrepareNewInvoker()
 	assert.Equal(t, "api_invoker_id_invoker_info", *invokerUnderTest.ApiInvokerId)
-	assert.Equal(t, "onboarding_secret_invoker_info", *invokerUnderTest.OnboardingInformation.OnboardingSecret)
 }

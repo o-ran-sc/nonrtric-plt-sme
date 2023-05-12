@@ -118,6 +118,10 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errorMsg, "invalid format for service "+apfId))
 	}
 
+	if !ps.serviceRegister.IsPublishingFunctionRegistered(apfId) {
+		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errorMsg, "api is only available for publishers "+apfId))
+	}
+
 	if err := ps.isServicePublished(newServiceAPIDescription); err != nil {
 		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errorMsg, err))
 	}

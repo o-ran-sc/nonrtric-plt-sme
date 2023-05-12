@@ -52,6 +52,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId"})
+	serviceRegisterMock.On("IsPublishingFunctionRegistered", apfId).Return(true)
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	serviceUnderTest, eventChannel, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
@@ -71,7 +72,6 @@ func TestPublishUnpublishService(t *testing.T) {
 
 	// Publish a service for provider
 	result = testutil.NewRequest().Post("/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
-
 	assert.Equal(t, http.StatusCreated, result.Code())
 	var resultService publishapi.ServiceAPIDescription
 	err := result.UnmarshalBodyToObject(&resultService)
@@ -136,6 +136,7 @@ func TestPostUnpublishedServiceWithUnregisteredFunction(t *testing.T) {
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{"otherAefId"})
+	serviceRegisterMock.On("IsPublishingFunctionRegistered", apfId).Return(true)
 	_, _, requestHandler := getEcho(&serviceRegisterMock, nil)
 
 	newServiceDescription := getServiceAPIDescription(aefId, "apiName", "description")
@@ -157,6 +158,7 @@ func TestGetServices(t *testing.T) {
 	aefId := "aefId"
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId})
+	serviceRegisterMock.On("IsPublishingFunctionRegistered", apfId).Return(true)
 	_, _, requestHandler := getEcho(&serviceRegisterMock, nil)
 
 	// Check no services published for provider
@@ -212,6 +214,7 @@ func TestUpdateDescription(t *testing.T) {
 
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId", "aefIdNew"})
+	serviceRegisterMock.On("IsPublishingFunctionRegistered", apfId).Return(true)
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	serviceUnderTest, eventChannel, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
@@ -285,6 +288,7 @@ func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
 	description := "description"
 
 	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("IsPublishingFunctionRegistered", apfId).Return(true)
 	serviceRegisterMock.On("GetAefsForPublisher", apfId).Return([]string{aefId, "otherAefId", "aefIdNew"})
 	helmManagerMock := helmMocks.HelmManager{}
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -367,7 +371,11 @@ func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
 }
 
 func TestPublishInvalidService(t *testing.T) {
-	_, _, requestHandler := getEcho(nil, nil)
+	apfId := "apfId"
+	serviceRegisterMock := serviceMocks.ServiceRegister{}
+	serviceRegisterMock.On("IsPublishingFunctionRegistered", apfId).Return(true)
+
+	_, _, requestHandler := getEcho(&serviceRegisterMock, nil)
 	newServiceDescription := getServiceAPIDescription("aefId", " ", "description")
 
 	// Publish a service

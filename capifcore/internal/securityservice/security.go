@@ -192,11 +192,6 @@ func (s *Security) PutTrustedInvokersApiInvokerId(ctx echo.Context, apiInvokerId
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
-	err = s.keycloak.AddClient(apiInvokerId, "invokerrealm")
-	if err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
-	}
-
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, apiInvokerId))
 

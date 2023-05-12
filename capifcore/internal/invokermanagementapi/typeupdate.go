@@ -30,8 +30,6 @@ var uuidFunc = getUUID
 
 func (ied *APIInvokerEnrolmentDetails) PrepareNewInvoker() {
 	ied.createId()
-	ied.getOnboardingSecret()
-
 }
 
 func (ied *APIInvokerEnrolmentDetails) createId() {
