@@ -1,0 +1,152 @@
+<!--
+   ========================LICENSE_START=================================
+   O-RAN-SC
+   %%
+   Copyright (C) 2023: Nordix Foundation
+   %%
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+   ========================LICENSE_END===================================
+-->
+{{define "title"}}
+  CAPIF Invoker | {{index . "name"}}
+{{end}}
+
+{{define "body"}}
+
+{{if .isResponse}}
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      <h4 class="card-subtitle mb-3 text-body-secondary">Response from CAPIF core</h4>
+      <div class="callout callout-info"> 
+        <h5 class="card-subtitle mb-3 text-body-secondary">DiscoveredAPIs - ServiceAPIDescription</h5>
+        <div id="response"> 
+        </div>
+      </div>  
+
+      <div class="btns col-md-12 text-center">
+        <form action="/" method="GET">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Return to main page">
+          </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    var htmlResponse = "{{.response}}"
+    const strData = JSON.parse(htmlResponse);
+    console.log(strData)
+    let index = 0
+    let out = "";
+    strData.serviceAPIDescriptions.forEach((api) => {
+        out += `
+          <h6>
+            ApiId:
+            <small id="ApiId" class="text-muted">${api.apiId}</small>
+          </h6>
+          <h6>
+            ApiName:
+            <small id="ApiName" class="text-muted">${api.apiName}</small>
+          </h6>
+          <h6>
+            Description:
+            <small id="Description" class="text-muted">${api.description}</small>
+          </h6>
+          
+          <h6>AefProfiles:</h6>
+          <div id="responseTable" class="table-responsive">
+            <table class="table accordion">
+              <thead>
+                 <tr>
+                    <th scope="col">AefId</th>
+                    <th scope="col">AefLocation</th>
+                    <th scope="col">DomainName</th>
+                    <th scope="col">Protocol</th>
+                    <th scope="col">SecurityMethods</th>
+                 </tr>
+              </thead>
+              <tbody id="data-output">
+                 <!-- Prodcuts from javascript file in here. -->
+                 ${printAefProfiles(api.aefProfiles, index)}
+              </tbody>
+           </table>
+          </div>
+        `;
+        index++;
+        document.querySelector("#response").innerHTML = out;
+    });
+  </script>
+{{- else}}
+    <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5">
+            {{if .isError}}
+                <div class="alert alert-danger" role="alert">
+                    {{.response}}
+                </div>
+            {{end}}
+            {{if .isEmpty}}
+                <div class="alert alert-warning" role="alert">
+                    {{.response}}
+                </div>
+            {{end}}
+            <h5 class="card-subtitle mb-3 text-body-secondary">CAPIF_Discover_Service_API > Discover_Service_API</h5>
+            <form action="/discovery" method="GET">
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">API invoker identifier:</label>
+                    <input type="text" class="form-control" id="api-invoker-id" name="api-invoker-id" placeholder="invokerId" required>
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">API name:</label>
+                    <input type="text" class="form-control" id="api-name" name="api-name" placeholder="apiName it is set as {apiName} part of the URI " >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">API major version the URI:</label>
+                    <input type="text" class="form-control" id="api-version" name="api-version" placeholder="apiVersion" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">Communication type used by the API:</label>
+                    <input type="text" class="form-control" id="comm-type" name="comm-type" placeholder="commType e.g. REQUEST_RESPONSE" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">Protocol:</label>
+                    <input type="text" class="form-control" id="protocol" name="protocol" placeholder="protocol" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">AEF identifer:</label>
+                    <input type="text" class="form-control" id="aef-id" name="aef-id" placeholder="aefId" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">Data formats used by the API:</label>
+                    <input type="text" class="form-control" id="data-format" name="data-format" placeholder="dataFormat e.g. serialization protocol JSON used" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">Api category:</label>
+                    <input type="text" class="form-control" id="api-cat" name="api-cat" placeholder="apiCat" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">Preferred Aef Location:</label>
+                    <input type="text" class="form-control" id="preferred-aef-loc" name="preferred-aef-loc" placeholder="preferredAefLoc" >
+                </div>
+                <div class="mb-3">
+                    <label for="apfId" class="form-label">Supported Features:</label>
+                    <input type="text" class="form-control" id="supported-features" name="supported-features" placeholder="suppFeat" >
+                </div>
+                <div class="btns col-md-12 text-center">
+                    <input class="btn btn-primary" type="submit" value="Submit">
+                    <input class="btn btn-secondary" formaction="/" type="submit" value="Cancel" formnovalidate>
+                </div>
+            </form>
+        </div>
+    </div>
+{{- end}}
+{{end}}
+
+

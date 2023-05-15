@@ -1,0 +1,115 @@
+<!--
+   ========================LICENSE_START=================================
+   O-RAN-SC
+   %%
+   Copyright (C) 2023: Nordix Foundation
+   %%
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+   ========================LICENSE_END===================================
+-->
+{{define "title"}}
+  CAPIF Invoker | {{index . "name"}}
+{{end}}
+
+{{define "body"}}
+{{if .isResponse}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      <h4 class="card-subtitle mb-3 text-body-secondary">Response from CAPIF core</h4>
+      <div class="callout callout-info"> 
+        <h5 class="card-subtitle mb-3 text-body-secondary">APIInvokerEnrolmentDetails</h5>
+        <div id="response"> 
+          <h6>
+            Api InvokerId:
+            <small id="apiInvokerId" class="text-muted"></small>
+          </h6>
+          <h6>
+            Api Invoker Information:
+            <small id="apiInvokerInformation" class="text-muted"></small>
+          </h6>
+          <h6>
+            Notification Destination:
+            <small id="notificationDestination" class="text-muted"></small>
+          </h6>
+          <h6>Onboarding Information:</h6>
+          <ul>
+            <li><h6>
+                Api Invoker Certificate:
+                <small id="apiInvokerCertificate" class="text-muted"></small>
+              </h6></li>
+            <li><h6>
+                Api Invoker PublicKey:
+                <small id="apiInvokerPublicKey" class="text-muted"></small>
+              </h6></li>
+            <li><h6>
+                Onboarding Secret:
+                <small id="onboardingSecret" class="text-muted"></small>
+              </h6></li>
+        </ul>
+        <h6>API List:</h6>
+          <div id="responseTable">
+
+          </div>
+        </div>
+      </div>  
+
+      <div class="btns col-md-12 text-center">
+        <form action="/" method="GET">
+          <input class="btn btn-secondary" formaction="/" type="submit" value="Return to main page">
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+
+    var htmlResponse = "{{.response}}"
+    const strData = JSON.parse(htmlResponse);
+
+    document.getElementById("apiInvokerId").innerHTML = strData.apiInvokerId;
+    document.getElementById("apiInvokerInformation").innerHTML = strData.apiInvokerInformation;
+    document.getElementById("notificationDestination").innerHTML = strData.notificationDestination;
+
+    document.getElementById("apiInvokerCertificate").innerHTML = strData.onboardingInformation['apiInvokerCertificate'];
+    document.getElementById("apiInvokerPublicKey").innerHTML = strData.onboardingInformation['apiInvokerPublicKey'];
+    document.getElementById("onboardingSecret").innerHTML = strData.onboardingInformation['onboardingSecret'];
+
+    var pretty = JSON.stringify(strData.apiList, undefined, 4);
+    document.getElementById("responseTable").innerHTML = pretty;
+
+  </script>
+{{- else}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      {{if .isError}}
+        <div class="alert alert-danger" role="alert">
+          {{.response}}
+        </div>
+      {{end}}
+      <h5 class="card-subtitle mb-3 text-body-secondary">CAPIF_API_Invoker_Management_API > Onboard_API_Invoker</h5>
+      <form action="/onboardinvoker" method="POST">
+        <div class="mb-3">
+          <label for="enrolmentDetails" class="form-label">APIInvokerEnrolmentDetails:</label>
+          <textarea id="enrolmentDetails"  class="form-control" name="enrolmentDetails" rows="10" cols="60" required></textarea>
+        </div>
+        
+        <div class="btns col-md-12 text-center">
+            <input class="btn btn-primary" type="submit" value="Submit">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Cancel" formnovalidate>
+        </div>
+      </form>
+    </div>
+  </div>
+{{- end}}
+{{end}}
+
+

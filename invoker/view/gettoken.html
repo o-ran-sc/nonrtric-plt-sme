@@ -1,0 +1,102 @@
+<!--
+   ========================LICENSE_START=================================
+   O-RAN-SC
+   %%
+   Copyright (C) 2023: Nordix Foundation
+   %%
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+   ========================LICENSE_END===================================
+-->
+{{define "title"}}
+  CAPIF Invoker
+{{end}}
+
+{{define "body"}}
+  {{if .isResponse}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+      <h4 class="card-subtitle mb-3 text-body-secondary">Response from CAPIF core</h4>
+      <div class="callout callout-info">
+        <h5 class="card-subtitle mb-3 text-body-secondary">Access Token Response</h5>
+        <div id="response" class="text-truncate">
+          <h6>
+            Access token:
+            <small id="accessToken" class="text-muted"></small>
+          </h6>
+          <h6>
+            Expires in:
+            <small id="expiresIn" class="text-muted"></small>
+          </h6>
+          <h6>
+            Scope:
+            <small id="scope" class="text-muted"></small>
+          </h6>
+          <h6>
+            Token type:
+            <small id="tokenType" class="text-muted"></small>
+          </h6>
+        </div>
+      </div>
+
+      <div class="btns col-md-12 text-center">
+        <form action="/" method="GET">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Return to main page">
+          </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    var htmlResponse = "{{.response}}"
+    const strData = JSON.parse(htmlResponse);
+    document.getElementById("accessToken").innerHTML = strData.access_token;
+    document.getElementById("expiresIn").innerHTML = strData.expires_in;
+    document.getElementById("scope").innerHTML = strData.scope;
+    document.getElementById("tokenType").innerHTML = strData.token_type;
+  </script>
+  {{- else}}
+  <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        {{if .isError}}
+            <div class="alert alert-danger" role="alert">
+                {{.response}}
+            </div>
+        {{end}}
+      <h5 class="card-subtitle mb-3 text-body-secondary">CAPIF_Security_API > Obtain_Authorization</h5>
+      <form action="/gettoken" method="POST">
+        <div class="mb-3">
+          <label for="securityId" class="form-label">Security Id:</label>
+          <input type="text" class="form-control" id="securityId" name="securityId" placeholder="securityId" required>
+        </div>
+        <div class="mb-3">
+            <label for="clientId" class="form-label">Client Id:</label>
+            <input type="text" class="form-control" id="clientId" name="clientId" placeholder="clientId" required>
+        </div>
+        <div class="mb-3">
+            <label for="clientSecret" class="form-label">Client Secret:</label>
+            <input type="text" class="form-control" id="clientSecret" name="clientSecret" placeholder="clientSecret" >
+        </div>
+        <div class="mb-3">
+            <label for="scope" class="form-label">Scope:</label>
+            <input type="text" class="form-control" id="scope" name="scope" placeholder="scope" >
+        </div>
+        <div class="btns col-md-12 text-center">
+            <input class="btn btn-primary" type="submit" value="Submit">
+            <input class="btn btn-secondary" formaction="/" type="submit" value="Cancel" formnovalidate>
+        </div>
+      </form>
+    </div>
+  </div>
+  {{- end}}
+{{end}}
+
+
