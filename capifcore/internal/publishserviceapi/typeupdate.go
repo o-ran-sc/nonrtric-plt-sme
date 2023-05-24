@@ -20,7 +20,9 @@
 
 package publishserviceapi
 
+import "strings"
+
 func (sd *ServiceAPIDescription) PrepareNewService() {
-	apiName := "api_id_" + sd.ApiName
+	apiName := "api_id_" + strings.ReplaceAll(sd.ApiName, " ", "_")
 	sd.ApiId = &apiName
 }
