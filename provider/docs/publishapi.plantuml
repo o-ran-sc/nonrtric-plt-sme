@@ -1,0 +1,25 @@
+@startuml Publish a new API
+actor ProviderClient
+box "CAPIF Internal"
+participant capifcore
+participant providermanager
+participant publishservice
+participant eventservice
+end box
+actor invoker
+
+alt#LightBlue #LightBlue Publish Service
+    ProviderClient->capifcore: Publish services\n with providerId\n andServiceAPIDescription
+    capifcore->publishservice: Publish services
+    publishservice->providermanager: Are AEFs registered\n for provider?
+    providermanager->publishservice: Ok
+    publishservice->publishservice: Create apiId
+    alt#Orange #Orange Subcribed Event Handling
+        publishservice->eventservice: Service published
+        eventservice->invoker: CAPIFEventDetail
+    end
+    publishservice->capifcore: ServiceAPIDescription\n with apiId
+    capifcore->ProviderClient: ServiceAPIDescription\n with apiId
+end
+
+@enduml

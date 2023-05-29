@@ -26,13 +26,13 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN go build -o /capifprovider
+RUN go build -o /capif-stub-provider
 ##
 ## Deploy
 ##
 FROM gcr.io/distroless/base-debian11
 WORKDIR /
 ## Copy from "build" stage
-COPY --from=build /capifprovider .
+COPY --from=build /capif-stub-provider .
 USER nonroot:nonroot
-ENTRYPOINT ["/capifprovider"]
+ENTRYPOINT ["/capif-stub-provider"]
