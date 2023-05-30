@@ -1,0 +1,31 @@
+@startuml Onboarding new invoker
+actor InvokerClient
+
+box "CAPIF Core"
+participant capifcore
+participant invokerservice
+participant publishservice
+participant eventservice
+end box
+
+participant keycloak
+
+
+alt#PaleGreen #PaleGreen Onboard Invoker
+    InvokerClient->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
+    capifcore->invokerservice: Creates a new API Invoker profile
+    invokerservice->invokerservice: Create apiInvokerId
+    invokerservice->keycloak: Register client and get\n onboardingSecret
+    keycloak->invokerservice: onboardingSecret
+    invokerservice->publishservice: Get available services
+    publishservice->invokerservice: Available services
+    invokerservice->capifcore: Services available\n for the invoker
+    capifcore->InvokerClient: Invoker with invokerId\n and available services
+    alt#Salmon #Salmon Subscribe to publishing events
+        InvokerClient->eventservice: Subscribe to events\n with EventSubscription
+        eventservice->eventservice: Create subscriptionId
+        eventservice->InvokerClient: subscriptionId
+    end
+end
+
+@enduml

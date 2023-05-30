@@ -1,0 +1,21 @@
+@startuml Discover Service API
+actor InvokerClient
+box "CAPIF Internal"
+participant capifcore
+participant discoverservice
+participant invokerservice
+participant publishservice
+end box
+
+alt#Yellow #Yellow Discover Services
+    InvokerClient->capifcore: Discover services\n with apiInvokerId\n and filter parameters
+    capifcore->discoverservice: Get services available\n for the invoker
+    discoverservice->invokerservice: Get services available\n for the invoker
+    invokerservice->publishservice: Get available services
+    publishservice->invokerservice: Available services
+    invokerservice->discoverservice: Services available \nfor the invoker
+    discoverservice->capifcore: Services available for the\n invoker matching the\n filter parameters
+    capifcore->InvokerClient: Services available\n matching the\n filter parameters
+end
+
+@enduml
