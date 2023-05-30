@@ -1,0 +1,30 @@
+@startuml Obtain Access Token
+actor InvokerClient
+
+box "CAPIF Internal"
+participant capifcore
+participant securityservice
+participant invokerservice
+participant publishservice
+participant providermanager
+end box
+participant keycloak
+
+alt#LightBlue #LightBlue Security Service
+        InvokerClient->securityservice: Request token\n for service with\n AccessTokenReq
+        securityservice->invokerservice: Is invoker registered?
+        invokerservice->securityservice: Ok
+        securityservice->keycloak: Is secret valid?
+        keycloak->securityservice: Ok
+        alt#Salmon #Salmon Check scope
+            securityservice->providermanager: Is function providing\n service registered?
+            providermanager->securityservice: Ok
+            securityservice->publishservice: Is service published?
+            publishservice->securityservice: Ok
+        end
+        securityservice->keycloak: get token
+        keycloak->securityservice: JWT token
+        securityservice->InvokerClient: AccessTokenRsp\n with token
+    end
+
+@enduml

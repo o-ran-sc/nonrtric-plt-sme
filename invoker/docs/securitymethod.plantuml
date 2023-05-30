@@ -1,0 +1,23 @@
+@startuml Obtain Security Method
+actor InvokerClient
+
+box "CAPIF Internal"
+participant capifcore
+participant securityservice
+participant invokerservice
+participant publishservice
+
+end box
+
+alt#Pink #Pink Security Service
+    InvokerClient->securityservice: Request security method\n for service with\n SecurityService Request
+    securityservice->invokerservice: Is invoker registered?
+    invokerservice->securityservice: Ok
+    securityservice->publishservice: Is service published?
+    publishservice->securityservice: Ok
+    securityservice->publishservice: Determine the security method for\n each service API interface
+    publishservice->securityservice: Compatible security method
+    securityservice->InvokerClient: SecurityService Response\n with compatible security method
+end
+
+@enduml
