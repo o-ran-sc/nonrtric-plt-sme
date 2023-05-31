@@ -18,6 +18,24 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "6e686994_46da7bd2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1001106
+      },
+      "writtenOn": "2023-05-31T08:34:40Z",
+      "side": 1,
+      "message": "thanks for the comment!",
+      "parentUuid": "81be99f8_f223ea02",
+      "revId": "8f3eaef9626efed5473a5cf5fcea90757c750b52",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "80871b36_2ba7ddf1",
@@ -41,6 +59,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "dd74773c_6c2d7a4c",
+        "filename": "provider/README.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1001106
+      },
+      "writtenOn": "2023-05-31T08:34:40Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "80871b36_2ba7ddf1",
+      "range": {
+        "startLine": 27,
+        "startChar": 17,
+        "endLine": 27,
+        "endChar": 20
+      },
+      "revId": "8f3eaef9626efed5473a5cf5fcea90757c750b52",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "6ec2639a_c0ecbc30",
@@ -54,6 +96,30 @@
       "writtenOn": "2023-05-30T11:26:22Z",
       "side": 1,
       "message": "This sentence is a bit long, might be better to break it up.\nMaybe something like:\nIn order to publish a new API, the APF should be registered in the Capif core (apfId is required) along with as the Service API information.\n The Service API information includes:\n then list the information in separate bullet points",
+      "range": {
+        "startLine": 88,
+        "startChar": 0,
+        "endLine": 88,
+        "endChar": 165
+      },
+      "revId": "8f3eaef9626efed5473a5cf5fcea90757c750b52",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6f994f71_1b916bf9",
+        "filename": "provider/README.md",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1001106
+      },
+      "writtenOn": "2023-05-31T08:34:40Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6ec2639a_c0ecbc30",
       "range": {
         "startLine": 88,
         "startChar": 0,
