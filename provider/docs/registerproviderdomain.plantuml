@@ -1,0 +1,18 @@
+@startuml Register API Provider Domain
+actor ProviderClient
+box "CAPIF Internal"
+participant capifcore
+participant providermanager
+participant publishservice
+
+end box
+
+alt#paleGreen #paleGreen Provider Enrolment
+    ProviderClient->capifcore: Register provider with\n APIProviderEnrolmentDetails
+    capifcore->providermanager:Register provider
+    providermanager->providermanager: Create apiProvDomId\n and apiProvFuncIds\n for provided functions
+    providermanager->capifcore: Provider with\n apfId and aefIds
+    capifcore->ProviderClient: Provider with\n apfId and aefIds
+end
+
+@enduml

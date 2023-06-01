@@ -1,0 +1,15 @@
+@startuml  Retrieve all published APIs
+actor ProviderClient
+box "CAPIF Internal"
+participant capifcore
+participant publishservice
+end box
+
+alt#Salmon #Salmon Retrieve API Service
+    ProviderClient->capifcore: Retrieve services\n with apfId
+    capifcore->publishservice: Retrieve all published\n services from apfId
+    publishservice->capifcore: Array of ServiceAPIDescription
+    capifcore->ProviderClient: All ServiceAPIDescription\n published from apfId
+end
+
+@enduml
