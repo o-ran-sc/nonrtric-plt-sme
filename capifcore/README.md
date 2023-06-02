@@ -68,6 +68,14 @@ For the CAPIF specification "TS29222_CAPIF_Discover_Service_API" a new dependenc
    has already been replaced in "TS29222_CAPIF_Discover_Service_API".
 3. If it has not been replaced, add a replacement above the "<new_replacement>" tag by copying and adapting the two rows above the tag.
 
+### Security in CAPIF
+
+Security requirements that are applicable to all CAPIF entities includes provide authorization mechanism for service APIs from the 3rd party API providers and support a common security mechanism for all API implementations to provide confidentiality and integrity protection.
+
+In the current implementation Keycloak is being used as identity and access management (IAM) solution that provides authentication, authorization, and user management for applications and services. Keycloak provides robust authentication mechanisms, including username/password, two-factor authentication, and client certificate authentication that complies with CAPIF security requirements.
+
+A docker-compose file is included to start up keycloak.
+
 ## Build and test
 
 To generate mocks manually, run the following command:
@@ -95,5 +103,9 @@ The application can also be built as a Docker image, by using the following comm
 To run the Core Function from the command line, run the following commands from this folder. For the parameter `chartMuseumUrl`, if it is not provided CAPIF Core will not do any Helm integration, i.e. try to start any Halm chart when publishing a service.
 
     ./capifcore [-port <port (default 8090)>] [-secPort <Secure port (default 4433)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>] [-certPath <Path to certificate>] [-keyPath <Path to private key>]
+
+Use docker compose file to start Keycloak:
+
+    docker-compose up
 
 To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available on port `31570`.
