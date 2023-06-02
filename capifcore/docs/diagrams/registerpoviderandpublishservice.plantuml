@@ -15,7 +15,7 @@ participant eventservice
 participant loggingservice
 end box
 
-alt Regtister Consumer rApp
+alt Register Consumer rApp
     rAppCatalogue->rAppManager: Register consumer \nrApp
     alt#coral #coral Register Invoker
         rAppManager->capifcore: Register invoker with\n APIInvokerEnrolmentDetails
@@ -34,7 +34,7 @@ alt Regtister Consumer rApp
         eventservice->capp: subscriptionId
     end
 end
-alt Regtister provider rApp
+alt Register provider rApp
     rAppCatalogue->rAppManager: Register rApp, with\n rApp descriptor\n specifying which\n services to expose
     alt#paleGreen #paleGreen Provider Enrolment
         rAppManager->capifcore: Register provider with\n APIProviderEnrolmentDetails
