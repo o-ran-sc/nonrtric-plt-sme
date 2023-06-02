@@ -2,7 +2,7 @@ tox
 Sphinx
 doc8
 docutils < 0.17
-setuptools
+setuptools < 66
 six
 sphinx_rtd_theme
 sphinxcontrib-needs
