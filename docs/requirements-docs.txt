@@ -8,3 +8,4 @@ sphinx_rtd_theme
 sphinxcontrib-needs
 sphinx_bootstrap_theme
 lfdocs-conf
+urllib3~=1.26.15
