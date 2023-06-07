@@ -17,7 +17,7 @@
 
 # Keycloak configurations
 authorizationServer:
-  host: "localhost"
+  host: "keycloak"
   port: "8080"
   admin:
     user: "admin"

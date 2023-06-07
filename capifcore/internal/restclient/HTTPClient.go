@@ -71,7 +71,6 @@ func do(method string, url string, body []byte, header map[string]string, client
 
 		if response, respErr := client.Do(req); respErr == nil {
 			if isResponseSuccess(response.StatusCode) {
-				fmt.Printf("HTTP client:: response statuscode:: %v body:: %v\n", response.StatusCode, response.Body)
 				defer response.Body.Close()
 
 				// Read the response body

@@ -30,9 +30,16 @@ RUN go build -o /capifcore
 ##
 ## Deploy
 ##
-FROM gcr.io/distroless/base-debian11
+FROM ubuntu
 WORKDIR /
 ## Copy from "build" stage
 COPY --from=build /capifcore .
-USER nonroot:nonroot
+
+RUN mkdir /configs
+RUN mkdir /certs
+
+COPY configs/keycloak.yaml /configs/keycloak.yaml
+COPY certs/cert.pem /certs/cert.pem
+COPY certs/key.pem /certs/key.pem
+
 ENTRYPOINT ["/capifcore"]
