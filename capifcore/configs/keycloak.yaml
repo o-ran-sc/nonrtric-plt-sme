@@ -23,4 +23,5 @@ authorizationServer:
     user: "admin"
     password: "secret"
   realms:
+   master: "master"
    invokerrealm: "invokerrealm"

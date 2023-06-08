@@ -84,7 +84,12 @@ type Jwttoken struct {
 
 func (km *KeycloakManager) GetToken(realm string, data map[string][]string) (Jwttoken, error) {
 	var jwt Jwttoken
-	getTokenUrl := km.keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token"
+	realmVal, ok := km.realms[realm]
+	if !ok {
+		log.Errorf("error realm does not exist\n")
+		return jwt, errors.New("realm does not exist")
+	}
+	getTokenUrl := km.keycloakServerUrl + "/realms/" + realmVal + "/protocol/openid-connect/token"
 	resp, err := http.PostForm(getTokenUrl, data)
 
 	if err != nil {
@@ -128,7 +133,13 @@ func (km *KeycloakManager) AddClient(clientId string, realm string) error {
 		return err
 	}
 
-	createClientUrl := km.keycloakServerUrl + "/admin/realms/" + realm + "/clients"
+	realmVal, ok := km.realms[realm]
+	if !ok {
+		log.Errorf("error realm does not exist\n")
+		return errors.New("realm does not exist")
+	}
+
+	createClientUrl := km.keycloakServerUrl + "/admin/realms/" + realmVal + "/clients"
 	newClient := map[string]interface{}{"clientId": clientId, "serviceAccountsEnabled": true}
 
 	body, err := json.Marshal(newClient)
@@ -156,7 +167,13 @@ func (km *KeycloakManager) GetClientRepresentation(clientId string, realm string
 		return nil, err
 	}
 
-	createClientUrl, _ := url.Parse(km.keycloakServerUrl + "/admin/realms/" + realm + "/clients")
+	realmVal, ok := km.realms[realm]
+	if !ok {
+		log.Errorf("error realm does not exist\n")
+		return nil, errors.New("realm does not exist")
+	}
+
+	createClientUrl, _ := url.Parse(km.keycloakServerUrl + "/admin/realms/" + realmVal + "/clients")
 	q := createClientUrl.Query()
 	q.Add("clientId", clientId)
 	createClientUrl.RawQuery = q.Encode()

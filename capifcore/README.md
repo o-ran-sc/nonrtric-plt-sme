@@ -104,8 +104,12 @@ To run the Core Function from the command line, run the following commands from 
 
     ./capifcore [-port <port (default 8090)>] [-secPort <Secure port (default 4433)>] [-chartMuseumUrl <URL to ChartMuseum>] [-repoName <Helm repo name (default capifcore)>] [-loglevel <log level (default Info)>] [-certPath <Path to certificate>] [-keyPath <Path to private key>]
 
-Use docker compose file to start Keycloak:
+Use docker compose file to start CAPIF core together with Keycloak:
 
     docker-compose up
+
+**NOTE!** There is a configuration file in configs/keycloak.yaml with information related to keycloak host, when running locally the host value must be set to localhost (Eg. host: "localhost") and when using docker-compose set value of host to keycloak (Eg. host:"keycloak")
+
+Before using CAPIF API invoker management, an invoker realm must be created in keycloak. Make sure it is created before running CAPIF core. After creating the realm in keycloak, set the name in the keycloak.yaml configuration file.
 
 To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available on port `31570`.

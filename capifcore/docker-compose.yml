@@ -74,9 +74,21 @@ services:
     networks:
       - capif
 
+  capifcore:
+    container_name: sme-capifcore
+    image: capifcore:v1
+    ports:
+      - 8090:8090
+    depends_on:
+      - keycloak
+    entrypoint: ["/capifcore"]
+    networks:
+      - capif
+
 networks:
   capif:
     driver: bridge
+    name: capifnet
 
 volumes:
     postgres_data:
