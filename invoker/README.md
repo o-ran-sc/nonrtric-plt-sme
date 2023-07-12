@@ -1,30 +1,30 @@
 <!--
- -
-   ========================LICENSE_START=================================
-   O-RAN-SC
-   %%
-   Copyright (C) 2023: Nordix Foundation
-   %%
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+-
+========================LICENSE_START=================================
+O-RAN-SC
+%%
+Copyright (C) 2023: Nordix Foundation
+%%
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
         http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-   ========================LICENSE_END===================================
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================LICENSE_END===================================
 
 -->
 
 # O-RAN-SC Non-RealTime RIC CAPIF Invoker Stub
 
-This is a Go implementation of a stub for the CAPIF Invoker function, based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
+This is a Go implementation of a stub for the CAPIF Invoker function, which is based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
 
-This stub offers an user interface that helps to test the functionalities implemented in the O-RAN-SC CAPIF implementation and the supported features are the following:
+This stub offers a user interface that helps to test the functionalities implemented in the O-RAN-SC CAPIF implementation and the supported features are as follows:
 
 - Onboard API Invoker
 - Discover published service APIs and retrieve a collection of APIs according to certain filter criteria.
@@ -37,7 +37,7 @@ This service operation is used by an API invoker to on-board itself as a recogni
 
 <img src="docs/Onboarding new invoker.svg">
 
-To onboard itself the Invoker should send a request to the CAPIF core including an API invoker Enrolment Details, API List and a Notification Destination URI for on-boarding notification.
+To onboard, the Invoker should send a request to the CAPIF core, including an API invoker Enrolment Details, API List and a Notification Destination URI for on-boarding notification.
 
 ```
 {
@@ -54,7 +54,7 @@ To onboard itself the Invoker should send a request to the CAPIF core including 
 }
 ```
 
-After receiving the request, the CAPIF core should check if the invoker can be onboard. In case it can be onboard, the CAPIF core will create the API invoker Profile consisting of an API invoker Identifier, Authentication Information, Authorization Information and CAPIF Identity Information. In this implementation, Keycloak is used to manage identity information.
+After receiving the request, the CAPIF core should check if the invoker can be onboarded. If the invoker is eligible for onboarding, the CAPIF core will create the API invoker Profile, which includes an API invoker Identifier, Authentication Information, Authorization Information, and CAPIF Identity Information. Keycloak is utilized in this implementation to manage identity information.
 
 ### Discover published service APIs and retrieve a collection of APIs according to certain filter criteria.
 

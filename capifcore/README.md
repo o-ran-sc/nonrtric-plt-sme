@@ -1,44 +1,44 @@
 <!--
- -
-   ========================LICENSE_START=================================
-   O-RAN-SC
-   %%
-   Copyright (C) 2022: Nordix Foundation
-   %%
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+-
+========================LICENSE_START=================================
+O-RAN-SC
+%%
+Copyright (C) 2022: Nordix Foundation
+%%
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
         http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-   ========================LICENSE_END===================================
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================LICENSE_END===================================
 
 -->
 
 # O-RAN-SC Non-RealTime RIC CAPIF Core implementation
 
-This product is a Go implementation of the CAPIF Core function, based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
+This product is a Go implementation of the CAPIF Core function, which is based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
 
-The, almost, complete data model for CAPIF is shown in the diagram below.
+The nearly complete data model for CAPIF is shown in the diagram below.
 
 <img src="docs/diagrams/Information model for CAPIF.svg">
 
-The data used within CAPIF Core for registering rApps that both provides and consumes services is shown in the diagram below.
+The data used within CAPIF Core for registering rApps that provide and consume services is shown in the diagram below.
 
 <img src="docs/diagrams/Information in rApp registration.svg">
 
 Some examples of interactions between components using the CAPIF interface are shown in the sequence diagram below.
 
-***NOTE!*** It has not been decided that CAPIF Core will actually do the Helm chart installation. This is just provided in the prototype as an example of what CAPIF Core could do.
+***NOTE!*** It has not been decided that CAPIF Core will actually handle the Helm chart installation. The prototype includes this as an example of what CAPIF Core could potentially do.
 
 <img src="docs/diagrams/Register Provider.svg">
 
-If Helm is used, before publishing a service, the chart that belongs to the service must be registered in ChartMuseum. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
+If Helm is used, before publishing a service, the chart belonging to the service must be registered in ChartMuseum. When publishing the service the following information should be provided in the `ServiceAPIDescription::description` attribute; "namespace", "repoName", "chartName", "releaseName". An example of the information: "Description of rApp helloWorld,namespace,repoName,chartName,releaseName".
 
 ## Generation of API code
 
@@ -70,7 +70,7 @@ For the CAPIF specification "TS29222_CAPIF_Discover_Service_API" a new dependenc
 
 ### Security in CAPIF
 
-Security requirements that are applicable to all CAPIF entities includes provide authorization mechanism for service APIs from the 3rd party API providers and support a common security mechanism for all API implementations to provide confidentiality and integrity protection.
+The security requirements applicable to all CAPIF entities include providing an authorization mechanism for service APIs from third-party API providers and supporting a common security mechanism for all API implementations to ensure confidentiality and integrity protection.
 
 In the current implementation Keycloak is being used as identity and access management (IAM) solution that provides authentication, authorization, and user management for applications and services. Keycloak provides robust authentication mechanisms, including username/password, two-factor authentication, and client certificate authentication that complies with CAPIF security requirements.
 

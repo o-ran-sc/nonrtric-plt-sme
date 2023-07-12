@@ -1,28 +1,28 @@
 <!--
- -
-   ========================LICENSE_START=================================
-   O-RAN-SC
-   %%
-   Copyright (C) 2023: Nordix Foundation
-   %%
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+-
+========================LICENSE_START=================================
+O-RAN-SC
+%%
+Copyright (C) 2023: Nordix Foundation
+%%
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
         http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-   ========================LICENSE_END===================================
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================LICENSE_END===================================
 
 -->
 
 # O-RAN-SC Non-RealTime RIC CAPIF Provider Stub
 
-This is a Go implementation of a stub for the CAPIF Provider function, based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
+This is a Go implementation of a stub for the CAPIF Provider function, which is based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
 
 This stub offers a user interface that helps to test the functionalities implemented in the O-RAN-SC Capif implementation and the supported features are the following:
 
@@ -75,7 +75,7 @@ The request from the provider domain should include API provider Enrolment Detai
 }
 ```
 
-The CAPIF core proceeds to register the provider and creates Ids for the API provider domain functions that will be return as part as the response message.
+The CAPIF core proceeds to register the provider and creates Ids for the API provider domain functions that will be return as part of the response message.
 
 ### Publish a new API
 
