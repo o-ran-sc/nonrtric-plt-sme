@@ -1,6 +1,6 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
 .. SPDX-License-Identifier: CC-BY-4.0
-.. Copyright (C) 2022 Nordix
+.. Copyright (C) 2022-2023 Nordix
 
 Non-RT RIC Service Management and Exposure (SME)
 ================================================
