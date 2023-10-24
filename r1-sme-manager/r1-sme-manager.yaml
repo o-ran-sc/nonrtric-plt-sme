@@ -1,0 +1,55 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: r1-sme-manager
+  labels:
+    name: r1-sme-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r1-sme-manager-deployment
+  namespace: r1-sme-manager
+  labels:
+    app: r1-sme-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: r1-sme-manager
+  template:
+    metadata:
+      labels:
+        app: r1-sme-manager
+        version: v1
+    spec:
+      containers:
+      - name: r1-sme-manager
+        # image: o-ran-sc.org/nonrtric/plt/r1-sme-manager
+        image: denisgnoonan/r1-sme-manager:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8090
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: "250m"
+          requests:
+            memory: 128Mi
+            cpu: "80m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: r1-sme-manager
+  namespace: r1-sme-manager
+spec:
+  selector:
+    app: r1-sme-manager
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8090
+      nodePort: 31570
+  type: NodePort

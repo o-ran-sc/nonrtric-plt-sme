@@ -1,5 +1,5 @@
 module oransc.org/nonrtric/r1-sme-manager
-
+       
 go 1.19
 
 require (
