@@ -53,6 +53,11 @@ committers:
       company: 'Ericsson Software Technology'
       id: 'BjornMagnussonXA'
       timezone: 'Sweden/Stockholm'
+    - name: 'Denis G Noonan'
+      email: 'denis.noonan@est.tech'
+      company: 'Ericsson Software Technology'
+      id: 'DenisGNoonan'
+      timezone: 'Europe/Dublin'
 tsc:
     # yamllint disable-line rule:line-length
     approval: 'https://wiki.o-ran-sc.org/display/TOC#ORANSCTechnicalOversightCommittee(TOC)-20221006 #3.a.i'
