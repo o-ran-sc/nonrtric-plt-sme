@@ -5,3 +5,15 @@ docs/_build/
 .project
 .settings
 .pydevproject
+go.work*
+servicemanager.tar.gz
+servicemanager/servicemanager
+servicemanager/specs
+coverage.txt
+# Ignore all .env files
+.env*
+# Except for .env.example
+!.env.example
+# Ignore all files in folders named "mocks"
+**/mocks/*
+servicemanager/specs/
