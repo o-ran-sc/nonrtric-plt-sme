@@ -1,0 +1,509 @@
+#  ============LICENSE_START===============================================
+#  Copyright (C) 2024 OpenInfra Foundation Europe. All rights reserved.
+#  ========================================================================
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#  ============LICENSE_END=================================================
+#
+
+
+
+# Default values for Kong's Helm Chart.
+#
+# Sections:
+# - Deployment parameters
+# - Kong parameters
+# - Ingress Controller parameters
+# - Postgres sub-chart parameters
+# - Miscellaneous parameters
+# - Kong Enterprise parameters
+
+# For a detailed example of values.yaml, please see https://github.com/Kong/charts/blob/main/charts/kong/values.yaml
+
+# -----------------------------------------------------------------------------
+# Deployment parameters
+# -----------------------------------------------------------------------------
+
+deployment:
+  kong:
+    enabled: true
+  serviceAccount:
+    create: true
+    automountServiceAccountToken: false
+
+  test:
+    enabled: false
+  daemonset: false
+  hostNetwork: false
+  hostname: ""
+  prefixDir:
+    sizeLimit: 256Mi
+  tmpDir:
+    sizeLimit: 1Gi
+
+# -----------------------------------------------------------------------------
+# Kong parameters
+# -----------------------------------------------------------------------------
+
+env:
+  database: "postgres"
+  router_flavor: "traditional"
+  nginx_worker_processes: "2"
+  proxy_access_log: /dev/stdout
+  admin_access_log: /dev/stdout
+  admin_gui_access_log: /dev/stdout
+  portal_api_access_log: /dev/stdout
+  proxy_error_log: /dev/stderr
+  admin_error_log: /dev/stderr
+  admin_gui_error_log: /dev/stderr
+  portal_api_error_log: /dev/stderr
+  prefix: /kong_prefix/
+
+extraLabels: {}
+
+# Specify Kong's Docker image and repository details here
+image:
+  repository: kong
+  tag: "3.4"
+
+  # Specify a semver version if your image tag is not one (e.g. "nightly")
+  effectiveSemver:
+  pullPolicy: IfNotPresent
+
+# Specify Kong admin API service and listener configuration
+admin:
+  enabled: true
+  type: NodePort
+  loadBalancerClass:
+  annotations: {}
+  labels: {}
+
+  http:
+    # Enable plaintext HTTP listen for the admin API
+    enabled: true
+    servicePort: 8001
+    containerPort: 8001
+    nodePort: 32081
+    parameters: []
+
+  tls:
+    # Enable HTTPS listen for the admin API
+    enabled: true
+    servicePort: 8444
+    containerPort: 8444
+    nodePort: 32443
+    parameters:
+    - http2
+
+    client:
+      caBundle: ""
+      secretName: ""
+
+  # Kong admin ingress settings. Useful if you want to expose the Admin
+  # API of Kong outside the k8s cluster.
+  ingress:
+    # Enable/disable exposure using ingress.
+    enabled: false
+  
+# Specify Kong status listener configuration
+status:
+  enabled: true
+  http:
+    enabled: true
+    containerPort: 8100
+    parameters: []
+
+  tls:
+    enabled: false
+    containerPort: 8543
+    parameters: []
+
+clusterCaSecretName: ""
+
+cluster:
+  enabled: false
+
+  tls:
+    enabled: false
+
+  type: ClusterIP
+  loadBalancerClass:
+
+  # Kong cluster ingress settings. Useful if you want to split CP and DP
+  # in different clusters.
+  ingress:
+    # Enable/disable exposure using ingress.
+    enabled: false
+
+# Specify Kong proxy service configuration
+proxy:
+  # Enable creating a Kubernetes service for the proxy
+  enabled: true
+  type: LoadBalancer
+  loadBalancerClass:
+  nameOverride: ""
+  annotations: {}
+  labels:
+    enable-metrics: "true"
+
+  http:
+    # Enable plaintext HTTP listen for the proxy
+    enabled: true
+    servicePort: 80
+    containerPort: 8000
+    # Set a nodePort which is available if service type is NodePort
+    nodePort: 32080
+    parameters: []
+
+  tls:
+    # Enable HTTPS listen for the proxy
+    enabled: true
+    servicePort: 443
+    containerPort: 8443
+    parameters:
+    - http2
+
+  stream: []
+
+  ingress:
+    enabled: false
+
+udpProxy:
+  enabled: false
+
+plugins: {}
+
+secretVolumes: []
+
+# Enable/disable migration jobs, and set annotations for them
+migrations:
+  preUpgrade: true
+  postUpgrade: true
+  annotations:
+    sidecar.istio.io/inject: false
+  jobAnnotations: {}
+  backoffLimit:
+  resources: {}
+  
+# Kong's configuration for DB-less mode
+dblessConfig:
+  configMap: ""
+  secret: ""
+  config: |
+
+# -----------------------------------------------------------------------------
+# Ingress Controller parameters
+# -----------------------------------------------------------------------------
+
+ingressController:
+  enabled: true
+  image:
+    repository: kong/kubernetes-ingress-controller
+    tag: "3.0"
+    effectiveSemver:
+  args: []
+
+  gatewayDiscovery:
+    enabled: false
+    generateAdminApiService: false
+    adminApiService:
+      namespace: ""
+      name: ""
+
+  watchNamespaces: []
+
+  env:
+    kong_admin_tls_skip_verify: true
+
+  admissionWebhook:
+    enabled: true
+    failurePolicy: Ignore
+    port: 8080
+    certificate:
+      provided: false
+    namespaceSelector: {}
+    service:
+      labels: {}
+
+  ingressClass: kong
+  ingressClassAnnotations: {}
+
+  rbac:
+    create: true
+
+  livenessProbe:
+    httpGet:
+      path: "/healthz"
+      port: 10254
+      scheme: HTTP
+    initialDelaySeconds: 5
+    timeoutSeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: "/readyz"
+      port: 10254
+      scheme: HTTP
+    initialDelaySeconds: 5
+    timeoutSeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  resources: {}
+
+  konnect:
+    enabled: false
+
+  adminApi:
+    tls:
+      client:
+        enabled: false
+
+
+# -----------------------------------------------------------------------------
+# Postgres sub-chart parameters
+# -----------------------------------------------------------------------------
+
+postgresql:
+  enabled: true
+  auth:
+    username: kong
+    database: kong
+    password: kong
+    postgresPassword: kong
+  image:
+    # use postgres < 14 until is https://github.com/Kong/kong/issues/8533 resolved 
+    tag: 13.11.0-debian-11-r20
+  service:
+    ports:
+      postgresql: "5432"
+  volumePermissions:
+    enabled: true 
+  primary:
+    persistence:
+      existingClaim: kong-postgresql-pvc
+
+# -----------------------------------------------------------------------------
+# Configure cert-manager integration
+# -----------------------------------------------------------------------------
+
+certificates:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Miscellaneous parameters
+# -----------------------------------------------------------------------------
+
+waitImage:
+  enabled: true
+  pullPolicy: IfNotPresent
+
+updateStrategy: {}
+
+resources: {}
+
+readinessProbe:
+  httpGet:
+    path: "/status/ready"
+    port: status
+    scheme: HTTP
+  initialDelaySeconds: 5
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: "/status"
+    port: status
+    scheme: HTTP
+  initialDelaySeconds: 5
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - kong
+        - quit
+        - '--wait=15'
+
+terminationGracePeriodSeconds: 30
+
+
+tolerations: []
+
+nodeSelector: {}
+
+podAnnotations:
+  kuma.io/gateway: enabled
+  traffic.sidecar.istio.io/includeInboundPorts: ""
+
+podLabels: {}
+
+replicaCount: 1
+
+deploymentAnnotations: {}
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+podSecurityPolicy:
+  enabled: false
+  labels: {}
+  annotations: {}
+  spec:
+    privileged: false
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    runAsGroup:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - 'configMap'
+      - 'secret'
+      - 'emptyDir'
+      - 'projected'
+    allowPrivilegeEscalation: false
+    hostNetwork: false
+    hostIPC: false
+    hostPID: false
+    readOnlyRootFilesystem: true
+
+
+priorityClassName: ""
+
+securityContext: {}
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  runAsUser: 1000
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+    - ALL
+
+serviceMonitor:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Kong Enterprise parameters
+# -----------------------------------------------------------------------------
+
+enterprise:
+  enabled: false
+
+manager:
+  enabled: true
+  type: NodePort
+  loadBalancerClass:
+  annotations: {}
+  labels: {}
+
+  http:
+    enabled: true
+    servicePort: 8002
+    containerPort: 8002
+    parameters: []
+
+  tls:
+    enabled: true
+    servicePort: 8445
+    containerPort: 8445
+    parameters:
+    - http2
+
+  ingress:
+    enabled: false
+
+portal:
+  enabled: true
+  type: NodePort
+  loadBalancerClass:
+  annotations: {}
+  labels: {}
+
+  http:
+    enabled: true
+    servicePort: 8003
+    containerPort: 8003
+    parameters: []
+
+  tls:
+    enabled: true
+    servicePort: 8446
+    containerPort: 8446
+    parameters:
+    - http2
+
+  ingress:
+    enabled: false
+
+portalapi:
+  enabled: true
+  type: NodePort
+  loadBalancerClass:
+  annotations: {}
+  labels: {}
+
+  http:
+    enabled: true
+    servicePort: 8004
+    containerPort: 8004
+    parameters: []
+
+  tls:
+    enabled: true
+    servicePort: 8447
+    containerPort: 8447
+    parameters:
+    - http2
+
+  ingress:
+    enabled: false
+
+clustertelemetry:
+  enabled: false
+  annotations: {}
+  labels: {}
+
+  tls:
+    enabled: false
+
+  type: ClusterIP
+  loadBalancerClass:
+
+  ingress:
+    enabled: false
+
+extraConfigMaps: []
+
+extraSecrets: []
+
+extraObjects: []
