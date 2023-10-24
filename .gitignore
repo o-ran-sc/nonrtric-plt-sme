@@ -5,3 +5,16 @@ docs/_build/
 .project
 .settings
 .pydevproject
+go.work*
+r1-sme-manager.tar.gz
+r1-sme-manager/r1-sme-manager
+r1-sme-manager/specs
+# Ignore generated code
+*.gen.go
+# Ignore all .env files
+.env*
+# Except for .env.example
+!.env.example
+# Ignore all files in folders named "mocks"
+**/mocks/*
+r1-sme-manager/specs/

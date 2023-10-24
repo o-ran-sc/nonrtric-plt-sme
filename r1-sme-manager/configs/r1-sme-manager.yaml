@@ -1,0 +1,75 @@
+#  ============LICENSE_START===============================================
+#  Copyright (C) 2024 OpenInfra Foundation Europe. All rights reserved.
+#  ========================================================================
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#  ============LICENSE_END=================================================
+#
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r1-sme-manager
+  namespace: r1-sme-manager
+  labels:
+    app: r1-sme-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: r1-sme-manager
+  template:
+    metadata:
+      labels:
+        app: r1-sme-manager
+        version: v1
+    spec:
+      containers:
+      - name: r1-sme-manager
+        image: o-ran-sc.org/nonrtric/plt/r1-sme-manager:latest
+        imagePullPolicy: Always
+        env:
+            - name: R1SME_ENV
+              value: ""
+        ports:
+        - containerPort: 8095
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: "250m"
+          requests:
+            memory: 128Mi
+            cpu: "80m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/.env
+          subPath: .env
+      volumes:
+      - name: config-volume
+        configMap:
+          name: env-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: r1-sme-manager
+  namespace: r1-sme-manager
+spec:
+  selector:
+    app: r1-sme-manager
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8095
+      nodePort: 31575
+  type: NodePort
