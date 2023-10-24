@@ -1,8 +1,9 @@
+#!/bin/bash
 # -
 #   ========================LICENSE_START=================================
 #   O-RAN-SC
 #   %%
-#   Copyright (C) 2023: Nordix Foundation
+#   Copyright (C) 2024: OpenInfra Foundation Europe
 #   %%
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,30 +19,12 @@
 #   ========================LICENSE_END===================================
 #
 
-#!/bin/bash
-
 make_internal_dirs () {
-    echo "Make the internal directory structure"
-    mkdir -p internal/config
-    mkdir -p internal/discoverservice
+    echo "Make the internal API directory structure"
     mkdir -p internal/discoverserviceapi
-    mkdir -p internal/eventsapi
-    mkdir -p internal/eventservice
-    mkdir -p internal/helmmanagement
-    mkdir -p internal/invokermanagement
     mkdir -p internal/invokermanagementapi
-    mkdir -p internal/keycloak
-    mkdir -p internal/loggingapi
-    mkdir -p internal/providermanagement
     mkdir -p internal/providermanagementapi
-    mkdir -p internal/publishservice
     mkdir -p internal/publishserviceapi
-    mkdir -p internal/restclient
-}
-
-tear_down () {
-    echo "Tear down the internal directory"
-    rm -rf internal/
 }
 
 set_up_dir_paths () {
@@ -49,23 +32,6 @@ set_up_dir_paths () {
     cwd=$PWD
     sme_dir=$(dirname "$cwd")
     capifcore_dir="$sme_dir/capifcore"
-}
-
-copy_test_wrappers () {
-    echo "Copy the test wrappers"
-    cp -v $capifcore_dir/internal/config/*.go internal/config
-    cp -v $capifcore_dir/internal/discoverservice/*.go internal/discoverservice
-    cp -v $capifcore_dir/internal/eventsapi/type*.go internal/eventsapi
-    cp -v $capifcore_dir/internal/eventservice/*.go internal/eventservice
-    cp -v $capifcore_dir/internal/helmmanagement/*.go internal/helmmanagement
-    cp -v $capifcore_dir/internal/invokermanagement/*.go internal/invokermanagement
-    cp -v $capifcore_dir/internal/invokermanagementapi/type*.go internal/invokermanagementapi
-    cp -v $capifcore_dir/internal/keycloak/*.go internal/keycloak
-    cp -v $capifcore_dir/internal/providermanagement/*.go internal/providermanagement
-    cp -v $capifcore_dir/internal/providermanagementapi/*.go internal/providermanagementapi
-    cp -v $capifcore_dir/internal/publishservice/*.go internal/publishservice
-    cp -v $capifcore_dir/internal/publishserviceapi/type*.go internal/publishserviceapi
-    cp -v $capifcore_dir/internal/restclient/*.go internal/restclient
 }
 
 curl_api_specs () {
@@ -86,24 +52,23 @@ curl_api_specs () {
     curl https://www.3gpp.org/ftp/Specs/archive/29_series/29.572/29572-h60.zip -o specs/common29572apidef.zip
 }
 
-jar_extraction () {
+spec_extraction () {
     cd specs/
-    echo "Jar extraction"
-    jar xvf apidef.zip
-    jar xvf common29122apidef.zip
-    jar xvf common29508apidef.zip
-    jar xvf common29510apidef.zip
-    jar xvf common29512apidef.zip
-    jar xvf common29514apidef.zip
-    jar xvf common29517apidef.zip
-    jar xvf common29518apidef.zip
-    jar xvf common29522apidef.zip
-    jar xvf common29523apidef.zip
-    jar xvf common29554apidef.zip
-    jar xvf common29571apidef.zip
-    jar xvf common29572apidef.zip
+    echo "Specifications extraction"
+    unzip -o apidef.zip
+    unzip -o common29122apidef.zip
+    unzip -o common29508apidef.zip
+    unzip -o common29510apidef.zip
+    unzip -o common29512apidef.zip
+    unzip -o common29514apidef.zip
+    unzip -o common29517apidef.zip
+    unzip -o common29518apidef.zip
+    unzip -o common29522apidef.zip
+    unzip -o common29523apidef.zip
+    unzip -o common29554apidef.zip
+    unzip -o common29571apidef.zip
+    unzip -o common29572apidef.zip
 }
-
 
 fix_with_sed () {
     echo "Fixing with sed"
@@ -120,7 +85,7 @@ fix_with_sed () {
     sed -i -e 'H;x;/^\(  *\)\n\1/{s/\n.*//;x;d;}' -e 's/.*//;x;/\MbsSession/{s/^\( *\).*/ \1/;x;d;}' TS29571_CommonData.yaml
     sed -i -e 'H;x;/^\(  *\)\n\1/{s/\n.*//;x;d;}' -e 's/.*//;x;/\SpatialValidityCond/{s/^\( *\).*/ \1/;x;d;}' TS29571_CommonData.yaml
 
-    # Remove attributes that can not be generated easily.
+    # Remove attributes that cannot be generated easily.
     sed -i '/accessTokenError.*/,+3d' TS29571_CommonData.yaml
     sed -i '/accessTokenRequest.*/,+3d' TS29571_CommonData.yaml
     sed -i '/oneOf.*/,+2d' TS29222_CAPIF_Publish_Service_API.yaml
@@ -161,7 +126,7 @@ gentools () {
     ./specificationfixer -apidir="$sme_dir/r1-sme-manager/specs"
 }
 
-code_generation () {
+generate_apis_from_spec () {
     go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.10.1
     PATH=$PATH:~/go/bin
 
@@ -169,93 +134,81 @@ code_generation () {
 
     echo "Generating TS29122_CommonData"
     mkdir -p internal/common29122
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/common29122/generator_settings.yaml" specs/TS29122_CommonData.yaml
+    oapi-codegen --config "gogeneratorspecs/common29122/generator_settings.yaml" specs/TS29122_CommonData.yaml
 
     echo "Generating aggregated CommonData"
     mkdir -p internal/common
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/common/generator_settings.yaml" specs/CommonData.yaml
+    oapi-codegen --config "gogeneratorspecs/common/generator_settings.yaml" specs/CommonData.yaml
 
     echo "Generating TS29571_CommonData"
     mkdir -p internal/common29571
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/common29571/generator_settings.yaml" specs/TS29571_CommonData.yaml
+    oapi-codegen --config "gogeneratorspecs/common29571/generator_settings.yaml" specs/TS29571_CommonData.yaml
 
     echo "Generating TS29222_CAPIF_Publish_Service_API"
     mkdir -p internal/publishserviceapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/publishserviceapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Publish_Service_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/publishserviceapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Publish_Service_API.yaml
+    oapi-codegen --config "gogeneratorspecs/publishserviceapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Publish_Service_API.yaml
+    oapi-codegen --config "gogeneratorspecs/publishserviceapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Publish_Service_API.yaml
+    oapi-codegen --config "gogeneratorspecs/publishserviceapi/generator_settings_client.yaml" specs/TS29222_CAPIF_Publish_Service_API.yaml
 
     echo "Generating TS29222_CAPIF_API_Invoker_Management_API"
     mkdir -p internal/invokermanagementapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/invokermanagementapi/generator_settings_types.yaml" specs/TS29222_CAPIF_API_Invoker_Management_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/invokermanagementapi/generator_settings_server.yaml" specs/TS29222_CAPIF_API_Invoker_Management_API.yaml
+    oapi-codegen --config "gogeneratorspecs/invokermanagementapi/generator_settings_types.yaml" specs/TS29222_CAPIF_API_Invoker_Management_API.yaml
+    oapi-codegen --config "gogeneratorspecs/invokermanagementapi/generator_settings_server.yaml" specs/TS29222_CAPIF_API_Invoker_Management_API.yaml
+    oapi-codegen --config "gogeneratorspecs/invokermanagementapi/generator_settings_client.yaml" specs/TS29222_CAPIF_API_Invoker_Management_API.yaml
 
     echo "Generating TS29222_CAPIF_API_Provider_Management_API"
     mkdir -p internal/providermanagementapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/providermanagementapi/generator_settings_types.yaml" specs/TS29222_CAPIF_API_Provider_Management_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/providermanagementapi/generator_settings_server.yaml" specs/TS29222_CAPIF_API_Provider_Management_API.yaml
+    oapi-codegen --config "gogeneratorspecs/providermanagementapi/generator_settings_types.yaml" specs/TS29222_CAPIF_API_Provider_Management_API.yaml
+    oapi-codegen --config "gogeneratorspecs/providermanagementapi/generator_settings_server.yaml" specs/TS29222_CAPIF_API_Provider_Management_API.yaml
+    oapi-codegen --config "gogeneratorspecs/providermanagementapi/generator_settings_client.yaml" specs/TS29222_CAPIF_API_Provider_Management_API.yaml
 
     echo "Generating TS29222_CAPIF_Discover_Service_API"
     mkdir -p internal/discoverserviceapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/discoverserviceapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Discover_Service_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/discoverserviceapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Discover_Service_API.yaml
-
-    echo "Generating TS29222_CAPIF_Logging_API_Invocation_API"
-    mkdir -p internal/loggingapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/loggingapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Logging_API_Invocation_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/loggingapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Logging_API_Invocation_API.yaml
-
-    echo "Generating TS29222_CAPIF_Routing_Info_API"
-    mkdir -p internal/routinginfoapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/routinginfoapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Routing_Info_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/routinginfoapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Routing_Info_API.yaml
-
-    echo "Generating TS29222_CAPIF_Access_Control_Policy_API"
-    mkdir -p internal/accesscontrolpolicyapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/accesscontrolpolicyapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Access_Control_Policy_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/accesscontrolpolicyapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Access_Control_Policy_API.yaml
-
-    echo "Generating TS29222_CAPIF_Events_API"
-    mkdir -p internal/eventsapi
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/eventsapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Events_API.yaml
-    oapi-codegen --config "$capifcore_dir/gogeneratorspecs/eventsapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Events_API.yaml
-
-    echo "Clean up"
-    rm -rf specs
+    oapi-codegen --config "gogeneratorspecs/discoverserviceapi/generator_settings_types.yaml" specs/TS29222_CAPIF_Discover_Service_API.yaml
+    oapi-codegen --config "gogeneratorspecs/discoverserviceapi/generator_settings_server.yaml" specs/TS29222_CAPIF_Discover_Service_API.yaml
+    oapi-codegen --config "gogeneratorspecs/discoverserviceapi/generator_settings_client.yaml" specs/TS29222_CAPIF_Discover_Service_API.yaml
 }
 
-
-fix_package_imports () {
-    echo "Fix package imports"
-    if find "$cwd/internal" -type f -exec sed -i 's/oransc.org\/nonrtric\/capifcore/oransc.org\/nonrtric\/r1-sme-manager/g' {} +; then
-        echo "Package import replacement successful"
-    else
-        echo "Package import replacement failed"
-    fi
-}
-
-generate_mocks () {
-    echo "Generating mocks"
-    go generate ./...
-}
-
-running_tests () {
-    echo "Running tests"
-    cd internal
-    go clean -testcache
-    go test ./publishservice ./discoverservice
+run_tests () {
+    # Make sure that R1SME_ENV is configured with the required .env file, e.g. 
+    # export R1SME_ENV=development
+    cd "$cwd"
+    go test -p=1 -count=1 ./...
 }
 
 # Main code block
+echo $(date -u) "generate started"
 
-tear_down
+# Check if the run-tests switch is provided as a command-line argument
+RUN_TESTS=false
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -t|--run-tests)
+            RUN_TESTS=true
+            shift  # consume the switch
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 make_internal_dirs
 set_up_dir_paths
-copy_test_wrappers
 curl_api_specs
-jar_extraction
+spec_extraction
 fix_with_sed
 gentools
-code_generation
-fix_package_imports
-generate_mocks
-running_tests
+generate_apis_from_spec
+
+# Check if the run-tests switch is enabled
+if [ "$RUN_TESTS" = true ]; then
+    echo "Running tests!"
+    run_tests
+else
+    echo "Not running tests."
+fi
+
+echo $(date -u) "generate completed"
