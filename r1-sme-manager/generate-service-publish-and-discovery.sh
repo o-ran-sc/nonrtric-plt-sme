@@ -22,7 +22,6 @@
 
 make_internal_dirs () {
     echo "Make the internal directory structure"
-    mkdir -p internal/config
     mkdir -p internal/discoverservice
     mkdir -p internal/discoverserviceapi
     mkdir -p internal/eventsapi
@@ -30,7 +29,6 @@ make_internal_dirs () {
     mkdir -p internal/helmmanagement
     mkdir -p internal/invokermanagement
     mkdir -p internal/invokermanagementapi
-    mkdir -p internal/keycloak
     mkdir -p internal/loggingapi
     mkdir -p internal/providermanagement
     mkdir -p internal/providermanagementapi
@@ -53,14 +51,12 @@ set_up_dir_paths () {
 
 copy_test_wrappers () {
     echo "Copy the test wrappers"
-    cp -v $capifcore_dir/internal/config/*.go internal/config
     cp -v $capifcore_dir/internal/discoverservice/*.go internal/discoverservice
     cp -v $capifcore_dir/internal/eventsapi/type*.go internal/eventsapi
     cp -v $capifcore_dir/internal/eventservice/*.go internal/eventservice
     cp -v $capifcore_dir/internal/helmmanagement/*.go internal/helmmanagement
     cp -v $capifcore_dir/internal/invokermanagement/*.go internal/invokermanagement
     cp -v $capifcore_dir/internal/invokermanagementapi/type*.go internal/invokermanagementapi
-    cp -v $capifcore_dir/internal/keycloak/*.go internal/keycloak
     cp -v $capifcore_dir/internal/providermanagement/*.go internal/providermanagement
     cp -v $capifcore_dir/internal/providermanagementapi/*.go internal/providermanagementapi
     cp -v $capifcore_dir/internal/publishservice/*.go internal/publishservice
@@ -103,7 +99,6 @@ jar_extraction () {
     jar xvf common29571apidef.zip
     jar xvf common29572apidef.zip
 }
-
 
 fix_with_sed () {
     echo "Fixing with sed"
@@ -161,7 +156,7 @@ gentools () {
     ./specificationfixer -apidir="$sme_dir/r1-sme-manager/specs"
 }
 
-code_generation () {
+generate_apis_from_spec () {
     go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.10.1
     PATH=$PATH:~/go/bin
 
@@ -223,7 +218,6 @@ code_generation () {
     rm -rf specs
 }
 
-
 fix_package_imports () {
     echo "Fix package imports"
     if find "$cwd/internal" -type f -exec sed -i 's/oransc.org\/nonrtric\/capifcore/oransc.org\/nonrtric\/r1-sme-manager/g' {} +; then
@@ -233,20 +227,39 @@ fix_package_imports () {
     fi
 }
 
+remove_keycloak () {
+    echo "Remove keycloak - invokermanagement.go"
+    cd internal/invokermanagement
+    sed -i 's/func NewInvokerManager(publishRegister publishservice.PublishRegister, km keycloak.AccessManagement, eventChannel chan<- eventsapi.EventNotification)/func NewInvokerManager(publishRegister publishservice.PublishRegister, eventChannel chan<- eventsapi.EventNotification)/' invokermanagement.go
+    sed -i '/func (im \*InvokerManager) addClientInKeycloak/,/^}/d' invokermanagement.go
+    sed -i '/addClientInKeycloak/d' invokermanagement.go
+    sed -i '/keycloak/d' invokermanagement.go   
+    sed -i '/^$/N;/\n$/D' invokermanagement.go
+
+    echo "Remove keycloak - invokermanagement_test.go"
+    sed -i 's/im := NewInvokerManager(publishRegister, keycloakMgm, eventChannel)/im := NewInvokerManager(publishRegister, eventChannel)/' invokermanagement_test.go
+    sed -i 's/func getEcho(publishRegister publishservice.PublishRegister, keycloakMgm keycloak.AccessManagement)/func getEcho(publishRegister publishservice.PublishRegister)/' invokermanagement_test.go
+    sed -i 's/getEcho(\&publishRegisterMock, \&accessMgmMock)/getEcho(\&publishRegisterMock)/' invokermanagement_test.go
+    sed -i '/accessMgmMock/d' invokermanagement_test.go
+    sed -i '/client/d' invokermanagement_test.go
+    sed -i '/keycloak/d' invokermanagement_test.go
+    sed -i '/^$/N;/\n$/D' invokermanagement_test.go
+}
+
 generate_mocks () {
+    cd $cwd
     echo "Generating mocks"
     go generate ./...
 }
 
 running_tests () {
     echo "Running tests"
-    cd internal
+    cd "$cwd/internal"
     go clean -testcache
     go test ./publishservice ./discoverservice
 }
 
 # Main code block
-
 tear_down
 make_internal_dirs
 set_up_dir_paths
@@ -255,7 +268,8 @@ curl_api_specs
 jar_extraction
 fix_with_sed
 gentools
-code_generation
+generate_apis_from_spec
 fix_package_imports
+remove_keycloak
 generate_mocks
 running_tests
