@@ -3,6 +3,7 @@
 //   O-RAN-SC
 //   %%
 //   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2023: OpenInfra Foundation Europe.
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -48,18 +49,12 @@ func (ds *DiscoverService) GetAllServiceAPIs(ctx echo.Context, params discoverap
 	if allApis == nil {
 		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Invoker %s not registered", params.ApiInvokerId))
 	}
+
 	filteredApis := []publishapi.ServiceAPIDescription{}
-	gatewayDomain := "r1-expo-func-aef"
 	for _, api := range *allApis {
-		if !matchesFilter(api, params) {
-			continue
+		if matchesFilter(api, params) {
+			filteredApis = append(filteredApis, api)
 		}
-		profiles := *api.AefProfiles
-		for i, profile := range profiles {
-			profile.DomainName = &gatewayDomain // Hardcoded for now. Should be provided through some other mechanism.
-			profiles[i] = profile
-		}
-		filteredApis = append(filteredApis, api)
 	}
 	discoveredApis := discoverapi.DiscoveredAPIs{
 		ServiceAPIDescriptions: &filteredApis,
