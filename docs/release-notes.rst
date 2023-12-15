@@ -1,6 +1,7 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright (C) 2022 Nordix
+.. Copyright (C) 2022-2023 Nordix Foundation. All rights reserved
+.. Copyright (C) 2023 CloudInfra Foundation Europe. All rights reserved
 
 =============
 Release-Notes
@@ -23,7 +24,10 @@ Version history SME capifcore
 | 2023-02-10 | 1.0.1    | Yennifer Chacon  | G Maintenance   |
 |            |          |                  | Release         |
 +------------+----------+------------------+-----------------+
-| 2023-06-16 | 1.0.1    | Yennifer Chacon  | G Release       |
+| 2023-06-16 | 1.1.0    | Yennifer Chacon  | H Release       |
+|            |          |                  |                 |
++------------+----------+------------------+-----------------+
+| 2023-12-15 | 1.2.0    | John Keeney      | I Release       |
 |            |          |                  |                 |
 +------------+----------+------------------+-----------------+
 
@@ -88,5 +92,26 @@ H Release
 +-----------------------------+---------------------------------------------------+
 | **Purpose of the delivery** | nonrtric-plt-capifcore:1.1.0                      |
 |                             |    Add more CAPIF core functions and APIs         |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+
+I Release
+---------
++-----------------------------+---------------------------------------------------+
+| **Project**                 | Non-RT RIC CAPIF Core                             |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Repo/commit-ID**          | nonrtric/plt/sme/                                 |
+|                             | b0d960af6287a3da8744af704b89daa5e23f0b54          |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Release designation**     | I release                                         |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Release date**            | 2023-12-15                                        |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Purpose of the delivery** | nonrtric-plt-capifcore:1.2.0                      |
+|                             |    Improve capability to use with Kong            |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
