@@ -1,6 +1,7 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright (C) 2022 Nordix
+.. Copyright (C) 2022-2023 Nordix Foundation. All rights reserved
+.. Copyright (C) 2023 CloudInfra Foundation Europe. All rights reserved
 
 =============
 Release-Notes
@@ -23,7 +24,7 @@ Version history SME capifcore
 | 2023-02-10 | 1.0.1    | Yennifer Chacon  | G Maintenance   |
 |            |          |                  | Release         |
 +------------+----------+------------------+-----------------+
-| 2023-06-16 | 1.0.1    | Yennifer Chacon  | G Release       |
+| 2023-06-16 | 1.0.1    | Yennifer Chacon  | H Release       |
 |            |          |                  |                 |
 +------------+----------+------------------+-----------------+
 
