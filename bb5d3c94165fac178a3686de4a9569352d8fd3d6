@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "379d994f_3bae3139",
+        "filename": "capifcore/internal/publishservice/publishservice_test.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 1001877
+      },
+      "writtenOn": "2024-01-15T16:24:49Z",
+      "side": 1,
+      "message": "minor: whitespace can be removed",
+      "range": {
+        "startLine": 134,
+        "startChar": 31,
+        "endLine": 134,
+        "endChar": 32
+      },
+      "revId": "bb5d3c94165fac178a3686de4a9569352d8fd3d6",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
