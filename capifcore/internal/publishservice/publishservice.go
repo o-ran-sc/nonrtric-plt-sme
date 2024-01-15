@@ -2,7 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2022-2023: Nordix Foundation
+//   Copyright (C) 2024: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -96,6 +97,12 @@ func (ps *PublishService) GetAllPublishedServices() []publishapi.ServiceAPIDescr
 // Retrieve all published APIs.
 func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
 	serviceDescriptions, ok := ps.publishedServices[apfId]
+
+	// Treat a zero-length publishedServices slice has a StatusNotFound error
+	if ok && (len(serviceDescriptions) == 0) {
+		ok = false
+	}
+
 	if ok {
 		err := ctx.JSON(http.StatusOK, serviceDescriptions)
 		if err != nil {
