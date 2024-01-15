@@ -2,7 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2022-2023: Nordix Foundation
+//   Copyright (C) 2024: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -57,7 +58,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	helmManagerMock.On("InstallHelmChart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	serviceUnderTest, eventChannel, requestHandler := getEcho(&serviceRegisterMock, &helmManagerMock)
 
-	// Check no services published for provider
+	// Check no services published
 	result := testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
 
 	assert.Equal(t, http.StatusNotFound, result.Code())
@@ -118,7 +119,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	helmManagerMock.AssertCalled(t, "UninstallHelmChart", namespace, chartName)
 	assert.Empty(t, serviceUnderTest.getAllAefIds())
 
-	// Check no services published
+	// Check no services published for a provider
 	result = testutil.NewRequest().Get("/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
 
 	if publishEvent, ok := waitForEvent(eventChannel, 1*time.Second); ok {
@@ -128,6 +129,10 @@ func TestPublishUnpublishService(t *testing.T) {
 		assert.Equal(t, eventsapi.CAPIFEventSERVICEAPIUNAVAILABLE, publishEvent.Events)
 	}
 
+	assert.Equal(t, http.StatusNotFound, result.Code())
+
+	// Check no services published
+	result = testutil.NewRequest().Get("/"+apfId+"/service-apis").Go(t, requestHandler)
 	assert.Equal(t, http.StatusNotFound, result.Code())
 }
 
