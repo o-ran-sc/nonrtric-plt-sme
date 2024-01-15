@@ -2,7 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2022-2023: Nordix Foundation
+//   Copyright (C) 2024: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -27,7 +28,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/labstack/echo/v4"
+	echo "github.com/labstack/echo/v4"
 	"k8s.io/utils/strings/slices"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
@@ -95,17 +96,17 @@ func (ps *PublishService) GetAllPublishedServices() []publishapi.ServiceAPIDescr
 
 // Retrieve all published APIs.
 func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
-	serviceDescriptions, ok := ps.publishedServices[apfId]
-	if ok {
-		err := ctx.JSON(http.StatusOK, serviceDescriptions)
-		if err != nil {
-			// Something really bad happened, tell Echo that our handler failed
-			return err
-		}
-	} else {
-		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf("Provider %s not registered", apfId))
+	if !ps.serviceRegister.IsPublishingFunctionRegistered(apfId) {
+		errorMsg := fmt.Sprintf("Unable to get the service due to %s api is only available for publishers", apfId)
+		return sendCoreError(ctx, http.StatusForbidden, errorMsg)
 	}
 
+	serviceDescriptions := ps.publishedServices[apfId]
+	err := ctx.JSON(http.StatusOK, serviceDescriptions)
+	if err != nil {
+		// Something really bad happened, tell Echo that our handler failed
+		return err
+	}
 	return nil
 }
 
