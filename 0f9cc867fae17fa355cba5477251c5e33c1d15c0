@@ -16,6 +16,24 @@
       "message": "possibly 200 [] is the correct reponse when no services.",
       "revId": "0f9cc867fae17fa355cba5477251c5e33c1d15c0",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "19a446bb_1367da7e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-01-23T12:04:44Z",
+      "side": 1,
+      "message": "Code updated accordingly.",
+      "parentUuid": "688a2ca9_7908d0ce",
+      "revId": "0f9cc867fae17fa355cba5477251c5e33c1d15c0",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
