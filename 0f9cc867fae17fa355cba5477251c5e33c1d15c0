@@ -57,6 +57,30 @@
       },
       "revId": "0f9cc867fae17fa355cba5477251c5e33c1d15c0",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "8b37f7f2_95e7543e",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-01-25T10:09:20Z",
+      "side": 1,
+      "message": "Yes, we lose the 404 NOT FOUND error (with related description, \"Provider %s not registered\"). In my new response, we return a 200 OK with an empty result set. \n\nIn this way, we get a consistent result regardless with whether we had no original registration or whether we registered the published service and then deleted the registration.\n\nIn the current implementation, if we start our service with no registrations, and call GET all publishers, we return HTTP error code 404, with \"Provider %s not registered\". Then, if we register a publisher, delete the registration, and then call \"GET all publishers\", we get a 200 OK with an empty result set. I see this flow as being inconsistent.\n\nI am basing my view on 29222-i40.doc, as below.\n\n\nTable 8.2.2.2.3.2-3: Data structures supported by the GET Response Body on this resource\n\nData type\tP\tCardinality\tResponse\ncodes\tDescription\narray(ServiceAPIDescription)\tO\t0..N\t200 OK\tDefinition of all service API(s) published by the API publishing function. \n\nn/a\t\t\t307 Temporary Redirect\tTemporary redirection, during resource retrieval. The response shall include a Location header field containing an alternative URI of the resource located in an alternative CAPIF core function.\nRedirection handling is described in clause 5.2.10 of 3GPP TS 29.122 [14].\n\nn/a\t\t\t308 Permanent Redirect\tPermanent redirection, during resource retrieval. The response shall include a Location header field containing an alternative URI of the resource located in an alternative CAPIF core function.\nRedirection handling is described in clause 5.2.10 of 3GPP TS 29.122 [14].\nNOTE:\t\n\nThe mandatory HTTP error status codes for the GET method listed in table 5.2.6-1 of 3GPP TS 29.122 [14] also apply.",
+      "parentUuid": "b6a99a24_8bd5591b",
+      "range": {
+        "startLine": 113,
+        "startChar": 62,
+        "endLine": 113,
+        "endChar": 89
+      },
+      "revId": "0f9cc867fae17fa355cba5477251c5e33c1d15c0",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
