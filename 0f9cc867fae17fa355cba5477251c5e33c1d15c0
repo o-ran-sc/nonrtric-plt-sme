@@ -105,6 +105,30 @@
       },
       "revId": "0f9cc867fae17fa355cba5477251c5e33c1d15c0",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a80c84eb_457f3853",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-01-25T16:40:21Z",
+      "side": 1,
+      "message": "Please add a 404 if apfId is not registered.",
+      "parentUuid": "8b37f7f2_95e7543e",
+      "range": {
+        "startLine": 113,
+        "startChar": 62,
+        "endLine": 113,
+        "endChar": 89
+      },
+      "revId": "0f9cc867fae17fa355cba5477251c5e33c1d15c0",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
