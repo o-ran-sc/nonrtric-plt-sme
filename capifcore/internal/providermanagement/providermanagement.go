@@ -153,6 +153,12 @@ func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, regi
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
+	// Additional validation for PUT
+	if updatedProvider.ApiProvDomId == nil {
+		errDetail := "APIProviderEnrolmentDetails missing required ApiProvDomId"
+		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf(errMsg, errDetail))
+	}
+
 	if err = pm.updateProvider(updatedProvider, registeredProvider); err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}

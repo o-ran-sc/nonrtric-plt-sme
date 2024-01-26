@@ -49,6 +49,49 @@ var (
 	funcIdAEF     = "AEF_id_rApp_as_AEF"
 )
 
+func TestFailedUpdateValidProviderWithNewFunction(t *testing.T) {
+	managerUnderTest, requestHandler := getEcho()
+
+	provider := getProvider()
+	provider.ApiProvDomId = &domainID
+	(*provider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	(*provider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
+	(*provider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+	managerUnderTest.registeredProviders[domainID] = provider
+
+	// Modify the provider
+	updatedProvider := getProvider()
+
+	// We omit to set updatedProvider.ApiProvDomId
+	(*updatedProvider.ApiProvFuncs)[0].ApiProvFuncId = &funcIdAPF
+	(*updatedProvider.ApiProvFuncs)[1].ApiProvFuncId = &funcIdAMF
+	(*updatedProvider.ApiProvFuncs)[2].ApiProvFuncId = &funcIdAEF
+	newDomainInfo := "New domain info"
+	updatedProvider.ApiProvDomInfo = &newDomainInfo
+	newFunctionInfo := "New function info"
+	(*updatedProvider.ApiProvFuncs)[0].ApiProvFuncInfo = &newFunctionInfo
+	newFuncInfoAEF := "new func as AEF"
+	testFuncs := *updatedProvider.ApiProvFuncs
+	testFuncs = append(testFuncs, provapi.APIProviderFunctionDetails{
+		ApiProvFuncInfo: &newFuncInfoAEF,
+		ApiProvFuncRole: provapi.ApiProviderFuncRoleAEF,
+		RegInfo: provapi.RegistrationInformation{
+			ApiProvPubKey: "key",
+		},
+	})
+	updatedProvider.ApiProvFuncs = &testFuncs
+
+	result := testutil.NewRequest().Put("/registrations/"+domainID).WithJsonBody(updatedProvider).Go(t, requestHandler)
+	assert.Equal(t, http.StatusNotFound, result.Code())
+
+	var resultError common29122.ProblemDetails
+	err := result.UnmarshalJsonToObject(&resultError)
+	assert.NoError(t, err, "error unmarshaling response")
+
+	assert.Contains(t, *resultError.Cause, "APIProviderEnrolmentDetails missing required ApiProvDomId")
+	assert.False(t, managerUnderTest.IsFunctionRegistered("AEF_id_new_func_as_AEF"))
+}
+
 func TestRegisterValidProvider(t *testing.T) {
 	managerUnderTest, requestHandler := getEcho()
 
