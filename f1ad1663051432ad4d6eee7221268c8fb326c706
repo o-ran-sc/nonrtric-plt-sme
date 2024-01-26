@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "523a0d71_42eb34ef",
+        "filename": "capifcore/internal/providermanagement/providermanagement.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-01-26T09:37:47Z",
+      "side": 1,
+      "message": "Is ID a URL path parameter? If so 404.",
+      "range": {
+        "startLine": 159,
+        "startChar": 33,
+        "endLine": 159,
+        "endChar": 49
+      },
+      "revId": "f1ad1663051432ad4d6eee7221268c8fb326c706",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
