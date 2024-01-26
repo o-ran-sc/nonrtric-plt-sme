@@ -22,6 +22,30 @@
       },
       "revId": "f1ad1663051432ad4d6eee7221268c8fb326c706",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "498e7945_ecc033a7",
+        "filename": "capifcore/internal/providermanagement/providermanagement.go",
+        "patchSetId": 1
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-01-26T12:14:07Z",
+      "side": 1,
+      "message": "Yes, I have updated the error to be a 404.",
+      "parentUuid": "523a0d71_42eb34ef",
+      "range": {
+        "startLine": 159,
+        "startChar": 33,
+        "endLine": 159,
+        "endChar": 49
+      },
+      "revId": "f1ad1663051432ad4d6eee7221268c8fb326c706",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
