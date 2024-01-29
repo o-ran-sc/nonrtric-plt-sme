@@ -257,21 +257,33 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	ps.lock.Lock()
 	defer ps.lock.Unlock()
 	errMsg := "Unable to update service due to %s."
+	
 	pos, publishedService, err := ps.checkIfServiceIsPublished(apfId, serviceApiId, ctx)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
+	
 	updatedServiceDescription, err := getServiceFromRequest(ctx)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
+
+	// Additional validation for PUT
+	if (updatedServiceDescription.ApiId == nil) || *updatedServiceDescription.ApiId != serviceApiId {
+		errDetail := "ServiceAPIDescription ApiId doesn't match path parameter"
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, errDetail))
+	}
+
 	err = ps.checkProfilesRegistered(apfId, *updatedServiceDescription.AefProfiles)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
+	
 	ps.updateDescription(pos, apfId, &updatedServiceDescription, &publishedService)
+	
 	publishedService.AefProfiles = updatedServiceDescription.AefProfiles
 	ps.publishedServices[apfId][pos] = publishedService
+	
 	err = ctx.JSON(http.StatusOK, publishedService)
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
@@ -279,6 +291,7 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	}
 	return nil
 }
+
 func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId string, ctx echo.Context) (int, publishapi.ServiceAPIDescription, error) {
 	publishedServices, ok := ps.publishedServices[apfId]
 	if !ok {
@@ -292,6 +305,7 @@ func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId s
 	}
 	return 0, publishapi.ServiceAPIDescription{}, fmt.Errorf("service must be published before updating it")
 }
+
 func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, error) {
 	var updatedServiceDescription publishapi.ServiceAPIDescription
 	err := ctx.Bind(&updatedServiceDescription)
@@ -300,6 +314,7 @@ func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, 
 	}
 	return updatedServiceDescription, nil
 }
+
 func (ps *PublishService) updateDescription(pos int, apfId string, updatedServiceDescription, publishedService *publishapi.ServiceAPIDescription) {
 	if updatedServiceDescription.Description != nil {
 		publishedService.Description = updatedServiceDescription.Description
