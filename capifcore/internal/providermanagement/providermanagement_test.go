@@ -82,13 +82,13 @@ func TestFailedUpdateValidProviderWithNewFunction(t *testing.T) {
 	updatedProvider.ApiProvFuncs = &testFuncs
 
 	result := testutil.NewRequest().Put("/registrations/"+domainID).WithJsonBody(updatedProvider).Go(t, requestHandler)
-	assert.Equal(t, http.StatusNotFound, result.Code())
+	assert.Equal(t, http.StatusServiceUnavailable, result.Code())
 
 	var resultError common29122.ProblemDetails
 	err := result.UnmarshalJsonToObject(&resultError)
 	assert.NoError(t, err, "error unmarshaling response")
 
-	assert.Contains(t, *resultError.Cause, "APIProviderEnrolmentDetails missing required ApiProvDomId")
+	assert.Contains(t, *resultError.Cause, "APIProviderEnrolmentDetails ApiProvDomId doesn't match path parameter")
 	assert.False(t, managerUnderTest.IsFunctionRegistered("AEF_id_new_func_as_AEF"))
 }
 

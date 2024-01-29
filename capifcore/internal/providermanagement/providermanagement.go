@@ -154,9 +154,9 @@ func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, regi
 	}
 
 	// Additional validation for PUT
-	if updatedProvider.ApiProvDomId == nil {
-		errDetail := "APIProviderEnrolmentDetails missing required ApiProvDomId"
-		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf(errMsg, errDetail))
+	if (updatedProvider.ApiProvDomId == nil) || *updatedProvider.ApiProvDomId != registrationId {
+		errDetail := "APIProviderEnrolmentDetails ApiProvDomId doesn't match path parameter"
+		return sendCoreError(ctx, http.StatusServiceUnavailable, fmt.Sprintf(errMsg, errDetail))
 	}
 
 	if err = pm.updateProvider(updatedProvider, registeredProvider); err != nil {

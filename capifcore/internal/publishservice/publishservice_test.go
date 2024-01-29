@@ -352,10 +352,7 @@ func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
 
 	newProfileDomain := "new profile Domain name"
 	var protocol publishapi.Protocol = "HTTP_1_1"
-	test := make([]publishapi.AefProfile, 1)
-	test = *serviceDescription.AefProfiles
-	test = append(test, publishapi.AefProfile{
-
+	test := append(*serviceDescription.AefProfiles, publishapi.AefProfile{
 		AefId:      "aefIdNew",
 		DomainName: &newProfileDomain,
 		Protocol:   &protocol,
@@ -382,10 +379,7 @@ func TestUpdateValidServiceWithDeletedFunction(t *testing.T) {
 	//Modify the service
 	updatedServiceDescription := getServiceAPIDescription(aefId, apiName, description)
 	updatedServiceDescription.ApiId = &serviceApiId
-	test1 := make([]publishapi.AefProfile, 1)
-	test1 = *updatedServiceDescription.AefProfiles
-	test1 = append(test1, publishapi.AefProfile{
-
+	test1 := append(*updatedServiceDescription.AefProfiles, publishapi.AefProfile{
 		AefId:      "aefIdNew",
 		DomainName: &newProfileDomain,
 		Protocol:   &protocol,

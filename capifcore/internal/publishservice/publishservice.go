@@ -279,6 +279,7 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	}
 	return nil
 }
+
 func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId string, ctx echo.Context) (int, publishapi.ServiceAPIDescription, error) {
 	publishedServices, ok := ps.publishedServices[apfId]
 	if !ok {
@@ -292,6 +293,7 @@ func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId s
 	}
 	return 0, publishapi.ServiceAPIDescription{}, fmt.Errorf("service must be published before updating it")
 }
+
 func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, error) {
 	var updatedServiceDescription publishapi.ServiceAPIDescription
 	err := ctx.Bind(&updatedServiceDescription)
@@ -300,6 +302,7 @@ func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, 
 	}
 	return updatedServiceDescription, nil
 }
+
 func (ps *PublishService) updateDescription(pos int, apfId string, updatedServiceDescription, publishedService *publishapi.ServiceAPIDescription) {
 	if updatedServiceDescription.Description != nil {
 		publishedService.Description = updatedServiceDescription.Description
