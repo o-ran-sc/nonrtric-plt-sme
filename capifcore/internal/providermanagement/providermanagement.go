@@ -26,12 +26,11 @@ import (
 	"path"
 	"sync"
 
-	"github.com/labstack/echo/v4"
+	echo "github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	provapi "oransc.org/nonrtric/capifcore/internal/providermanagementapi"
-
-	log "github.com/sirupsen/logrus"
 )
 
 //go:generate mockery --name ServiceRegister
@@ -154,9 +153,9 @@ func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, regi
 	}
 
 	// Additional validation for PUT
-	if updatedProvider.ApiProvDomId == nil {
-		errDetail := "APIProviderEnrolmentDetails missing required ApiProvDomId"
-		return sendCoreError(ctx, http.StatusNotFound, fmt.Sprintf(errMsg, errDetail))
+	if (updatedProvider.ApiProvDomId == nil) || (*updatedProvider.ApiProvDomId != registrationId) {
+		errDetail := "APIProviderEnrolmentDetails ApiProvDomId doesn't match path parameter"
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, errDetail))
 	}
 
 	if err = pm.updateProvider(updatedProvider, registeredProvider); err != nil {
