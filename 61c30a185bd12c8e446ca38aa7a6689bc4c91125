@@ -26,6 +26,30 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "f4fa20c3_1fa2f0be",
+        "filename": "capifcore/internal/providermanagement/providermanagement_test.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-01-30T17:38:45Z",
+      "side": 1,
+      "message": "Removed empty line and updated comment for further clarification.",
+      "parentUuid": "9b2b315f_5249f8ee",
+      "range": {
+        "startLine": 65,
+        "startChar": 3,
+        "endLine": 65,
+        "endChar": 47
+      },
+      "revId": "61c30a185bd12c8e446ca38aa7a6689bc4c91125",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "e80e86de_8918cf90",
         "filename": "capifcore/internal/publishservice/publishservice.go",
         "patchSetId": 2
@@ -37,6 +61,30 @@
       "writtenOn": "2024-01-30T15:50:31Z",
       "side": 1,
       "message": "NB: I feel, If we add brackets to this gives readability.",
+      "range": {
+        "startLine": 272,
+        "startChar": 47,
+        "endLine": 272,
+        "endChar": 96
+      },
+      "revId": "61c30a185bd12c8e446ca38aa7a6689bc4c91125",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c440518e_b5715994",
+        "filename": "capifcore/internal/publishservice/publishservice.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 272,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-01-30T17:38:45Z",
+      "side": 1,
+      "message": "Added brackets.",
+      "parentUuid": "e80e86de_8918cf90",
       "range": {
         "startLine": 272,
         "startChar": 47,
