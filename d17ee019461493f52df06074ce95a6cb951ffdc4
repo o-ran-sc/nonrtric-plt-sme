@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "268cf0b9_2231ccf6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-02-01T12:16:01Z",
+      "side": 1,
+      "message": "For ProviderManagement, apiProvDomId is required to be present, as we can see from the OpenAPI yaml file.\n\n        apiProvDomId:\n          description: |\n            API provider domain ID assigned by the CAPIF core function to the API management function while registering the API provider domain. \n            Shall not be present in the HTTP POST request from the API Management function to the CAPIF core function, to on-board itself. \n            Shall be present in all other HTTP requests and responses.\n\nFor PublishService, apiId is is not specified for PUT only POST and GET, as we can see from the OpenAPI yaml file.\n\n        apiId:\n          description: |\n            API identifier assigned by the CAPIF core function to the published service API.\n            Shall not be present in the HTTP POST request from the API publishing function to the CAPIF core function.\n            Shall be present in the HTTP POST response from the CAPIF core function to the API publishing function and\n             in the HTTP GET response from the CAPIF core function to the API invoker (discovery API).\n\nTherefore, we need to specify apiProvDomId for ProviderManagement. \n\nThe specification does not specify the exact handling of apiId for PublishService. \n\nIn this commit, I am updating the code to make apiId \u0027s presence required in the request body and that it has to match the apiId provided in the path parameter. \n\nIn this way the handling of apiId for PublishService is the same as the handling apiProvDomId for ProviderManagement.",
+      "revId": "d17ee019461493f52df06074ce95a6cb951ffdc4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
