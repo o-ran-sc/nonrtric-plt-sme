@@ -31,10 +31,9 @@ import (
 
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	invokerapi "oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
-
 	"oransc.org/nonrtric/capifcore/internal/publishservice"
 
-	"github.com/labstack/echo/v4"
+	echo "github.com/labstack/echo/v4"
 )
 
 //go:generate mockery --name InvokerRegister
@@ -103,17 +102,18 @@ func (im *InvokerManager) GetInvokerApiList(invokerId string) *invokerapi.APILis
 
 // Creates a new individual API Invoker profile.
 func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
-	var newInvoker invokerapi.APIInvokerEnrolmentDetails
 	errMsg := "Unable to onboard invoker due to %s"
-	if err := ctx.Bind(&newInvoker); err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for invoker"))
+
+	newInvoker, err := getInvokerFromRequest(ctx)
+	if err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
-	if err := im.isInvokerOnboarded(newInvoker); err != nil {
+	if err = im.isInvokerOnboarded(newInvoker); err != nil {
 		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errMsg, err))
 	}
 
-	if err := im.validateInvoker(newInvoker, ctx); err != nil {
+	if err = im.validateInvoker(newInvoker, ctx); err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
@@ -123,7 +123,8 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 
 	uri := ctx.Request().Host + ctx.Request().URL.String()
 	ctx.Response().Header().Set(echo.HeaderLocation, ctx.Scheme()+`://`+path.Join(uri, *newInvoker.ApiInvokerId))
-	err := ctx.JSON(http.StatusCreated, newInvoker)
+
+	err = ctx.JSON(http.StatusCreated, newInvoker)
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
 		return err
@@ -185,29 +186,40 @@ func (im *InvokerManager) deleteInvoker(onboardingId string) {
 	delete(im.onboardedInvokers, onboardingId)
 }
 
+func getInvokerFromRequest(ctx echo.Context) (invokerapi.APIInvokerEnrolmentDetails, error) {
+	var invoker invokerapi.APIInvokerEnrolmentDetails
+	if err := ctx.Bind(&invoker); err != nil {
+		return invokerapi.APIInvokerEnrolmentDetails{}, fmt.Errorf("invalid format for invoker")
+	}
+	return invoker, nil
+}
+
 // Updates an individual API invoker details.
 func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onboardingId string) error {
-	var invoker invokerapi.APIInvokerEnrolmentDetails
 	errMsg := "Unable to update invoker due to %s"
-	if err := ctx.Bind(&invoker); err != nil {
-		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "invalid format for invoker"))
+
+	newInvoker, err := getInvokerFromRequest(ctx)
+	if err != nil {
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
-	if onboardingId != *invoker.ApiInvokerId {
-		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, "ApiInvokerId not matching"))
+	// Additional validation for PUT
+	if (newInvoker.ApiInvokerId == nil) || (*newInvoker.ApiInvokerId != onboardingId) {
+		errMismatch := "APIInvokerEnrolmentDetails ApiInvokerId doesn't match path parameter"
+		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, errMismatch))
 	}
 
-	if err := im.validateInvoker(invoker, ctx); err != nil {
+	if err := im.validateInvoker(newInvoker, ctx); err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
 	if _, ok := im.onboardedInvokers[onboardingId]; ok {
-		im.updateInvoker(invoker)
+		im.updateInvoker(newInvoker)
 	} else {
 		return sendCoreError(ctx, http.StatusNotFound, "The invoker to update has not been onboarded")
 	}
 
-	err := ctx.JSON(http.StatusOK, invoker)
+	err = ctx.JSON(http.StatusOK, newInvoker)
 	if err != nil {
 		// Something really bad happened, tell Echo that our handler failed
 		return err

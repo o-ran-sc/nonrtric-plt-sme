@@ -233,7 +233,8 @@ func (ps *PublishService) GetApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 
 func getServiceDescription(serviceApiId string, descriptions []publishapi.ServiceAPIDescription) (int, *publishapi.ServiceAPIDescription) {
 	for pos, description := range descriptions {
-		if serviceApiId == *description.ApiId {
+		// Check for nil as we had a failure here when running unit tests in parallel against a single Capifcore instance
+		if (description.ApiId != nil) && (serviceApiId == *description.ApiId) {
 			return pos, &description
 		}
 	}

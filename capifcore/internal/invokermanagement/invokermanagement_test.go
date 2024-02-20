@@ -166,6 +166,29 @@ func TestDeleteInvoker(t *testing.T) {
 	}
 }
 
+func TestFailedUpdateInvoker(t *testing.T) {
+	publishRegisterMock := publishmocks.PublishRegister{}
+	publishRegisterMock.On("GetAllPublishedServices").Return([]publishserviceapi.ServiceAPIDescription{})
+	serviceUnderTest, _, requestHandler := getEcho(&publishRegisterMock, nil)
+
+	invokerInfo := "invoker a"
+	invokerId := "api_invoker_id_" + strings.Replace(invokerInfo, " ", "_", 1)
+
+	// Attempt to update with an invoker without the ApiInvokerId provided in the parameter body. We should get 400 with problem details.
+	invalidInvoker := getInvoker(invokerInfo)
+	serviceUnderTest.onboardedInvokers[invokerId] = invalidInvoker
+
+	result := testutil.NewRequest().Put("/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	assert.Equal(t, http.StatusBadRequest, result.Code())
+
+	var problemDetails common29122.ProblemDetails
+	err := result.UnmarshalBodyToObject(&problemDetails)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
+
+	assert.Contains(t, *problemDetails.Cause, "APIInvokerEnrolmentDetails ApiInvokerId doesn't match path parameter")
+}
+
 func TestUpdateInvoker(t *testing.T) {
 	publishRegisterMock := publishmocks.PublishRegister{}
 	publishRegisterMock.On("GetAllPublishedServices").Return([]publishserviceapi.ServiceAPIDescription{})
@@ -236,8 +259,7 @@ func TestUpdateInvoker(t *testing.T) {
 	err = result.UnmarshalBodyToObject(&problemDetails)
 	assert.NoError(t, err, "error unmarshaling response")
 	assert.Equal(t, http.StatusBadRequest, *problemDetails.Status)
-	assert.Contains(t, *problemDetails.Cause, "not matching")
-	assert.Contains(t, *problemDetails.Cause, "ApiInvokerId")
+	assert.Contains(t, *problemDetails.Cause, "APIInvokerEnrolmentDetails ApiInvokerId doesn't match path parameter")
 
 	// Update an invoker that has not been onboarded, should get 404 with problem details
 	missingId := "1"
