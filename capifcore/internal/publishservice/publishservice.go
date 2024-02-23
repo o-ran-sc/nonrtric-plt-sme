@@ -49,6 +49,7 @@ type PublishRegister interface {
 	// Gets all published APIs.
 	// Returns a list of all APIs that has been published.
 	GetAllPublishedServices() []publishapi.ServiceAPIDescription
+	GetAllowedPublishedServices(invokerApiList []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription
 }
 
 type PublishService struct {
@@ -92,6 +93,29 @@ func (ps *PublishService) GetAllPublishedServices() []publishapi.ServiceAPIDescr
 		publishedDescriptions = append(publishedDescriptions, descriptions...)
 	}
 	return publishedDescriptions
+}
+
+func (ps *PublishService) GetAllowedPublishedServices(apiListRequestedServices []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
+	apiListAllPublished := ps.GetAllPublishedServices()
+	if apiListRequestedServices != nil {
+		allowedPublishedServices := intersection(apiListAllPublished, apiListRequestedServices)
+		return allowedPublishedServices
+	}
+	return []publishapi.ServiceAPIDescription{}
+}
+
+func intersection(a, b []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
+	var result []publishapi.ServiceAPIDescription
+
+	for _, itemA := range a {
+		for _, itemB := range b {
+			if *itemA.ApiId == *itemB.ApiId {
+				result = append(result, itemA)
+				break
+			}
+		}
+	}
+	return result
 }
 
 // Retrieve all published APIs.

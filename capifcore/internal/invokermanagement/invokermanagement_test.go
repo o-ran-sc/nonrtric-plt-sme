@@ -3,7 +3,8 @@
 //	========================LICENSE_START=================================
 //	O-RAN-SC
 //	%%
-//	Copyright (C) 2022: Nordix Foundation
+//	Copyright (C) 2022-2023: Nordix Foundation
+//	Copyright (C) 2024: OpenInfra Foundation Europe
 //	%%
 //	Licensed under the Apache License, Version 2.0 (the "License");
 //	you may not use this file except in compliance with the License.
@@ -64,7 +65,7 @@ func TestOnboardInvoker(t *testing.T) {
 	var client keycloak.Client
 	client.Secret = &wantedInvokerSecret
 	publishRegisterMock := publishmocks.PublishRegister{}
-	publishRegisterMock.On("GetAllPublishedServices").Return(publishedServices)
+	publishRegisterMock.On("GetAllowedPublishedServices", mock.AnythingOfType("[]publishserviceapi.ServiceAPIDescription")).Return(publishedServices)
 
 	accessMgmMock := keycloackmocks.AccessManagement{}
 	accessMgmMock.On("AddClient", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
@@ -90,7 +91,9 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.Equal(t, "http://example.com/onboardedInvokers/"+*resultInvoker.ApiInvokerId, result.Recorder.Header().Get(echo.HeaderLocation))
 	assert.True(t, invokerUnderTest.IsInvokerRegistered(wantedInvokerId))
 	assert.True(t, invokerUnderTest.VerifyInvokerSecret(wantedInvokerId, wantedInvokerSecret))
-	publishRegisterMock.AssertCalled(t, "GetAllPublishedServices")
+
+	publishRegisterMock.AssertCalled(t, "GetAllowedPublishedServices", mock.AnythingOfType("[]publishserviceapi.ServiceAPIDescription"))
+
 	assert.Equal(t, invokermanagementapi.APIList(publishedServices), *resultInvoker.ApiList)
 	if invokerEvent, timeout := waitForEvent(eventChannel, 1*time.Second); timeout {
 		assert.Fail(t, "No event sent")

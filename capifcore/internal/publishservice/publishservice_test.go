@@ -259,6 +259,64 @@ func TestGetPublishedServices(t *testing.T) {
 	assert.Len(t, result, 2)
 }
 
+func TestGetAllowedServices(t *testing.T) {
+	serviceUnderTest := NewPublishService(nil, nil, nil)
+
+	aefProfiles1 := []publishapi.AefProfile{
+	}
+	apiId1 := "apiId1"
+	aefProfiles2 := []publishapi.AefProfile{
+	}
+	apiId2 := "apiId2"
+	aefProfiles3 := []publishapi.AefProfile{
+	}
+	apiId3 := "apiId3"
+	aefProfiles4 := []publishapi.AefProfile{
+	}
+	apiId4 := "apiId4"
+
+	serviceUnderTest.publishedServices["publisher1"] = []publishapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId1,
+			AefProfiles: &aefProfiles1,
+		},
+		{
+			ApiId:       &apiId2,
+			AefProfiles: &aefProfiles2,
+		},
+		{
+			ApiId:       &apiId3,
+			AefProfiles: &aefProfiles3,
+		},
+		{
+			ApiId:       &apiId4,
+			AefProfiles: &aefProfiles4,
+		},
+	}
+
+	serviceDescription := publishapi.ServiceAPIDescription{
+		ApiId:       &apiId4,
+		AefProfiles: &aefProfiles4,
+	}
+	serviceUnderTest.publishedServices["publisher2"] = []publishapi.ServiceAPIDescription{
+		serviceDescription,
+	}
+
+	allowedApiList := []publishapi.ServiceAPIDescription{
+		{
+			ApiId:       &apiId2,
+			AefProfiles: &aefProfiles2,
+		},
+		{
+			ApiId:       &apiId3,
+			AefProfiles: &aefProfiles3,
+		},
+	}
+
+	result := serviceUnderTest.GetAllowedPublishedServices(allowedApiList)
+	assert.Len(t, result, 2)
+}
+
 func TestUpdateDescription(t *testing.T) {
 	apfId := "apfId"
 	serviceApiId := "serviceApiId"

@@ -29,6 +29,22 @@ func (_m *PublishRegister) GetAllPublishedServices() []publishserviceapi.Service
 	return r0
 }
 
+// GetAllowedPublishedServices provides a mock function with given fields: invokerApiList
+func (_m *PublishRegister) GetAllowedPublishedServices(invokerApiList []publishserviceapi.ServiceAPIDescription) []publishserviceapi.ServiceAPIDescription {
+	ret := _m.Called(invokerApiList)
+
+	var r0 []publishserviceapi.ServiceAPIDescription
+	if rf, ok := ret.Get(0).(func([]publishserviceapi.ServiceAPIDescription) []publishserviceapi.ServiceAPIDescription); ok {
+		r0 = rf(invokerApiList)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]publishserviceapi.ServiceAPIDescription)
+		}
+	}
+
+	return r0
+}
+
 // IsAPIPublished provides a mock function with given fields: aefId, path
 func (_m *PublishRegister) IsAPIPublished(aefId string, path string) bool {
 	ret := _m.Called(aefId, path)

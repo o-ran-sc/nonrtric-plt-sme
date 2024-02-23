@@ -2,7 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2022-2023: Nordix Foundation
+//   Copyright (C) 2024: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -143,16 +144,18 @@ func (im *InvokerManager) isInvokerOnboarded(newInvoker invokerapi.APIInvokerEnr
 }
 
 func (im *InvokerManager) prepareNewInvoker(newInvoker *invokerapi.APIInvokerEnrolmentDetails) {
-	var apiList invokerapi.APIList = im.publishRegister.GetAllPublishedServices()
-	newInvoker.ApiList = &apiList
+	var apiListRequestedServices invokerapi.APIList = nil
+	if newInvoker.ApiList != nil {
+		apiListRequestedServices = *newInvoker.ApiList
+	}
+	var allowedPublishedServices invokerapi.APIList = im.publishRegister.GetAllowedPublishedServices(apiListRequestedServices)
+	newInvoker.ApiList = &allowedPublishedServices
 
 	im.lock.Lock()
 	defer im.lock.Unlock()
 
 	newInvoker.PrepareNewInvoker()
-
 	im.addClientInKeycloak(newInvoker)
-
 	im.onboardedInvokers[*newInvoker.ApiInvokerId] = *newInvoker
 }
 
