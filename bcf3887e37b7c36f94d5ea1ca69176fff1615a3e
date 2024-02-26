@@ -266,6 +266,30 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "543772f3_d97e1406",
+        "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-02-26T11:43:07Z",
+      "side": 1,
+      "message": "If we use the first interface, we can have a 1:1 between our aefProfile and our Kong service. Adding additional interfaces implies adding additional Kong services. Then, we need to determine how to map from the Kong route to the different Kong services. Before we add other interfaces, I think that we need more clarity on the purpose of the additional interfaces.",
+      "parentUuid": "3ae795b5_57e745b5",
+      "range": {
+        "startLine": 153,
+        "startChar": 57,
+        "endLine": 153,
+        "endChar": 76
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "ed1f9b30_8c417845",
         "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
         "patchSetId": 5
