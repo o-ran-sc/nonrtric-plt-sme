@@ -337,6 +337,30 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "95a2c2db_35c16229",
+        "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1001877
+      },
+      "writtenOn": "2024-02-26T20:02:46Z",
+      "side": 1,
+      "message": "Yes. As per spec, AEF Profile protocol supports only two values HTTP_1_1, HTTP_2. It doesn\u0027t indicate whether the connection is using http or https. Can this value derived from URL rather than using \"http\"?",
+      "parentUuid": "4a01d645_b03483cf",
+      "range": {
+        "startLine": 158,
+        "startChar": 7,
+        "endLine": 158,
+        "endChar": 20
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "4199ee28_d1fcc86e",
         "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
         "patchSetId": 5
