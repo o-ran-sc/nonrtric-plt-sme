@@ -3,6 +3,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "a8e08cb4_f6ccdaaf",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-02-28T14:51:33Z",
+      "side": 1,
+      "message": "Please rename the entire directory from \u0027r1-sme-manager\u0027 to \u0027servicemanager\u0027",
+      "revId": "30ce7c77a4f13aa282403b298097520b7cfa61f4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "7e164685_587a1145",
         "filename": "r1-sme-manager/.env.example",
         "patchSetId": 7
