@@ -383,6 +383,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ecf6bb3c_346738b4",
+        "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1001877
+      },
+      "writtenOn": "2024-02-29T12:26:21Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "0685ccb3_dc11934c",
+      "range": {
+        "startLine": 158,
+        "startChar": 7,
+        "endLine": 158,
+        "endChar": 20
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "4199ee28_d1fcc86e",
