@@ -2,7 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2022-2023: Nordix Foundation
+//   Copyright (C) 2024: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -138,7 +139,7 @@ func (pm *ProviderManager) deleteProvider(registrationId string) {
 
 func (pm *ProviderManager) PutRegistrationsRegistrationId(ctx echo.Context, registrationId string) error {
 	errMsg := "Unable to update provider due to %s."
-	registeredProvider, err := pm.checkIfProviderIsRegistered(registrationId, ctx)
+	registeredProvider, err := pm.checkIfProviderIsRegistered(registrationId)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
@@ -173,7 +174,7 @@ func (pm *ProviderManager) ModifyIndApiProviderEnrolment(ctx echo.Context, regis
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (pm *ProviderManager) checkIfProviderIsRegistered(registrationId string, ctx echo.Context) (*provapi.APIProviderEnrolmentDetails, error) {
+func (pm *ProviderManager) checkIfProviderIsRegistered(registrationId string) (*provapi.APIProviderEnrolmentDetails, error) {
 	registeredProvider, ok := pm.registeredProviders[registrationId]
 	if !ok {
 		return nil, fmt.Errorf("provider not onboarded")

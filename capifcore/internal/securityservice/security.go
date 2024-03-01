@@ -2,7 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation
+//   Copyright (C) 2022-2023: Nordix Foundation
+//   Copyright (C) 2024: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -240,7 +241,7 @@ func (s *Security) PostTrustedInvokersApiInvokerIdDelete(ctx echo.Context, apiIn
 	}
 
 	if ss, ok := s.trustedInvokers[apiInvokerId]; ok {
-		securityInfoCopy := s.revokeTrustedInvoker(&ss, notification, apiInvokerId)
+		securityInfoCopy := s.revokeTrustedInvoker(&ss, notification)
 
 		if len(securityInfoCopy) == 0 {
 			s.deleteTrustedInvoker(apiInvokerId)
@@ -257,7 +258,7 @@ func (s *Security) PostTrustedInvokersApiInvokerIdDelete(ctx echo.Context, apiIn
 
 }
 
-func (s *Security) revokeTrustedInvoker(ss *securityapi.ServiceSecurity, notification securityapi.SecurityNotification, apiInvokerId string) []securityapi.SecurityInformation {
+func (s *Security) revokeTrustedInvoker(ss *securityapi.ServiceSecurity, notification securityapi.SecurityNotification) []securityapi.SecurityInformation {
 
 	data, _ := copystructure.Copy(ss.SecurityInfo)
 	securityInfoCopy, _ := data.([]securityapi.SecurityInformation)

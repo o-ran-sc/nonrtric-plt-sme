@@ -97,19 +97,20 @@ func (ps *PublishService) GetAllPublishedServices() []publishapi.ServiceAPIDescr
 
 func (ps *PublishService) GetAllowedPublishedServices(apiListRequestedServices []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
 	apiListAllPublished := ps.GetAllPublishedServices()
-	if apiListRequestedServices != nil {
-		allowedPublishedServices := intersection(apiListAllPublished, apiListRequestedServices)
-		return allowedPublishedServices
-	}
-	return []publishapi.ServiceAPIDescription{}
+	allowedPublishedServices := intersection(apiListAllPublished, apiListRequestedServices)
+	return allowedPublishedServices
 }
 
 func intersection(a, b []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
 	var result []publishapi.ServiceAPIDescription
 
+	if (a == nil) || (b == nil) || (len(a) == 0) || (len(b) == 0) {
+		return result
+	}
+
 	for _, itemA := range a {
 		for _, itemB := range b {
-			if *itemA.ApiId == *itemB.ApiId {
+			if (itemA.ApiId != nil) && (itemB.ApiId != nil) && (*itemA.ApiId == *itemB.ApiId) {
 				result = append(result, itemA)
 				break
 			}
@@ -283,7 +284,7 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	defer ps.lock.Unlock()
 	errMsg := "Unable to update service due to %s."
 
-	pos, publishedService, err := ps.checkIfServiceIsPublished(apfId, serviceApiId, ctx)
+	pos, publishedService, err := ps.checkIfServiceIsPublished(apfId, serviceApiId)
 	if err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
@@ -304,7 +305,7 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
-	ps.updateDescription(pos, apfId, &updatedServiceDescription, &publishedService)
+	ps.updateDescription(&updatedServiceDescription, &publishedService)
 
 	publishedService.AefProfiles = updatedServiceDescription.AefProfiles
 	ps.publishedServices[apfId][pos] = publishedService
@@ -317,7 +318,7 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	return nil
 }
 
-func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId string, ctx echo.Context) (int, publishapi.ServiceAPIDescription, error) {
+func (ps *PublishService) checkIfServiceIsPublished(apfId string, serviceApiId string) (int, publishapi.ServiceAPIDescription, error) {
 	publishedServices, ok := ps.publishedServices[apfId]
 	if !ok {
 		return 0, publishapi.ServiceAPIDescription{}, fmt.Errorf("service must be published before updating it")
@@ -340,7 +341,7 @@ func getServiceFromRequest(ctx echo.Context) (publishapi.ServiceAPIDescription, 
 	return updatedServiceDescription, nil
 }
 
-func (ps *PublishService) updateDescription(pos int, apfId string, updatedServiceDescription, publishedService *publishapi.ServiceAPIDescription) {
+func (ps *PublishService) updateDescription(updatedServiceDescription, publishedService *publishapi.ServiceAPIDescription) {
 	if updatedServiceDescription.Description != nil {
 		publishedService.Description = updatedServiceDescription.Description
 		go ps.sendEvent(*publishedService, eventsapi.CAPIFEventSERVICEAPIUPDATE)

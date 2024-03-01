@@ -68,7 +68,6 @@ func TestUnregisteredService(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, *resultError.Status)
 }
 
-
 func TestPublishUnpublishService(t *testing.T) {
 
 	apfId := "apfId"
@@ -262,17 +261,13 @@ func TestGetPublishedServices(t *testing.T) {
 func TestGetAllowedServices(t *testing.T) {
 	serviceUnderTest := NewPublishService(nil, nil, nil)
 
-	aefProfiles1 := []publishapi.AefProfile{
-	}
+	aefProfiles1 := []publishapi.AefProfile{}
 	apiId1 := "apiId1"
-	aefProfiles2 := []publishapi.AefProfile{
-	}
+	aefProfiles2 := []publishapi.AefProfile{}
 	apiId2 := "apiId2"
-	aefProfiles3 := []publishapi.AefProfile{
-	}
+	aefProfiles3 := []publishapi.AefProfile{}
 	apiId3 := "apiId3"
-	aefProfiles4 := []publishapi.AefProfile{
-	}
+	aefProfiles4 := []publishapi.AefProfile{}
 	apiId4 := "apiId4"
 
 	serviceUnderTest.publishedServices["publisher1"] = []publishapi.ServiceAPIDescription{
@@ -315,6 +310,22 @@ func TestGetAllowedServices(t *testing.T) {
 
 	result := serviceUnderTest.GetAllowedPublishedServices(allowedApiList)
 	assert.Len(t, result, 2)
+
+	result = serviceUnderTest.GetAllowedPublishedServices(nil)
+	assert.Len(t, result, 0)
+
+	result = serviceUnderTest.GetAllowedPublishedServices([]publishapi.ServiceAPIDescription{})
+	assert.Len(t, result, 0)
+
+	// Create a list with no ApiIds
+	badApiList := []publishapi.ServiceAPIDescription{
+		{
+		},
+		{
+		},
+	}
+	result = serviceUnderTest.GetAllowedPublishedServices(badApiList)
+	assert.Len(t, result, 0)
 }
 
 func TestUpdateDescription(t *testing.T) {

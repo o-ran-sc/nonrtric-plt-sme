@@ -114,7 +114,7 @@ func (im *InvokerManager) PostOnboardedInvokers(ctx echo.Context) error {
 		return sendCoreError(ctx, http.StatusForbidden, fmt.Sprintf(errMsg, err))
 	}
 
-	if err = im.validateInvoker(newInvoker, ctx); err != nil {
+	if err = im.validateInvoker(newInvoker); err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
@@ -212,7 +212,7 @@ func (im *InvokerManager) PutOnboardedInvokersOnboardingId(ctx echo.Context, onb
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, errMismatch))
 	}
 
-	if err := im.validateInvoker(newInvoker, ctx); err != nil {
+	if err := im.validateInvoker(newInvoker); err != nil {
 		return sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf(errMsg, err))
 	}
 
@@ -241,7 +241,7 @@ func (im *InvokerManager) ModifyIndApiInvokeEnrolment(ctx echo.Context, onboardi
 	return ctx.NoContent(http.StatusNotImplemented)
 }
 
-func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails, ctx echo.Context) error {
+func (im *InvokerManager) validateInvoker(invoker invokerapi.APIInvokerEnrolmentDetails) error {
 	if err := invoker.Validate(); err != nil {
 		return err
 	}
