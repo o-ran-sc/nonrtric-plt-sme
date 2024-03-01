@@ -71,6 +71,42 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "234ee5ac_be3a8fe1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "2efb1bb2_a9e95c05",
+      "revId": "30ce7c77a4f13aa282403b298097520b7cfa61f4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d37277c5_a80633fe",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "19a18123_98f4cc60",
+      "revId": "30ce7c77a4f13aa282403b298097520b7cfa61f4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "7e164685_587a1145",
@@ -156,6 +192,30 @@
       "side": 1,
       "message": "Added create_env_from_template() to deploy-to-k8s.sh.",
       "parentUuid": "7e164685_587a1145",
+      "range": {
+        "startLine": 1,
+        "startChar": 12,
+        "endLine": 1,
+        "endChar": 20
+      },
+      "revId": "30ce7c77a4f13aa282403b298097520b7cfa61f4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5e5edd36_ae86ec57",
+        "filename": "r1-sme-manager/.env.example",
+        "patchSetId": 7
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1a17d136_262b5853",
       "range": {
         "startLine": 1,
         "startChar": 12,

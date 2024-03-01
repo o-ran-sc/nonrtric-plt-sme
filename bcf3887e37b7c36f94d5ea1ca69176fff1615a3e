@@ -53,6 +53,24 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "d59d23dd_067d8417",
+        "filename": "r1-sme-manager/configs/capifcore.yaml",
+        "patchSetId": 5
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "c33e8344_3b5e162b",
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "9eea9fe6_dfde31c4",
@@ -90,6 +108,30 @@
       "side": 1,
       "message": "Used the following structure\n/deploy\n--/src\n--/manifest\n\nManifest is for the Kubernetes yaml files and src is for the bash source files.",
       "parentUuid": "9eea9fe6_dfde31c4",
+      "range": {
+        "startLine": 1,
+        "startChar": 7,
+        "endLine": 1,
+        "endChar": 11
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5d690901_b0764070",
+        "filename": "r1-sme-manager/configs/delete-from-k8s.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3cbc71fc_bc30ddbc",
       "range": {
         "startLine": 1,
         "startChar": 7,
@@ -194,6 +236,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "1d4b19a6_43ba7817",
+        "filename": "r1-sme-manager/configs/values.yaml",
+        "patchSetId": 5
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "b621a7a6_d2dc15d7",
+      "range": {
+        "startLine": 18,
+        "startChar": 10,
+        "endLine": 18,
+        "endChar": 17
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "03c8d08b_e313de8a",
@@ -241,6 +307,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "d96aa0fe_ae84a397",
+        "filename": "r1-sme-manager/internal/envreader/envreader.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "1e37e0f5_3cafdc27",
+      "range": {
+        "startLine": 74,
+        "startChar": 0,
+        "endLine": 85,
+        "endChar": 65
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "3ae795b5_57e745b5",
@@ -278,6 +368,30 @@
       "side": 1,
       "message": "If we use the first interface, we can have a 1:1 between our aefProfile and our Kong service. Adding additional interfaces implies adding additional Kong services. Then, we need to determine how to map from the Kong route to the different Kong services. Before we add other interfaces, I think that we need more clarity on the purpose of the additional interfaces.",
       "parentUuid": "3ae795b5_57e745b5",
+      "range": {
+        "startLine": 153,
+        "startChar": 57,
+        "endLine": 153,
+        "endChar": 76
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a2a37226_493d4dcf",
+        "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "543772f3_d97e1406",
       "range": {
         "startLine": 153,
         "startChar": 57,
@@ -454,6 +568,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "0314f979_bf97c4cd",
+        "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 209,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "6404d2fd_633bba8c",
+      "range": {
+        "startLine": 209,
+        "startChar": 14,
+        "endLine": 209,
+        "endChar": 29
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "ebac7041_17da6b03",
@@ -586,6 +724,30 @@
       "side": 1,
       "message": "Revised the log info lines to add Debug and Trace logging. These lines for \"entering\" code blocks have been set to Trace.",
       "parentUuid": "2a59dcec_bc3245a5",
+      "range": {
+        "startLine": 247,
+        "startChar": 5,
+        "endLine": 247,
+        "endChar": 9
+      },
+      "revId": "bcf3887e37b7c36f94d5ea1ca69176fff1615a3e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be15e22d_79d5f194",
+        "filename": "r1-sme-manager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 5
+      },
+      "lineNbr": 247,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-01T15:46:15Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "65ba3740_aadee7f4",
       "range": {
         "startLine": 247,
         "startChar": 5,
