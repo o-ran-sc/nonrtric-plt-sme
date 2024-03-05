@@ -262,35 +262,35 @@ func TestGetAllowedServices(t *testing.T) {
 	serviceUnderTest := NewPublishService(nil, nil, nil)
 
 	aefProfiles1 := []publishapi.AefProfile{}
-	apiId1 := "apiId1"
+	apiName1 := "api Name 1"
 	aefProfiles2 := []publishapi.AefProfile{}
-	apiId2 := "apiId2"
+	apiName2 := "api Name 2"
 	aefProfiles3 := []publishapi.AefProfile{}
-	apiId3 := "apiId3"
+	apiName3 := "api Name 3"
 	aefProfiles4 := []publishapi.AefProfile{}
-	apiId4 := "apiId4"
+	apiName4 := "api Name 4"
 
 	serviceUnderTest.publishedServices["publisher1"] = []publishapi.ServiceAPIDescription{
 		{
-			ApiId:       &apiId1,
+			ApiName:     apiName1,
 			AefProfiles: &aefProfiles1,
 		},
 		{
-			ApiId:       &apiId2,
+			ApiName:     apiName2,
 			AefProfiles: &aefProfiles2,
 		},
 		{
-			ApiId:       &apiId3,
+			ApiName:     apiName3,
 			AefProfiles: &aefProfiles3,
 		},
 		{
-			ApiId:       &apiId4,
+			ApiName:     apiName4,
 			AefProfiles: &aefProfiles4,
 		},
 	}
 
 	serviceDescription := publishapi.ServiceAPIDescription{
-		ApiId:       &apiId4,
+		ApiName:     apiName4,
 		AefProfiles: &aefProfiles4,
 	}
 	serviceUnderTest.publishedServices["publisher2"] = []publishapi.ServiceAPIDescription{
@@ -299,11 +299,11 @@ func TestGetAllowedServices(t *testing.T) {
 
 	allowedApiList := []publishapi.ServiceAPIDescription{
 		{
-			ApiId:       &apiId2,
+			ApiName:     apiName2,
 			AefProfiles: &aefProfiles2,
 		},
 		{
-			ApiId:       &apiId3,
+			ApiName:     apiName3,
 			AefProfiles: &aefProfiles3,
 		},
 	}
@@ -317,7 +317,7 @@ func TestGetAllowedServices(t *testing.T) {
 	result = serviceUnderTest.GetAllowedPublishedServices([]publishapi.ServiceAPIDescription{})
 	assert.Len(t, result, 0)
 
-	// Create a list with no ApiIds
+	// Create a list with no ApiNames
 	badApiList := []publishapi.ServiceAPIDescription{
 		{
 		},

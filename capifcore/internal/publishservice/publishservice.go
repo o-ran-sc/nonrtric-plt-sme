@@ -97,11 +97,11 @@ func (ps *PublishService) GetAllPublishedServices() []publishapi.ServiceAPIDescr
 
 func (ps *PublishService) GetAllowedPublishedServices(apiListRequestedServices []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
 	apiListAllPublished := ps.GetAllPublishedServices()
-	allowedPublishedServices := intersection(apiListAllPublished, apiListRequestedServices)
+	allowedPublishedServices := join(apiListAllPublished, apiListRequestedServices)
 	return allowedPublishedServices
 }
 
-func intersection(a, b []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
+func join(a, b []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescription {
 	var result []publishapi.ServiceAPIDescription
 
 	if (a == nil) || (b == nil) || (len(a) == 0) || (len(b) == 0) {
@@ -110,7 +110,7 @@ func intersection(a, b []publishapi.ServiceAPIDescription) []publishapi.ServiceA
 
 	for _, itemA := range a {
 		for _, itemB := range b {
-			if (itemA.ApiId != nil) && (itemB.ApiId != nil) && (*itemA.ApiId == *itemB.ApiId) {
+			if itemA.ApiName == itemB.ApiName {
 				result = append(result, itemA)
 				break
 			}
