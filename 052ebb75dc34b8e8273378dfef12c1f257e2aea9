@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "974c8c29_483c86b9",
+        "filename": "servicemanager/Dockerfile",
+        "patchSetId": 13
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-06T16:06:30Z",
+      "side": 1,
+      "message": "oops.\nThis has to be changed!\nIs this anywhere else?",
+      "range": {
+        "startLine": 15,
+        "startChar": 1,
+        "endLine": 17,
+        "endChar": 28
+      },
+      "revId": "052ebb75dc34b8e8273378dfef12c1f257e2aea9",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
