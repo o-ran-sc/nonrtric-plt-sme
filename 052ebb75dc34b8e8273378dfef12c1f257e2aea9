@@ -22,6 +22,30 @@
       },
       "revId": "052ebb75dc34b8e8273378dfef12c1f257e2aea9",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5337f1a2_5f001e7f",
+        "filename": "servicemanager/Dockerfile",
+        "patchSetId": 13
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-03-07T12:58:29Z",
+      "side": 1,
+      "message": "Also found in Capif. Submitting a separate Gerrit for that.",
+      "parentUuid": "974c8c29_483c86b9",
+      "range": {
+        "startLine": 15,
+        "startChar": 1,
+        "endLine": 17,
+        "endChar": 28
+      },
+      "revId": "052ebb75dc34b8e8273378dfef12c1f257e2aea9",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
