@@ -22,6 +22,8 @@ package invokermanagement
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -30,6 +32,8 @@ import (
 	"oransc.org/nonrtric/servicemanager/internal/envreader"
 	"oransc.org/nonrtric/servicemanager/internal/invokermanagementapi"
 	"oransc.org/nonrtric/servicemanager/internal/kongclear"
+	"oransc.org/nonrtric/servicemanager/mocks"
+
 	"oransc.org/nonrtric/servicemanager/internal/providermanagement"
 	provapi "oransc.org/nonrtric/servicemanager/internal/providermanagementapi"
 	"oransc.org/nonrtric/servicemanager/internal/publishservice"
@@ -43,7 +47,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var requestHandler *echo.Echo
+var (
+	requestHandler *echo.Echo
+	mockConfigReader *envreader.MockConfigReader
+	mockKongServer *httptest.Server
+)
 
 func TestMain(m *testing.M) {
 	err := setupTest()
@@ -59,7 +67,39 @@ func TestMain(m *testing.M) {
 }
 
 func setupTest() error {
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	// Start the mock Kong server
+	mockKongServer = mocks.KongMockServer()
+
+	// Parse the server URL
+	parsedMockKongURL, err := url.Parse(mockKongServer.URL)
+	if err != nil {
+		log.Fatalf("error parsing mock Kong URL: %v", err)
+		return err
+	}
+
+	// Extract the host and port
+	mockKongHost := parsedMockKongURL.Hostname()
+	mockKongControlPlanePort := parsedMockKongURL.Port()
+
+	// Set up the mock config reader with the desired configuration for testing
+	mockConfigReader = &envreader.MockConfigReader{
+		MockedConfig: map[string]string{
+			"KONG_DOMAIN": "kong",
+			"KONG_PROTOCOL": "http",
+			"KONG_IPV4": mockKongHost,
+			"KONG_DATA_PLANE_PORT": "32080",
+			"KONG_CONTROL_PLANE_PORT": mockKongControlPlanePort,
+			"CAPIF_PROTOCOL": "http",
+			"CAPIF_IPV4": "10.101.1.101",
+			"CAPIF_PORT": "31570",
+			"LOG_LEVEL": "Info",
+			"SERVICE_MANAGER_PORT": "8095",
+			"TEST_SERVICE_IPV4": "10.101.1.101",
+			"TEST_SERVICE_PORT": "30951",
+		},
+	}
+	
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	if err != nil {
 		log.Fatal("error loading environment file on setupTest")
 		return err
@@ -149,7 +189,7 @@ func teardown() error {
 	result = testutil.NewRequest().Delete("/api-provider-management/v1/registrations/"+domainID).Go(t, requestHandler)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	if err != nil {
 		log.Fatal("error loading environment file")
 		return err
@@ -159,6 +199,8 @@ func teardown() error {
 	if err != nil {
 		log.Fatal("error clearing Kong on teardown")
 	}
+	mockKongServer = nil
+
 	return err
 }
 
@@ -181,7 +223,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	apiName := "apiName"
 	newApiId := "api_id_" + apiName
 
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	assert.Nil(t, err, "error reading env file")
 
 	testServiceIpv4 := common29122.Ipv4Addr(myEnv["TEST_SERVICE_IPV4"])

@@ -46,11 +46,12 @@ import (
 )
 
 func main() {
-	myEnv, myPorts, err := envreader.ReadDotEnv()
-	if err != nil {
-		log.Fatal("error loading environment file")
-		return
-	}
+    realConfigReader := &envreader.RealConfigReader{}
+    myEnv, myPorts, err := realConfigReader.ReadDotEnv()
+    if err != nil {
+        fmt.Println("error loading environment file", err)
+        return
+    }
 
 	e, err := getEcho(myEnv, myPorts)
 	if err != nil {

@@ -30,10 +30,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ReadDotEnv() (map[string]string, map[string]int, error) {
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
-	})
+type ConfigReader interface {
+    ReadDotEnv() (map[string]string, map[string]int, error)
+}
+
+// RealConfigReader implements ConfigReader
+type RealConfigReader struct {
+}
+
+func (r *RealConfigReader) ReadDotEnv() (map[string]string, map[string]int, error) {
+	setLogLevel("Info")
 
 	env := os.Getenv("SERVICE_MANAGER_ENV")
 	log.Infof("read SERVICE_MANAGER_ENV: %s", env)
@@ -61,14 +67,30 @@ func ReadDotEnv() (map[string]string, map[string]int, error) {
 			return nil, nil, err
 		}
 	}
-	log.Infof("imported .env: %s", envFile)
 
-	loglevel, err := log.ParseLevel(myEnv["LOG_LEVEL"])
+	setLogLevel(myEnv["LOG_LEVEL"])
+	logConfig(myEnv, envFile)
+
+	myPorts, err := createMapPorts(myEnv)
+	return myEnv, myPorts, err
+}
+
+func setLogLevel(logLevel string) error {
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	loglevel, err := log.ParseLevel(logLevel)
 	if err != nil {
-		log.Fatalf("error loading LOG_LEVEL from .env file: %s", err)
-		return nil, nil, err
+		log.Fatalf("error loading LOG_LEVEL from .env file: %v", err)
+		return err
 	}
 	log.SetLevel(loglevel)
+	return nil
+}
+
+func logConfig(myEnv map[string]string, envFile string) {
+	log.Infof("imported .env: %s", envFile)
 
 	log.Infof("KONG_DOMAIN %s", myEnv["KONG_DOMAIN"])
 	log.Infof("KONG_PROTOCOL %s", myEnv["KONG_PROTOCOL"])
@@ -82,31 +104,34 @@ func ReadDotEnv() (map[string]string, map[string]int, error) {
 	log.Infof("SERVICE_MANAGER_PORT %s", myEnv["SERVICE_MANAGER_PORT"])
 	log.Infof("TEST_SERVICE_IPV4 %s", myEnv["TEST_SERVICE_IPV4"])
 	log.Infof("TEST_SERVICE_PORT %s", myEnv["TEST_SERVICE_PORT"])
+}
 
-	var myPorts = make(map[string]int)
+func createMapPorts(myEnv map[string]string) (map[string]int, error) {
+    myPorts := make(map[string]int)
+	var err error
 
 	myPorts["KONG_DATA_PLANE_PORT"], err = strconv.Atoi(myEnv["KONG_DATA_PLANE_PORT"])
 	if err != nil {
 		log.Fatalf("error loading KONG_DATA_PLANE_PORT from .env file: %s", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	myPorts["KONG_CONTROL_PLANE_PORT"], err = strconv.Atoi(myEnv["KONG_CONTROL_PLANE_PORT"])
 	if err != nil {
 		log.Fatalf("error loading KONG_CONTROL_PLANE_PORT from .env file: %s", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	myPorts["CAPIF_PORT"], err = strconv.Atoi(myEnv["CAPIF_PORT"])
 	if err != nil {
 		log.Fatalf("error loading CAPIF_PORT from .env file: %s", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	myPorts["SERVICE_MANAGER_PORT"], err = strconv.Atoi(myEnv["SERVICE_MANAGER_PORT"])
 	if err != nil {
 		log.Fatalf("error loading SERVICE_MANAGER_PORT from .env file: %s", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	// TEST_SERVICE_PORT is required for unit testing, but not required for production
@@ -114,9 +139,25 @@ func ReadDotEnv() (map[string]string, map[string]int, error) {
 		myPorts["TEST_SERVICE_PORT"], err = strconv.Atoi(myEnv["TEST_SERVICE_PORT"])
 		if err != nil {
 			log.Fatalf("error loading TEST_SERVICE_PORT from .env file: %s", err)
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
-	return myEnv, myPorts, err
+	return myPorts, err
+}
+
+// MockConfigReader is a mock implementation for testing
+type MockConfigReader struct {
+    MockedConfig map[string]string
+}
+
+func (m *MockConfigReader) ReadDotEnv() (map[string]string, map[string]int, error) {
+	const envFile = "mock"
+
+	setLogLevel(m.MockedConfig["LOG_LEVEL"])
+	logConfig(m.MockedConfig, envFile)
+
+	// Return the mocked configuration for testing
+	myPorts, err := createMapPorts(m.MockedConfig)
+    return m.MockedConfig, myPorts, err
 }

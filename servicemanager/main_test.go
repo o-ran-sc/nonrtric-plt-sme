@@ -38,23 +38,42 @@ import (
 var e *echo.Echo
 var myPorts map [string]int
 
+// Init code to run before tests
 func TestMain(m *testing.M) {
-    // Init code to run before tests
-	myEnv, myPorts, err := envreader.ReadDotEnv()
-	if err != nil {
-		log.Fatal("error loading environment file")
+	// Set up the mock config reader with the desired configuration for testing
+    mockConfigReader := &envreader.MockConfigReader{
+        MockedConfig: map[string]string{
+            "KONG_DOMAIN": "kong",
+            "KONG_PROTOCOL": "http",
+            "KONG_IPV4": "10.101.1.101",
+            "KONG_DATA_PLANE_PORT": "32080",
+            "KONG_CONTROL_PLANE_PORT": "32081",
+            "CAPIF_PROTOCOL": "http",
+            "CAPIF_IPV4": "10.101.1.101",
+            "CAPIF_PORT": "31570",
+            "LOG_LEVEL": "Info",
+            "SERVICE_MANAGER_PORT": "8095",
+            "TEST_SERVICE_IPV4": "10.101.1.101",
+            "TEST_SERVICE_PORT": "30951",
+        },
+    }
+
+    // Use the mock implementation for testing
+    myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
+    if err != nil {
+        log.Fatalf("error reading mock config: %v", err)
 		return
-	}
+    }
 
 	e, err = getEcho(myEnv, myPorts)
 	if err != nil {
 		log.Fatal("getEcho fatal error")
 		return
 	}
-    
+
     // Run tests
     exitVal := m.Run()
-    
+
     // Finalization code to run after tests
 
     // Exit with exit value from tests

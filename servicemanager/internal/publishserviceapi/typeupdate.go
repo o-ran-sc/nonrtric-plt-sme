@@ -135,7 +135,8 @@ func (sd *ServiceAPIDescription) createKongRoute(kongControlPlaneURL string, cli
 	if resp.StatusCode() == http.StatusCreated {
 		log.Infof("kong route %s created successfully", routeName)
 	} else {
-		err = fmt.Errorf("the Kong service already exists. Status code: %d", resp.StatusCode())
+		log.Debugf("kongRoutesURL %s", kongRoutesURL)
+		err = fmt.Errorf("error creating Kong route. Status code: %d", resp.StatusCode())
 		log.Error(err.Error())
 		log.Errorf("response body: %s", resp.Body())
 		return resp.StatusCode(), err
@@ -195,7 +196,7 @@ func (sd *ServiceAPIDescription) createKongService(kongControlPlaneURL string, k
 	} else if resp.StatusCode() == http.StatusConflict {
 		log.Errorf("kong service already exists. Status code: %d", resp.StatusCode())
 		err = fmt.Errorf("service with identical apiName is already published") // for compatibilty with Capif error message on a duplicate service
-		statusCode = http.StatusForbidden // for compatibilty with the spec, TS29222_CAPIF_Publish_Service_API
+		statusCode = http.StatusForbidden                                       // for compatibilty with the spec, TS29222_CAPIF_Publish_Service_API
 	} else {
 		err = fmt.Errorf("error creating Kong service. Status code: %d", resp.StatusCode())
 	}
@@ -308,6 +309,7 @@ func (sd *ServiceAPIDescription) deleteKongRoute(kongControlPlaneURL string, cli
 	if resp.StatusCode() == http.StatusNoContent {
 		log.Infof("kong route %s deleted successfully", routeName)
 	} else {
+		log.Debugf("kongRoutesURL: %s", kongRoutesURL)
 		log.Errorf("error deleting Kong route. Status code: %d", resp.StatusCode())
 		log.Errorf("response body: %s", resp.Body())
 		return resp.StatusCode(), err
@@ -344,6 +346,7 @@ func (sd *ServiceAPIDescription) deleteKongService(kongControlPlaneURL string, s
 	if resp.StatusCode() == http.StatusNoContent {
 		log.Infof("kong service %s deleted successfully", serviceName)
 	} else {
+		log.Debugf("kongServicesURL: %s", kongServicesURL)
 		log.Errorf("deleting Kong service, status code: %d", resp.StatusCode())
 		log.Errorf("response body: %s", resp.Body())
 	}
