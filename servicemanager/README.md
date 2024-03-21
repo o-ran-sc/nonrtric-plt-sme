@@ -102,6 +102,21 @@ The application can also be built as a Docker image, by using the following comm
 docker image build . -t servicemanager
 ```
 
+## Kongclearup
+
+Please note that a special executable has been provided for deleting Kong routes and services that have been created ServiceManager in Kong. This executable is called `kongclearup` and is found in the working directory of the ServiceManger Docker image, at `/app/kongclearup`. When we create a Kong route or service, we add Kong tags with information as follows.
+  * apfId
+  * aefId
+  * apiId
+  * apiVersion
+  * resourceName
+
+When we delete Kong routes and services using `kongclearup`, we check for the existance of these tags, specifically, apfId, apiId and aefId. Only if these tags exist and have values do we proceed to delete the Kong service or route.
+
+The executable `kongclearup` uses the volume-mounted .env file to load the configuration giving the location of Kong.
+
+Please refer to `sme/servicemanager/internal/kongclearup.go`.
+
 ## Stand-alone Deployment on Kubernetes
 
 For a stand-alone deployment, please see the `deploy` folder for configurations to deploy to R1-SME-Manager to Kubernetes. We need the following steps.
@@ -119,7 +134,7 @@ We consolidate the above steps into the script `deploy-to-k8s.sh`. To delete the
       - src/
       - manifests/
 
-We store the Kubernetes manifests files in the manifests in the subfolder. We store the shell scripts in the src folder. 
+We store the Kubernetes manifests files in the manifests in the subfolder. We store the shell scripts in the src folder.
 
 In `deploy-to-k8s.sh`, we copy .env.example and use sed to replace the template values with values for testing/production. You will need to update this part of the script with your own values. There is an example sed replacement in function `substitute_manifest()` in `deploy-to-k8s.sh`. Here, you can substitute your own Docker images for Capifcore and Service Manager for local development.
 

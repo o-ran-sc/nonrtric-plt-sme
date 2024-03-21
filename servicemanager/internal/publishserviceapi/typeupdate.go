@@ -38,7 +38,13 @@ func (sd *ServiceAPIDescription) PrepareNewService() {
 	sd.ApiId = &apiName
 }
 
-func (sd *ServiceAPIDescription) RegisterKong(kongDomain string, kongProtocol string, kongIPv4 common29122.Ipv4Addr, kongDataPlanePort common29122.Port, kongControlPlanePort common29122.Port) (int, error) {
+func (sd *ServiceAPIDescription) RegisterKong(kongDomain string,
+		kongProtocol string,
+		kongIPv4 common29122.Ipv4Addr,
+		kongDataPlanePort common29122.Port,
+		kongControlPlanePort common29122.Port,
+		apfId string) (int, error) {
+
 	log.Trace("entering RegisterKong")
 	var (
 		statusCode int
@@ -46,7 +52,7 @@ func (sd *ServiceAPIDescription) RegisterKong(kongDomain string, kongProtocol st
 	)
 	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongIPv4, kongControlPlanePort)
 
-	statusCode, err = sd.createKongRoutes(kongControlPlaneURL)
+	statusCode, err = sd.createKongRoutes(kongControlPlaneURL, apfId)
 	if (err != nil) || (statusCode != http.StatusCreated) {
 		return statusCode, err
 	}
@@ -57,7 +63,7 @@ func (sd *ServiceAPIDescription) RegisterKong(kongDomain string, kongProtocol st
 	return statusCode, nil
 }
 
-func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string) (int, error) {
+func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string, apfId string) (int, error) {
 	log.Trace("entering createKongRoutes")
 	var (
 		statusCode int
@@ -72,7 +78,7 @@ func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string) (i
 		for _, version := range profile.Versions {
 			log.Debugf("createKongRoutes, apiVersion \"%s\"", version.ApiVersion)
 			for _, resource := range *version.Resources {
-				statusCode, err = sd.createKongRoute(kongControlPlaneURL, client, resource, profile.AefId, version.ApiVersion)
+				statusCode, err = sd.createKongRoute(kongControlPlaneURL, client, resource, apfId, profile.AefId, version.ApiVersion)
 				if (err != nil) || (statusCode != http.StatusCreated) {
 					return statusCode, err
 				}
@@ -82,32 +88,36 @@ func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string) (i
 	return statusCode, nil
 }
 
-func (sd *ServiceAPIDescription) createKongRoute(kongControlPlaneURL string, client *resty.Client, resource Resource, aefId string, apiVersion string) (int, error) {
+func (sd *ServiceAPIDescription) createKongRoute(
+		kongControlPlaneURL string,
+		client *resty.Client,
+		resource Resource,
+		apfId string,
+		aefId string,
+		apiVersion string ) (int, error) {
 	log.Trace("entering createKongRoute")
-	uri := resource.Uri
 
-	if apiVersion != "" {
-		if apiVersion[0] != '/' {
-			apiVersion = "/" + apiVersion
-		}
-		if apiVersion[len(apiVersion)-1] != '/' && resource.Uri[0] != '/' {
-			apiVersion = apiVersion + "/"
-		}
-		uri = apiVersion + resource.Uri
-	}
+	resourceName := resource.ResourceName
+	apiId := *sd.ApiId
 
-	log.Debugf("createKongRoute, uri %s", uri)
+	tags := buildTags(apfId, aefId, apiId, apiVersion, resourceName)
+	log.Debugf("createKongRoute, tags %s", tags)
 
-	serviceName := *sd.ApiId + "_" + resource.ResourceName
+	serviceName := apiId + "_" + resourceName
+	routeName := serviceName
+
 	log.Debugf("createKongRoute, serviceName %s", serviceName)
+	log.Debugf("createKongRoute, routeName %s", routeName)
 	log.Debugf("createKongRoute, aefId %s", aefId)
 
-	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, uri, aefId)
+	uri := buildUriWithVersion(apiVersion, resource.Uri)
+	log.Debugf("createKongRoute, uri %s", uri)
+
+	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, uri, tags)
 	if (err != nil) || (statusCode != http.StatusCreated) {
 		return statusCode, err
 	}
 
-	routeName := serviceName
 	kongRoutesURL := kongControlPlaneURL + "/services/" + serviceName + "/routes"
 
 	// Define the route information for Kong
@@ -115,7 +125,7 @@ func (sd *ServiceAPIDescription) createKongRoute(kongControlPlaneURL string, cli
 		"name":       routeName,
 		"paths":      []string{uri},
 		"methods":    resource.Operations,
-		"tags":       []string{aefId},
+		"tags":       tags,
 		"strip_path": true,
 	}
 
@@ -144,7 +154,39 @@ func (sd *ServiceAPIDescription) createKongRoute(kongControlPlaneURL string, cli
 	return resp.StatusCode(), nil
 }
 
-func (sd *ServiceAPIDescription) createKongService(kongControlPlaneURL string, kongServiceName string, kongServiceUri string, aefId string) (int, error) {
+func buildUriWithVersion(apiVersion string, uri string) string {
+	if apiVersion != "" {
+		if apiVersion[0] != '/' {
+			apiVersion = "/" + apiVersion
+		}
+		if apiVersion[len(apiVersion)-1] != '/' && uri[0] != '/' {
+			apiVersion = apiVersion + "/"
+		}
+		uri = apiVersion + uri
+	}
+	return uri
+}
+
+func buildTags(apfId string, aefId string, apiId string, apiVersion string, resourceName string) []string  {
+	tagsMap := map[string]string{
+		"apfId": apfId,
+		"aefId": aefId,
+		"apiId": apiId,
+		"apiVersion": apiVersion,
+		"resourceName": resourceName,
+	}
+
+	// Convert the map to a slice of strings
+	var tagsSlice []string
+	for key, value := range tagsMap {
+		str := fmt.Sprintf("%s: %s", key, value)
+		tagsSlice = append(tagsSlice, str)
+	}
+
+	return tagsSlice
+}
+
+func (sd *ServiceAPIDescription) createKongService(kongControlPlaneURL string, kongServiceName string, kongServiceUri string, tags []string) (int, error) {
 	log.Tracef("entering createKongService")
 	log.Tracef("createKongService, kongServiceName %s", kongServiceName)
 
@@ -167,7 +209,7 @@ func (sd *ServiceAPIDescription) createKongService(kongControlPlaneURL string, k
 		"port":     firstAEFProfilePort,
 		"protocol": kongControlPlaneURLParsed.Scheme,
 		"path":     kongServiceUri,
-		"tags":     []string{aefId},
+		"tags":     tags,
 	}
 
 	// Kong admin API endpoint for creating a service
