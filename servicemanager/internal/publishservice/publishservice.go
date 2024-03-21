@@ -82,7 +82,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 
 	newServiceAPIDescription.PrepareNewService()
 
-	statusCode, err := newServiceAPIDescription.RegisterKong(ps.KongDomain, ps.KongProtocol, ps.KongIPv4, ps.KongDataPlanePort, ps.KongControlPlanePort)
+	statusCode, err := newServiceAPIDescription.RegisterKong(ps.KongDomain, ps.KongProtocol, ps.KongIPv4, ps.KongDataPlanePort, ps.KongControlPlanePort, apfId)
 	if (err != nil) || (statusCode != http.StatusCreated) {
 		// We can return with http.StatusForbidden if there is a http.StatusConflict detected by Kong
 		msg := err.Error()
