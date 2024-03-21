@@ -29,6 +29,9 @@ RUN go mod download
 COPY . .
 RUN go build -o /servicemanager
 
+WORKDIR "/app/internal"
+RUN go build kongclearup.go
+
 ##
 ## Deploy
 ##
@@ -41,5 +44,6 @@ WORKDIR /app
 
 ## Copy from "build" stage
 COPY --from=build /servicemanager .
+COPY --from=build /app/internal/kongclearup .
 
 ENTRYPOINT ["/app/servicemanager"]
