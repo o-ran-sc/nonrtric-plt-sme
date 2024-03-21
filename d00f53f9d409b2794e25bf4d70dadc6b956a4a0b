@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "92360620_5601158a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-03-21T11:47:39Z",
+      "side": 1,
+      "message": "Will try only remove the services \u0026 routes created. Then this utility can stay inside the service manager image. \nNeeds some documentation to alert users that its available.",
+      "revId": "d00f53f9d409b2794e25bf4d70dadc6b956a4a0b",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
