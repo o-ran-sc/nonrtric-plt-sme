@@ -102,6 +102,21 @@ The application can also be built as a Docker image, by using the following comm
 docker image build . -t servicemanager
 ```
 
+## Kongclearup
+
+Please note that a special executable has been provided for deleting Kong routes and services that have been created ServiceManager in Kong. This executable is called `kongclearup` and is found in the working directory of the ServiceManger Docker image, at `/app/kongclearup`. When we create a Kong route or service, we add Kong tags with information as follows.
+  * apfId
+  * aefId
+  * apiId
+  * apiVersion
+  * resourceName
+
+When we delete Kong routes and services using `kongclearup`, we check for the existance of these tags, specifically, apfId, apiId and aefId. Only if these tags exist and have values do we proceed to delete the Kong service or route. 
+
+The executable `kongclearup` uses the volume-mounted .env file to load the configuration giving the location of Kong. 
+
+Please refer to `sme/servicemanager/internal/kongclearup.go`.
+
 ## Stand-alone Deployment on Kubernetes
 
 For a stand-alone deployment, please see the `deploy` folder for configurations to deploy to R1-SME-Manager to Kubernetes. We need the following steps.

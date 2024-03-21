@@ -7,8 +7,9 @@ docs/_build/
 .pydevproject
 go.work*
 servicemanager.tar.gz
-servicemanager/servicemanager
 servicemanager/specs
+servicemanager/servicemanager
+servicemanager/internal/kongclearup
 coverage.txt
 # Ignore all .env files
 .env*
@@ -16,4 +17,3 @@ coverage.txt
 !.env.example
 # Ignore all files in folders named "mocks"
 **/mocks/*
-servicemanager/specs/
