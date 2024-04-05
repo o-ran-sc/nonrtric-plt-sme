@@ -22,6 +22,8 @@ package main
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -33,32 +35,123 @@ import (
 
 	"oransc.org/nonrtric/servicemanager/internal/common29122"
 	"oransc.org/nonrtric/servicemanager/internal/envreader"
+	"oransc.org/nonrtric/servicemanager/internal/kongclear"
+
+	"oransc.org/nonrtric/capifcore"
+	"oransc.org/nonrtric/servicemanager/mockkong"
 )
 
-var e *echo.Echo
-var myPorts map [string]int
+var (
+	eServiceManager  	 *echo.Echo
+	eCapifWeb        	 *echo.Echo
+	eKong            	 *echo.Echo
+	mockConfigReader 	 *envreader.MockConfigReader
+	serviceManagerServer *httptest.Server
+	capifServer 		 *httptest.Server
+	mockKongServer 		 *httptest.Server
+)
 
+// Init code to run before tests
 func TestMain(m *testing.M) {
-    // Init code to run before tests
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	err := setupTest()
+	if err != nil {
+		return
+	}
+
+	ret := m.Run()
+	if ret == 0 {
+		teardown()
+	}
+	os.Exit(ret)
+}
+
+func setupTest() error {
+	// Start the mock Kong server
+	eKong = echo.New()
+	mockKong.RegisterHandlers(eKong)
+	mockKongServer = httptest.NewServer(eKong)
+
+	// Parse the server URL
+	parsedMockKongURL, err := url.Parse(mockKongServer.URL)
+	if err != nil {
+		log.Fatalf("error parsing mock Kong URL: %v", err)
+		return err
+	}
+
+	// Extract the host and port
+	mockKongHost := parsedMockKongURL.Hostname()
+	mockKongControlPlanePort := parsedMockKongURL.Port()
+
+	eCapifWeb = echo.New()
+	capifcore.RegisterHandlers(eCapifWeb, nil, nil)
+	capifServer = httptest.NewServer(eCapifWeb)
+
+	// Parse the server URL
+	parsedCapifURL, err := url.Parse(capifServer.URL)
+	if err != nil {
+		log.Fatalf("error parsing mock Kong URL: %v", err)
+		return err
+	}
+
+	// Extract the host and port
+	capifHost := parsedCapifURL.Hostname()
+	capifPort := parsedCapifURL.Port()
+
+	// Set up the mock config reader with the desired configuration for testing
+	mockConfigReader = &envreader.MockConfigReader{
+		MockedConfig: map[string]string{
+			"KONG_DOMAIN":             "kong",
+			"KONG_PROTOCOL":           "http",
+			"KONG_IPV4":               mockKongHost,
+			"KONG_DATA_PLANE_PORT":    "32080",
+			"KONG_CONTROL_PLANE_PORT": mockKongControlPlanePort,
+			"CAPIF_PROTOCOL":          "http",
+			"CAPIF_IPV4":              capifHost,
+			"CAPIF_PORT":              capifPort,
+			"LOG_LEVEL":               "Info",
+			"SERVICE_MANAGER_PORT":    "8095",
+			"TEST_SERVICE_IPV4":       "10.101.1.101",
+			"TEST_SERVICE_PORT":       "30951",
+		},
+	}
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
+	if err != nil {
+		log.Fatal("error loading environment file on setupTest")
+		return err
+	}
+
+	eServiceManager = echo.New()
+	err = registerHandlers(eServiceManager, myEnv, myPorts)
+	if err != nil {
+		log.Fatal("registerHandlers fatal error on setupTest")
+		return err
+	}
+	serviceManagerServer = httptest.NewServer(eServiceManager)
+
+	return err
+}
+
+
+func teardown() error {
+	log.Trace("entering teardown")
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	if err != nil {
 		log.Fatal("error loading environment file")
-		return
+		return err
 	}
 
-	e, err = getEcho(myEnv, myPorts)
+	err = kongclear.KongClear(myEnv, myPorts)
 	if err != nil {
-		log.Fatal("getEcho fatal error")
-		return
+		log.Fatal("error clearing Kong on teardown")
 	}
-    
-    // Run tests
-    exitVal := m.Run()
-    
-    // Finalization code to run after tests
 
-    // Exit with exit value from tests
-    os.Exit(exitVal)
+	mockKongServer.Close()
+	capifServer.Close()
+	serviceManagerServer.Close()
+
+	return err
 }
 
 
@@ -117,9 +210,9 @@ func Test_routing(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var result *testutil.CompletedRequest
 			if tt.args.method == "GET" {
-				result = testutil.NewRequest().Get(tt.args.url).Go(t, e)
+				result = testutil.NewRequest().Get(tt.args.url).Go(t, eServiceManager)
 			} else if tt.args.method == "DELETE" {
-				result = testutil.NewRequest().Delete(tt.args.url).Go(t, e)
+				result = testutil.NewRequest().Delete(tt.args.url).Go(t, eServiceManager)
 			}
 
 			assert.Equal(t, tt.args.returnStatus, result.Code(), tt.name)
@@ -167,7 +260,7 @@ func TestGetSwagger(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := testutil.NewRequest().Get("/swagger/"+tt.args.apiPath).Go(t, e)
+			result := testutil.NewRequest().Get("/swagger/"+tt.args.apiPath).Go(t, eServiceManager)
 			assert.Equal(t, http.StatusOK, result.Code())
 			var swaggerResponse openapi3.T
 			err := result.UnmarshalJsonToObject(&swaggerResponse)
@@ -176,7 +269,7 @@ func TestGetSwagger(t *testing.T) {
 		})
 	}
 	invalidApi := "foobar"
-	result := testutil.NewRequest().Get("/swagger/"+invalidApi).Go(t, e)
+	result := testutil.NewRequest().Get("/swagger/"+invalidApi).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 	var errorResponse common29122.ProblemDetails
 	err := result.UnmarshalJsonToObject(&errorResponse)
