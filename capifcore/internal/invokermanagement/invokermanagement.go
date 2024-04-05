@@ -155,7 +155,15 @@ func (im *InvokerManager) prepareNewInvoker(newInvoker *invokerapi.APIInvokerEnr
 	defer im.lock.Unlock()
 
 	newInvoker.PrepareNewInvoker()
-	im.addClientInKeycloak(newInvoker)
+
+	if im.keycloak != nil {
+		// The type assertion fails when unit testing from ServiceManager where we use Capif as a library, and we are not using Keycloak.
+		if _, ok := im.keycloak.(*keycloak.KeycloakManager); !ok {
+			// im.keycloak is not nil and its dynamic value is not nil.
+			im.addClientInKeycloak(newInvoker)
+        }
+	}
+
 	im.onboardedInvokers[*newInvoker.ApiInvokerId] = *newInvoker
 }
 

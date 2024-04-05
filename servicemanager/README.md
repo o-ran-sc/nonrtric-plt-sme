@@ -96,10 +96,10 @@ R1-SME-Manager is then available on the port configured in .env.
 
 ## Building the Docker Image
 
-The application can also be built as a Docker image, by using the following command. We build the image without a .env file. This is supplied by volume mounting at container run-time.
+The application can also be built as a Docker image, by using the following command. We build the image without a .env file. This is supplied by volume mounting at container run-time. Because we need to include capifcore in the Docker build context, we build from the git repo's root directory, sme.
 
 ```sh
-docker image build . -t servicemanager
+docker build -t servicemanager -f servicemanager/Dockerfile .
 ```
 
 ## Kongclearup
