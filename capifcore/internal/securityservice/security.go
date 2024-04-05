@@ -92,9 +92,17 @@ func (s *Security) PostSecuritiesSecurityIdToken(ctx echo.Context, securityId st
 		}
 	}
 	data := url.Values{"grant_type": {"client_credentials"}, "client_id": {accessTokenReq.ClientId}, "client_secret": {*accessTokenReq.ClientSecret}}
-	jwtToken, err := s.keycloak.GetToken("invokerrealm", data)
-	if err != nil {
-		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, err.Error())
+
+	var jwtToken keycloak.Jwttoken
+	var err error
+
+	if s.keycloak != nil {
+		jwtToken, err = s.keycloak.GetToken("invokerrealm", data)
+		if err != nil {
+			return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, err.Error())
+		}
+	} else {
+		return sendAccessTokenError(ctx, http.StatusBadRequest, securityapi.AccessTokenErrErrorUnauthorizedClient, "keycloak is nil")
 	}
 
 	accessTokenResp := securityapi.AccessTokenRsp{

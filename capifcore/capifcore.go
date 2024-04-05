@@ -2,8 +2,8 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2022: Nordix Foundation. All rights reserved.
-//   Copyright (C) 2023 OpenInfra Foundation Europe. All rights reserved.
+//   Copyright (C) 2022-2023: Nordix Foundation. All rights reserved.
+//   Copyright (C) 2023-2024 OpenInfra Foundation Europe. All rights reserved.
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -19,83 +19,38 @@
 //   ========================LICENSE_END===================================
 //
 
-package main
+package capifcore
 
 import (
-	"flag"
-	"fmt"
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
-	"helm.sh/helm/v3/pkg/cli"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 	"oransc.org/nonrtric/capifcore/internal/discoverserviceapi"
 	"oransc.org/nonrtric/capifcore/internal/eventsapi"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagementapi"
-	"oransc.org/nonrtric/capifcore/internal/keycloak"
 	"oransc.org/nonrtric/capifcore/internal/providermanagementapi"
 	"oransc.org/nonrtric/capifcore/internal/securityapi"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
-	config "oransc.org/nonrtric/capifcore/internal/config"
+	"oransc.org/nonrtric/capifcore/internal/helmmanagement"
+
 	"oransc.org/nonrtric/capifcore/internal/discoverservice"
 	"oransc.org/nonrtric/capifcore/internal/eventservice"
-	"oransc.org/nonrtric/capifcore/internal/helmmanagement"
 	"oransc.org/nonrtric/capifcore/internal/invokermanagement"
 	"oransc.org/nonrtric/capifcore/internal/providermanagement"
 	"oransc.org/nonrtric/capifcore/internal/publishservice"
 	"oransc.org/nonrtric/capifcore/internal/publishserviceapi"
 	security "oransc.org/nonrtric/capifcore/internal/securityservice"
+	"oransc.org/nonrtric/capifcore/internal/keycloak"
 )
 
-var url string
-var helmManager helmmanagement.HelmManager
-var repoName string
-
-func main() {
-	var port = flag.Int("port", 8090, "Port for CAPIF Core Function HTTP server")
-	var secPort = flag.Int("secPort", 4433, "Port for CAPIF Core Function HTTPS server")
-	flag.StringVar(&url, "chartMuseumUrl", "", "ChartMuseum URL")
-	flag.StringVar(&repoName, "repoName", "capifcore", "Repository name")
-	var logLevelStr = flag.String("loglevel", "Info", "Log level")
-	var certPath = flag.String("certPath", "certs/cert.pem", "Path for server certificate")
-	var keyPath = flag.String("keyPath", "certs/key.pem", "Path for server private key")
-
-	flag.Parse()
-
-	if loglevel, err := log.ParseLevel(*logLevelStr); err == nil {
-		log.SetLevel(loglevel)
-	}
-
-	// Add repo
-	helmManager = helmmanagement.NewHelmManager(cli.New())
-	err := helmManager.SetUpRepo(repoName, url)
-	if err != nil {
-		log.Warnf("No Helm repo added due to: %s", err.Error())
-	}
-
-	go startWebServer(getEcho(), *port)
-	go startHttpsWebServer(getEcho(), *secPort, *certPath, *keyPath)
-
-	log.Info("Server started and listening on port: ", *port)
-
-	keepServerAlive()
-}
-
-func getEcho() *echo.Echo {
-	e := echo.New()
+func RegisterHandlers(e *echo.Echo, helmManager helmmanagement.HelmManager, km *keycloak.KeycloakManager) {
 	// Log all requests
 	e.Use(echomiddleware.Logger())
-
-	// Read configuration file
-	cfg, err := config.ReadKeycloakConfigFile("configs")
-	if err != nil {
-		log.Fatalf("Error loading configuration file\n: %s", err)
-	}
-	km := keycloak.NewKeycloakManager(cfg, &http.Client{})
 
 	var group *echo.Group
 	// Register ProviderManagement
@@ -168,21 +123,6 @@ func getEcho() *echo.Echo {
 	e.GET("/", hello)
 
 	e.GET("/swagger/:apiName", getSwagger)
-
-	return e
-}
-
-func startWebServer(e *echo.Echo, port int) {
-	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", port)))
-}
-
-func startHttpsWebServer(e *echo.Echo, port int, certPath string, keyPath string) {
-	e.Logger.Fatal(e.StartTLS(fmt.Sprintf("0.0.0.0:%d", port), certPath, keyPath))
-}
-
-func keepServerAlive() {
-	forever := make(chan int)
-	<-forever
 }
 
 func hello(c echo.Context) error {
