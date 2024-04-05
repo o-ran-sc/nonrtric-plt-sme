@@ -24,7 +24,7 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN go build -o /capifcore
+RUN go build -o /capifcore cmd/main.go
 ##
 ## Deploy
 ##

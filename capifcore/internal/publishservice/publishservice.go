@@ -204,7 +204,7 @@ func (ps *PublishService) isServicePublished(newService publishapi.ServiceAPIDes
 
 func (ps *PublishService) installHelmChart(newServiceAPIDescription publishapi.ServiceAPIDescription, ctx echo.Context) (bool, error) {
 	info := strings.Split(*newServiceAPIDescription.Description, ",")
-	if len(info) == 5 {
+	if (len(info) == 5) && (ps.helmManager != nil) {
 		err := ps.helmManager.InstallHelmChart(info[1], info[2], info[3], info[4])
 		if err != nil {
 			return true, sendCoreError(ctx, http.StatusBadRequest, fmt.Sprintf("Unable to install Helm chart %s due to: %s", info[3], err.Error()))
@@ -221,7 +221,7 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 		pos, description := getServiceDescription(serviceApiId, serviceDescriptions)
 		if description != nil {
 			info := strings.Split(*description.Description, ",")
-			if len(info) == 5 {
+			if (len(info) == 5) && (ps.helmManager != nil) {
 				ps.helmManager.UninstallHelmChart(info[1], info[3])
 				log.Debug("Deleted service: ", serviceApiId)
 			}

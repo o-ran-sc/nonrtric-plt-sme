@@ -28,7 +28,8 @@ import (
 )
 
 func main() {
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	realConfigReader := &envreader.RealConfigReader{}
+    myEnv, myPorts, err := realConfigReader.ReadDotEnv()
 	if err != nil {
 		log.Fatal("error loading environment file")
 	}

@@ -33,13 +33,13 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"oransc.org/nonrtric/capifcore"
 	"oransc.org/nonrtric/capifcore/internal/common29122"
 )
 
-var e *echo.Echo
-
 func Test_routing(t *testing.T) {
-	e = getEcho()
+	e := echo.New()
+	capifcore.RegisterHandlers(e, nil, nil)
 
 	type args struct {
 		url          string
@@ -122,7 +122,8 @@ func Test_routing(t *testing.T) {
 }
 
 func TestGetSwagger(t *testing.T) {
-	e = getEcho()
+	e := echo.New()
+	capifcore.RegisterHandlers(e, nil, nil)
 
 	type args struct {
 		apiPath string
@@ -196,9 +197,11 @@ func TestGetSwagger(t *testing.T) {
 }
 
 func TestHTTPSServer(t *testing.T) {
-	e = getEcho()
+	e := echo.New()
+	capifcore.RegisterHandlers(e, nil, nil)
+
 	var port = 44333
-	go startHttpsWebServer(e, 44333, "certs/cert.pem", "certs/key.pem") //"certs/test/cert.pem", "certs/test/key.pem"
+	go startHttpsWebServer(e, 44333, "../certs/cert.pem", "../certs/key.pem") //"certs/test/cert.pem", "certs/test/key.pem"
 
 	time.Sleep(100 * time.Millisecond)
 

@@ -22,6 +22,8 @@ package invokermanagement
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -30,6 +32,7 @@ import (
 	"oransc.org/nonrtric/servicemanager/internal/envreader"
 	"oransc.org/nonrtric/servicemanager/internal/invokermanagementapi"
 	"oransc.org/nonrtric/servicemanager/internal/kongclear"
+
 	"oransc.org/nonrtric/servicemanager/internal/providermanagement"
 	provapi "oransc.org/nonrtric/servicemanager/internal/providermanagementapi"
 	"oransc.org/nonrtric/servicemanager/internal/publishservice"
@@ -41,9 +44,20 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"oransc.org/nonrtric/capifcore"
+	"oransc.org/nonrtric/servicemanager/mockkong"
 )
 
-var requestHandler *echo.Echo
+var (
+	eServiceManager  	 *echo.Echo
+	eCapifWeb        	 *echo.Echo
+	eKong            	 *echo.Echo
+	mockConfigReader 	 *envreader.MockConfigReader
+	serviceManagerServer *httptest.Server
+	capifServer 		 *httptest.Server
+	mockKongServer 		 *httptest.Server
+)
 
 func TestMain(m *testing.M) {
 	err := setupTest()
@@ -59,22 +73,69 @@ func TestMain(m *testing.M) {
 }
 
 func setupTest() error {
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	// Start the mock Kong server
+	eKong = echo.New()
+	mockKong.RegisterHandlers(eKong)
+	mockKongServer = httptest.NewServer(eKong)
+
+	// Parse the server URL
+	parsedMockKongURL, err := url.Parse(mockKongServer.URL)
+	if err != nil {
+		log.Fatalf("error parsing mock Kong URL: %v", err)
+		return err
+	}
+
+	// Extract the host and port
+	mockKongHost := parsedMockKongURL.Hostname()
+	mockKongControlPlanePort := parsedMockKongURL.Port()
+
+	eCapifWeb = echo.New()
+	capifcore.RegisterHandlers(eCapifWeb, nil, nil)
+	capifServer = httptest.NewServer(eCapifWeb)
+
+	// Parse the server URL
+	parsedCapifURL, err := url.Parse(capifServer.URL)
+	if err != nil {
+		log.Fatalf("error parsing mock Kong URL: %v", err)
+		return err
+	}
+
+	// Extract the host and port
+	capifHost := parsedCapifURL.Hostname()
+	capifPort := parsedCapifURL.Port()
+
+	// Set up the mock config reader with the desired configuration for testing
+	mockConfigReader = &envreader.MockConfigReader{
+		MockedConfig: map[string]string{
+			"KONG_DOMAIN":             "kong",
+			"KONG_PROTOCOL":           "http",
+			"KONG_IPV4":               mockKongHost,
+			"KONG_DATA_PLANE_PORT":    "32080",
+			"KONG_CONTROL_PLANE_PORT": mockKongControlPlanePort,
+			"CAPIF_PROTOCOL":          "http",
+			"CAPIF_IPV4":              capifHost,
+			"CAPIF_PORT":              capifPort,
+			"LOG_LEVEL":               "Info",
+			"SERVICE_MANAGER_PORT":    "8095",
+			"TEST_SERVICE_IPV4":       "10.101.1.101",
+			"TEST_SERVICE_PORT":       "30951",
+		},
+	}
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	if err != nil {
 		log.Fatal("error loading environment file on setupTest")
 		return err
 	}
 
-	requestHandler, err = getEcho(myEnv, myPorts)
+	eServiceManager = echo.New()
+	err = registerHandlers(eServiceManager, myEnv, myPorts)
 	if err != nil {
-		log.Fatal("getEcho fatal error on setupTest")
+		log.Fatal("registerHandlers fatal error on setupTest")
 		return err
 	}
-	err = teardown()
-	if err != nil {
-		log.Fatal("getEcho fatal error on teardown")
-		return err
-	}
+	serviceManagerServer = httptest.NewServer(eServiceManager)
+	capifCleanUp()
 
 	return err
 }
@@ -109,16 +170,14 @@ func getProvider() provapi.APIProviderEnrolmentDetails {
 	}
 }
 
-func teardown() error {
-	log.Trace("entering teardown")
-
-	t := new(testing.T) // Create a new testing.T instance for teardown
+func capifCleanUp()  {
+	t := new(testing.T) // Create a new testing.T instance for capifCleanUp
 
 	// Delete the invoker
 	invokerInfo := "invoker a"
 	invokerId := "api_invoker_id_" + strings.Replace(invokerInfo, " ", "_", 1)
 
-	result := testutil.NewRequest().Delete("/api-invoker-management/v1/onboardedInvokers/"+invokerId).Go(t, requestHandler)
+	result := testutil.NewRequest().Delete("/api-invoker-management/v1/onboardedInvokers/"+invokerId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 
 	// Delete the original published service
@@ -126,7 +185,7 @@ func teardown() error {
 	apiName := "apiName"
 	apiId := "api_id_" + apiName
 
-	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 
 	// Delete the first published service
@@ -134,22 +193,26 @@ func teardown() error {
 	apiName = "apiName1"
 	apiId = "api_id_" + apiName
 
-	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 
 	// Delete the second published service
 	apiName = "apiName2"
 	apiId = "api_id_" + apiName
 
-	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 
 	// Delete the provider
 	domainID := "domain_id_Kong"
-	result = testutil.NewRequest().Delete("/api-provider-management/v1/registrations/"+domainID).Go(t, requestHandler)
+	result = testutil.NewRequest().Delete("/api-provider-management/v1/registrations/"+domainID).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
+}
 
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+func teardown() error {
+	log.Trace("entering teardown")
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	if err != nil {
 		log.Fatal("error loading environment file")
 		return err
@@ -159,16 +222,21 @@ func teardown() error {
 	if err != nil {
 		log.Fatal("error clearing Kong on teardown")
 	}
-	return err
+
+	mockKongServer.Close()
+	capifServer.Close()
+	serviceManagerServer.Close()
+
+	return nil
 }
 
 func TestRegisterValidProvider(t *testing.T) {
-	teardown()
+	capifCleanUp()
 
 	newProvider := getProvider()
 
 	// Register a valid provider
-	result := testutil.NewRequest().Post("/api-provider-management/v1/registrations").WithJsonBody(newProvider).Go(t, requestHandler)
+	result := testutil.NewRequest().Post("/api-provider-management/v1/registrations").WithJsonBody(newProvider).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusCreated, result.Code())
 
 	var resultProvider provapi.APIProviderEnrolmentDetails
@@ -181,7 +249,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	apiName := "apiName"
 	newApiId := "api_id_" + apiName
 
-	myEnv, myPorts, err := envreader.ReadDotEnv()
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
 	assert.Nil(t, err, "error reading env file")
 
 	testServiceIpv4 := common29122.Ipv4Addr(myEnv["TEST_SERVICE_IPV4"])
@@ -191,7 +259,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.NotZero(t, testServicePort, "TEST_SERVICE_PORT is required in .env file for unit testing")
 
 	// Check no services published
-	result := testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis").Go(t, requestHandler)
+	result := testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis").Go(t, eServiceManager)
 	assert.Equal(t, http.StatusOK, result.Code())
 
 	// Parse JSON from the response body
@@ -212,7 +280,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	newServiceDescription := getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort)
 
 	// Publish a service for provider
-	result = testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, requestHandler)
+	result = testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusCreated, result.Code())
 
 	if result.Code() != http.StatusCreated {
@@ -228,7 +296,7 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.Equal(t, "http://example.com/published-apis/v1/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 
 	// Check that the service is published for the provider
-	result = testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis/"+newApiId).Go(t, requestHandler)
+	result = testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis/"+newApiId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusOK, result.Code())
 
 	err = result.UnmarshalJsonToObject(&resultService)
@@ -256,7 +324,7 @@ func TestOnboardInvoker(t *testing.T) {
 	newInvoker := getInvoker(invokerInfo)
 
 	// Onboard a valid invoker
-	result := testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+	result := testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(newInvoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusCreated, result.Code())
 
 	var resultInvoker invokermanagementapi.APIInvokerEnrolmentDetails
@@ -273,7 +341,7 @@ func TestOnboardInvoker(t *testing.T) {
 	assert.Equal(t, "http://example.com/api-invoker-management/v1/onboardedInvokers/"+*resultInvoker.ApiInvokerId, result.Recorder.Header().Get(echo.HeaderLocation))
 
 	// Onboarding the same invoker should result in Forbidden
-	result = testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(newInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(newInvoker).Go(t, eServiceManager)
 
 	assert.Equal(t, http.StatusForbidden, result.Code())
 
@@ -290,7 +358,7 @@ func TestOnboardInvoker(t *testing.T) {
 			ApiInvokerPublicKey: "newKey",
 		},
 	}
-	result = testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -305,7 +373,7 @@ func TestOnboardInvoker(t *testing.T) {
 		NotificationDestination: "http://golang.cafe/",
 	}
 
-	result = testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(invalidInvoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -321,7 +389,7 @@ func TestDeleteInvoker(t *testing.T) {
 	invokerId := "api_invoker_id_" + strings.Replace(invokerInfo, " ", "_", 1)
 
 	// Delete the invoker
-	result := testutil.NewRequest().Delete("/api-invoker-management/v1/onboardedInvokers/"+invokerId).Go(t, requestHandler)
+	result := testutil.NewRequest().Delete("/api-invoker-management/v1/onboardedInvokers/"+invokerId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 }
 
@@ -331,7 +399,7 @@ func TestUpdateInvoker(t *testing.T) {
 	invokerId := "api_invoker_id_" + strings.Replace(invokerInfo, " ", "_", 1)
 
 	// Onboard a valid invoker
-	result := testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(invoker).Go(t, requestHandler)
+	result := testutil.NewRequest().Post("/api-invoker-management/v1/onboardedInvokers").WithJsonBody(invoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusCreated, result.Code())
 
 	// Update the invoker with valid invoker, should return 200 with updated invoker details
@@ -342,7 +410,7 @@ func TestUpdateInvoker(t *testing.T) {
 
 	invoker.ApiInvokerId = &invokerId
 
-	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusOK, result.Code())
 
 	var resultInvoker invokermanagementapi.APIInvokerEnrolmentDetails
@@ -362,7 +430,7 @@ func TestUpdateInvoker(t *testing.T) {
 		ApiInvokerId:          &invokerId,
 		OnboardingInformation: validOnboardingInfo,
 	}
-	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 
 	var problemDetails common29122.ProblemDetails
@@ -376,7 +444,7 @@ func TestUpdateInvoker(t *testing.T) {
 	// Update with an invoker missing required OnboardingInformation.ApiInvokerPublicKey, should get 400 with problem details
 	invalidInvoker.NotificationDestination = "http://golang.org/"
 	invalidInvoker.OnboardingInformation = invokermanagementapi.OnboardingInformation{}
-	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -390,7 +458,7 @@ func TestUpdateInvoker(t *testing.T) {
 	invalidId := "1"
 	invalidInvoker.ApiInvokerId = &invalidId
 	invalidInvoker.OnboardingInformation = validOnboardingInfo
-	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+invokerId).WithJsonBody(invalidInvoker).Go(t, eServiceManager)
 
 	assert.Equal(t, http.StatusBadRequest, result.Code())
 
@@ -403,7 +471,7 @@ func TestUpdateInvoker(t *testing.T) {
 	// Update an invoker that has not been onboarded, should get 404 with problem details
 	missingId := "1"
 	invoker.ApiInvokerId = &missingId
-	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+missingId).WithJsonBody(invoker).Go(t, requestHandler)
+	result = testutil.NewRequest().Put("/api-invoker-management/v1/onboardedInvokers/"+missingId).WithJsonBody(invoker).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNotFound, result.Code())
 
 	err = result.UnmarshalBodyToObject(&problemDetails)
@@ -412,10 +480,10 @@ func TestUpdateInvoker(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, *problemDetails.Status)
 	assert.Contains(t, *problemDetails.Cause, "not been onboarded")
 	assert.Contains(t, *problemDetails.Cause, "invoker")
-	teardown()
+	capifCleanUp()
 }
 
-func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error) {
+func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]int) (err error) {
 	capifProtocol := myEnv["CAPIF_PROTOCOL"]
 	capifIPv4 := common29122.Ipv4Addr(myEnv["CAPIF_IPV4"])
 	capifPort := common29122.Port(myPorts["CAPIF_PORT"])
@@ -425,13 +493,11 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
 	kongControlPlanePort := common29122.Port(myPorts["KONG_CONTROL_PLANE_PORT"])
 
-	e := echo.New()
-
 	// Register ProviderManagement
 	providerManagerSwagger, err := provapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("error loading ProviderManagement swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 	providerManagerSwagger.Servers = nil
 	providerManager := providermanagement.NewProviderManager(capifProtocol, capifIPv4, capifPort)
@@ -445,7 +511,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	publishServiceSwagger, err := publishapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading PublishService swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 
 	publishServiceSwagger.Servers = nil
@@ -460,7 +526,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	invokerServiceSwagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading InvokerManagement swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 
 	invokerServiceSwagger.Servers = nil
@@ -472,7 +538,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	group.Use(middleware.OapiRequestValidator(invokerServiceSwagger))
 	invokermanagementapi.RegisterHandlersWithBaseURL(e, im, "api-invoker-management/v1")
 
-	return e, err
+	return err
 }
 
 func getServiceAPIDescription(aefId, apiName, description string, testServiceIpv4 common29122.Ipv4Addr, testServicePort common29122.Port) publishapi.ServiceAPIDescription {

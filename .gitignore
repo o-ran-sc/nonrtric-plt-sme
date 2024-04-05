@@ -15,5 +15,3 @@ coverage.txt
 .env*
 # Except for .env.example
 !.env.example
-# Ignore all files in folders named "mocks"
-**/mocks/*
