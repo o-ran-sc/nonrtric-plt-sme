@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6fba360e_4fcad093",
+        "filename": "capifcore/Dockerfile",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1001877
+      },
+      "writtenOn": "2024-04-10T16:26:41Z",
+      "side": 1,
+      "message": "Copyright info can be added",
+      "range": {
+        "startLine": 2,
+        "startChar": 4,
+        "endLine": 2,
+        "endChar": 14
+      },
+      "revId": "54f75869ca01df3bb6f371f99a718d383da626e4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e2e4c6a0_444ee061",
+        "filename": "capifcore/capifcore.go",
+        "patchSetId": 2
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 1001877
+      },
+      "writtenOn": "2024-04-10T16:26:41Z",
+      "side": 1,
+      "message": "Nordix copyright can be retained.",
+      "range": {
+        "startLine": 5,
+        "startChar": 5,
+        "endLine": 5,
+        "endChar": 15
+      },
+      "revId": "54f75869ca01df3bb6f371f99a718d383da626e4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
