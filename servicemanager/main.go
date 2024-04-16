@@ -46,27 +46,29 @@ import (
 )
 
 func main() {
-	myEnv, myPorts, err := envreader.ReadDotEnv()
-	if err != nil {
+    realConfigReader := &envreader.RealConfigReader{}
+    myEnv, myPorts, err := realConfigReader.ReadDotEnv()
+    if err != nil {
 		log.Fatal("error loading environment file")
-		return
-	}
+        return
+    }
 
-	e, err := getEcho(myEnv, myPorts)
+	eServiceManager := echo.New()
+	err = registerHandlers(eServiceManager, myEnv, myPorts)
+
 	if err != nil {
-		log.Fatal("getEcho fatal error")
+		log.Fatal("registerHandlers fatal error")
 		return
 	}
 
 	port := myPorts["SERVICE_MANAGER_PORT"]
 
-	go startWebServer(e, port)
+	go startWebServer(eServiceManager, port)
 	log.Info("server started and listening on port: ", port)
 	keepServerAlive()
 }
 
-func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error) {
-	e := echo.New()
+func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]int) (err error) {
 	// Log all requests
 	e.Use(echomiddleware.Logger())
 
@@ -85,7 +87,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	providerManagerSwagger, err := providermanagementapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("error loading ProviderManagement swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 	providerManagerSwagger.Servers = nil
 	providerManager := providermanagement.NewProviderManager(capifProtocol, capifIPv4, capifPort)
@@ -97,7 +99,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	publishServiceSwagger, err := publishserviceapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("error loading PublishService swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 	publishServiceSwagger.Servers = nil
 	publishService := publishservice.NewPublishService(kongDomain, kongProtocol, kongIPv4, kongDataPlanePort, kongControlPlanePort, capifProtocol, capifIPv4, capifPort)
@@ -110,7 +112,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	invokerManagerSwagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("error loading InvokerManagement swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 	invokerManagerSwagger.Servers = nil
 	invokerManager := invokermanagement.NewInvokerManager(capifProtocol, capifIPv4, capifPort)
@@ -122,7 +124,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	discoverServiceSwagger, err := discoverserviceapi.GetSwagger()
 	if err != nil {
 		log.Fatalf("error loading DiscoverService swagger spec\n: %s", err)
-		return nil, err
+		return err
 	}
 
 	discoverServiceSwagger.Servers = nil
@@ -135,7 +137,7 @@ func getEcho(myEnv map[string]string, myPorts map[string]int) (*echo.Echo, error
 	e.GET("/", hello)
 	e.GET("/swagger/:apiName", getSwagger)
 
-	return e, err
+	return err
 }
 
 func startWebServer(e *echo.Echo, port int) {

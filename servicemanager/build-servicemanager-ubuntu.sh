@@ -29,7 +29,7 @@ go version
 # Get the go coverage tool helper
 go install github.com/ory/go-acc
 go get github.com/stretchr/testify/mock@v1.7.1
-go-acc ./... --ignore gentools,mocks,common,discoverserviceapi,invokermanagementapi,publishserviceapi,providermanagementapi
+go-acc ./... --ignore mockkong,common,discoverserviceapi,invokermanagementapi,publishserviceapi,providermanagementapi
 
 sed -i 's/oransc\.org\/nonrtric\/servicemanager/servicemanager/' coverage.txt
 

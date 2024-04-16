@@ -20,16 +20,25 @@
 ##
 FROM nexus3.o-ran-sc.org:10001/golang:1.19.2-bullseye AS build
 
-WORKDIR /app
+WORKDIR /app/capifcore
 
-COPY go.mod .
-COPY go.sum .
+COPY capifcore/go.mod .
+COPY capifcore/go.sum .
 RUN go mod download
 
-COPY . .
-RUN go build -o /servicemanager
+COPY ./capifcore/. .
 
-WORKDIR "/app/internal"
+WORKDIR /app/servicemanager
+
+COPY servicemanager/go.mod .
+COPY servicemanager/go.sum .
+RUN go mod download
+
+COPY ./servicemanager/. .
+
+RUN go build
+
+WORKDIR /app/servicemanager/internal
 RUN go build kongclearup.go
 
 ##
@@ -38,12 +47,11 @@ RUN go build kongclearup.go
 
 FROM ubuntu:22.04
 
-# We use the /app directory as this is where our servicemanager expects to find its .env file.
-RUN mkdir -p /app
-WORKDIR /app
+# We use the /app/servicemanager directory as this is where our servicemanager build expects to find its .env file.
+WORKDIR /app/servicemanager
 
 ## Copy from "build" stage
-COPY --from=build /servicemanager .
-COPY --from=build /app/internal/kongclearup .
+COPY --from=build /app/servicemanager/servicemanager .
+COPY --from=build /app/servicemanager/internal/kongclearup .
 
-ENTRYPOINT ["/app/servicemanager"]
+ENTRYPOINT ["/app/servicemanager/servicemanager"]
