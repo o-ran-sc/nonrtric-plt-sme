@@ -170,10 +170,10 @@ generate_apis_from_spec () {
 }
 
 run_tests () {
-    # Make sure that SERVICE_MANAGER_ENV is configured with the required .env file, e.g. 
+    # Make sure that SERVICE_MANAGER_ENV is configured with the required .env file, e.g.
     # export SERVICE_MANAGER_ENV=development
     cd "$cwd"
-    go test -p=1 -count=1 ./...
+    go test ./...
 }
 
 # Main code block

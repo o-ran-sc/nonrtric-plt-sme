@@ -20,19 +20,24 @@
 create_env_from_template(){
     # Set up .env file for Kubernetes Config Map
     echo "create_env_from_template"
-    cp -v ../../.env.example ./.env
-    sed -i 's/KONG_DOMAIN=<string>/KONG_DOMAIN=kong/' .env
-    sed -i 's/KONG_PROTOCOL=<http or https protocol scheme>/KONG_PROTOCOL=http/' .env
-    sed -i 's/KONG_IPV4=<host string>/KONG_IPV4=10.101.1.101/' .env
-    sed -i 's/KONG_DATA_PLANE_PORT=<port number>/KONG_DATA_PLANE_PORT=32080/' .env
-    sed -i 's/KONG_CONTROL_PLANE_PORT=<port number>/KONG_CONTROL_PLANE_PORT=32081/' .env
-    sed -i 's/CAPIF_PROTOCOL=<http or https protocol scheme>/CAPIF_PROTOCOL=http/' .env
-    sed -i 's/CAPIF_IPV4=<host>/CAPIF_IPV4=10.101.1.101/' .env
-    sed -i 's/CAPIF_PORT=<port number>/CAPIF_PORT=31570/' .env
-    sed -i 's/LOG_LEVEL=<Trace, Debug, Info, Warning, Error, Fatal or Panic>/LOG_LEVEL=Info/' .env
-    sed -i 's/SERVICE_MANAGER_PORT=<port number>/SERVICE_MANAGER_PORT=8095/' .env
-    sed -i 's/TEST_SERVICE_IPV4=<host string>/TEST_SERVICE_IPV4=10.101.1.101/' .env
-    sed -i 's/TEST_SERVICE_PORT=<port number>/TEST_SERVICE_PORT=30951/' .env
+    if [ ! -f ../../.env ]; then
+        cp -v ../../.env.example ../../.env
+        sed -i 's/KONG_DOMAIN=<string>/KONG_DOMAIN=kong/' ../../.env
+        sed -i 's/KONG_PROTOCOL=<http or https protocol scheme>/KONG_PROTOCOL=http/' ../../.env
+        sed -i 's/KONG_IPV4=<host string>/KONG_IPV4=10.101.1.101/' ../../.env
+        sed -i 's/KONG_DATA_PLANE_PORT=<port number>/KONG_DATA_PLANE_PORT=32080/' ../../.env
+        sed -i 's/KONG_CONTROL_PLANE_PORT=<port number>/KONG_CONTROL_PLANE_PORT=32081/' ../../.env
+        sed -i 's/CAPIF_PROTOCOL=<http or https protocol scheme>/CAPIF_PROTOCOL=http/' ../../.env
+        sed -i 's/CAPIF_IPV4=<host>/CAPIF_IPV4=10.101.1.101/' ../../.env
+        sed -i 's/CAPIF_PORT=<port number>/CAPIF_PORT=31570/' ../../.env
+        sed -i 's/LOG_LEVEL=<Trace, Debug, Info, Warning, Error, Fatal or Panic>/LOG_LEVEL=Info/' ../../.env
+        sed -i 's/SERVICE_MANAGER_PORT=<port number>/SERVICE_MANAGER_PORT=8095/' ../../.env
+        sed -i 's/TEST_SERVICE_IPV4=<host string>/TEST_SERVICE_IPV4=10.101.1.101/' ../../.env
+        sed -i 's/TEST_SERVICE_PORT=<port number>/TEST_SERVICE_PORT=30951/' ../../.env
+        echo "created .env"
+    else
+        echo "found .env"
+    fi
 }
 
 substitute_repo(){
@@ -48,28 +53,34 @@ substitute_repo(){
 
 add_env(){
     echo "add_env"
-    additional_env=$1
+    # Our additional .env has to exist in the project root folder
+    additional_env="../../$1"
+
     # Add our own .env file
     if [ -f $additional_env ]; then
-        echo "found additional env"
-        kubectl create configmap env-configmap --from-file=.env --from-file=$additional_env -n servicemanager
+        echo "found additional env $1"
+        kubectl create configmap env-configmap --from-file=../../.env --from-file=$additional_env -n servicemanager
 
         # Add additional env file to volume mounting
         env_filename=$(basename "$additional_env")
         echo "env_filename $env_filename"
 
-        mount_path_wc=$(grep "mountPath: /app/$env_filename" ../manifests/servicemanager.yaml | wc -l)
+        mount_path_wc=$(grep "mountPath: /app/servicemanager/$env_filename" ../manifests/servicemanager.yaml | wc -l)
         env_path_count=$((mount_path_wc))
         if [ $env_path_count -eq 0 ]; then
             echo "Adding mount path"
-            sed -i -e '/subPath: .env/a\' -e "        - name: config-volume\n          mountPath: /app/$env_filename\n          subPath: $env_filename" ../manifests/servicemanager.yaml
+            sed -i -e '/subPath: .env/a\' \
+                -e "        - name: config-volume\n          mountPath: /app/servicemanager/$env_filename\n          subPath: $env_filename" ../manifests/servicemanager.yaml
         fi
 
         # Update SERVICE_MANAGER_ENV to point to additional env
         env_extension=$(basename "$additional_env" | awk -F. '{print $NF}')
-        echo "env_extension $env_extension"
-
+        echo "SERVICE_MANAGER_ENV=$env_extension"
         sed -i "/- name: SERVICE_MANAGER_ENV/{n;s/              value: \"\"/              value: \"$env_extension\"/}" ../manifests/servicemanager.yaml
+        return 0  # Return zero for success
+    else
+        echo "additional env $additional_env NOT found"
+        return 1  # Return non-zero for failure
     fi
 }
 
@@ -136,8 +147,12 @@ kubectl create ns servicemanager
 
 if [ "$ADD_ENV" = true ]; then
     add_env $ENV_PATH
+    # Check if the function failed
+    if [ $? -ne 0 ]; then
+        kubectl create configmap env-configmap --from-file=../../.env -n servicemanager
+    fi
 else
-    kubectl create configmap env-configmap --from-file=.env -n servicemanager
+    kubectl create configmap env-configmap --from-file=../../.env -n servicemanager
 fi
 
 # Create the Kubernetes resources
