@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: servicemanager
-        image: o-ran-sc.org/nonrtric/plt/servicemanager
+        image: "nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-servicemanager:0.1.1"
         imagePullPolicy: IfNotPresent
         env:
             - name: SERVICE_MANAGER_ENV
@@ -52,7 +52,7 @@ spec:
             cpu: "80m"
         volumeMounts:
         - name: config-volume
-          mountPath: /app/.env
+          mountPath: /app/servicemanager/.env
           subPath: .env
       volumes:
       - name: config-volume
