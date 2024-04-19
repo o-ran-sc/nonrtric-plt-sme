@@ -46,17 +46,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"oransc.org/nonrtric/capifcore"
-	"oransc.org/nonrtric/servicemanager/mockkong"
+	mockKong "oransc.org/nonrtric/servicemanager/mockkong"
 )
 
 var (
-	eServiceManager  	 *echo.Echo
-	eCapifWeb        	 *echo.Echo
-	eKong            	 *echo.Echo
-	mockConfigReader 	 *envreader.MockConfigReader
+	eServiceManager      *echo.Echo
+	eCapifWeb            *echo.Echo
+	eKong                *echo.Echo
+	mockConfigReader     *envreader.MockConfigReader
 	serviceManagerServer *httptest.Server
-	capifServer 		 *httptest.Server
-	mockKongServer 		 *httptest.Server
+	capifServer          *httptest.Server
+	mockKongServer       *httptest.Server
 )
 
 func TestMain(m *testing.M) {
@@ -109,9 +109,10 @@ func setupTest() error {
 		MockedConfig: map[string]string{
 			"KONG_DOMAIN":             "kong",
 			"KONG_PROTOCOL":           "http",
-			"KONG_IPV4":               mockKongHost,
-			"KONG_DATA_PLANE_PORT":    "32080",
+			"KONG_CONTROL_PLANE_IPV4": mockKongHost,
 			"KONG_CONTROL_PLANE_PORT": mockKongControlPlanePort,
+			"KONG_DATA_PLANE_IPV4":    "10.101.1.101",
+			"KONG_DATA_PLANE_PORT":    "32080",
 			"CAPIF_PROTOCOL":          "http",
 			"CAPIF_IPV4":              capifHost,
 			"CAPIF_PORT":              capifPort,
@@ -170,7 +171,7 @@ func getProvider() provapi.APIProviderEnrolmentDetails {
 	}
 }
 
-func capifCleanUp()  {
+func capifCleanUp() {
 	t := new(testing.T) // Create a new testing.T instance for capifCleanUp
 
 	// Delete the invoker
@@ -309,13 +310,13 @@ func TestPublishUnpublishService(t *testing.T) {
 	resultServiceIpv4 := *interfaceDescription.Ipv4Addr
 	resultServicePort := *interfaceDescription.Port
 
-	kongIPv4 := common29122.Ipv4Addr(myEnv["KONG_IPV4"])
+	kongDataPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_DATA_PLANE_IPV4"])
 	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
 
-	assert.NotEmpty(t, kongIPv4, "KONG_IPV4 is required in .env file for unit testing")
+	assert.NotEmpty(t, kongDataPlaneIPv4, "KONG_DATA_PLANE_IPV4 is required in .env file for unit testing")
 	assert.NotZero(t, kongDataPlanePort, "KONG_DATA_PLANE_PORT is required in .env file for unit testing")
 
-	assert.Equal(t, kongIPv4, resultServiceIpv4)
+	assert.Equal(t, kongDataPlaneIPv4, resultServiceIpv4)
 	assert.Equal(t, kongDataPlanePort, resultServicePort)
 }
 
@@ -489,9 +490,10 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	capifPort := common29122.Port(myPorts["CAPIF_PORT"])
 	kongDomain := myEnv["KONG_DOMAIN"]
 	kongProtocol := myEnv["KONG_PROTOCOL"]
-	kongIPv4 := common29122.Ipv4Addr(myEnv["KONG_IPV4"])
-	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
+	kongControlPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_CONTROL_PLANE_IPV4"])
 	kongControlPlanePort := common29122.Port(myPorts["KONG_CONTROL_PLANE_PORT"])
+	kongDataPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_DATA_PLANE_IPV4"])
+	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
 
 	// Register ProviderManagement
 	providerManagerSwagger, err := provapi.GetSwagger()
@@ -516,7 +518,11 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 
 	publishServiceSwagger.Servers = nil
 
-	ps := publishservice.NewPublishService(kongDomain, kongProtocol, kongIPv4, kongDataPlanePort, kongControlPlanePort, capifProtocol, capifIPv4, capifPort)
+	ps := publishservice.NewPublishService(
+		kongDomain, kongProtocol,
+		kongControlPlaneIPv4, kongControlPlanePort,
+		kongDataPlaneIPv4, kongDataPlanePort,
+		capifProtocol, capifIPv4, capifPort)
 
 	group = e.Group("/published-apis/v1")
 	group.Use(echomiddleware.Logger())

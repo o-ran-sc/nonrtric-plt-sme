@@ -24,12 +24,13 @@ create_env_from_template(){
         cp -v ../../.env.example ../../.env
         sed -i 's/KONG_DOMAIN=<string>/KONG_DOMAIN=kong/' ../../.env
         sed -i 's/KONG_PROTOCOL=<http or https protocol scheme>/KONG_PROTOCOL=http/' ../../.env
-        sed -i 's/KONG_IPV4=<host string>/KONG_IPV4=10.101.1.101/' ../../.env
-        sed -i 's/KONG_DATA_PLANE_PORT=<port number>/KONG_DATA_PLANE_PORT=32080/' ../../.env
-        sed -i 's/KONG_CONTROL_PLANE_PORT=<port number>/KONG_CONTROL_PLANE_PORT=32081/' ../../.env
+        sed -i 's/KONG_CONTROL_PLANE_IPV4=<host string>/KONG_CONTROL_PLANE_IPV4=kong-kong-admin.kong.svc.cluster.local/' ../../.env
+        sed -i 's/KONG_CONTROL_PLANE_PORT=<port number>/KONG_CONTROL_PLANE_PORT=8001/' ../../.env
+        sed -i 's/KONG_DATA_PLANE_IPV4=<host string>/KONG_DATA_PLANE_IPV4=kong-kong-proxy.kong.svc.cluster.local/' ../../.env
+        sed -i 's/KONG_DATA_PLANE_PORT=<port number>/KONG_DATA_PLANE_PORT=80/' ../../.env
         sed -i 's/CAPIF_PROTOCOL=<http or https protocol scheme>/CAPIF_PROTOCOL=http/' ../../.env
-        sed -i 's/CAPIF_IPV4=<host>/CAPIF_IPV4=10.101.1.101/' ../../.env
-        sed -i 's/CAPIF_PORT=<port number>/CAPIF_PORT=31570/' ../../.env
+        sed -i 's/CAPIF_IPV4=<host>/CAPIF_IPV4=capifcore.servicemanager.svc.cluster.local/' ../../.env
+        sed -i 's/CAPIF_PORT=<port number>/CAPIF_PORT=8090/' ../../.env
         sed -i 's/LOG_LEVEL=<Trace, Debug, Info, Warning, Error, Fatal or Panic>/LOG_LEVEL=Info/' ../../.env
         sed -i 's/SERVICE_MANAGER_PORT=<port number>/SERVICE_MANAGER_PORT=8095/' ../../.env
         sed -i 's/TEST_SERVICE_IPV4=<host string>/TEST_SERVICE_IPV4=10.101.1.101/' ../../.env
@@ -40,15 +41,25 @@ create_env_from_template(){
     fi
 }
 
-substitute_repo(){
-    echo "substitute_repo"
+substitute_repos(){
+    echo "substitute_repos"
     docker_repo=$1
 
     # Use our own Capificore and ServiceManager images
-    sed -i "s/image: o-ran-sc.org\/nonrtric\/plt\/capifcore/image: $docker_repo\/capifcore:latest/" ../manifests/capifcore.yaml
-    sed -i 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Always/' ../manifests/capifcore.yaml
-    sed -i "s/image: o-ran-sc.org\/nonrtric\/plt\/servicemanager/image: $docker_repo\/servicemanager:latest/" ../manifests/servicemanager.yaml
-    sed -i 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Always/' ../manifests/servicemanager.yaml
+    sed -i "s*nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-capifcore:CAPIF_VERSION*$docker_repo/capifcore:latest*" ../manifests/capifcore.yaml
+    sed -i "s*nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-servicemanager:SERVICEMANAGER_VERSION*$docker_repo/servicemanager:latest*" ../manifests/servicemanager.yaml
+
+    sed -i 's*imagePullPolicy: IfNotPresent*imagePullPolicy: Always*' ../manifests/capifcore.yaml
+    sed -i 's*imagePullPolicy: IfNotPresent*imagePullPolicy: Always*' ../manifests/servicemanager.yaml
+}
+
+substitute_repo_versions(){
+    echo "substitute_repo_versions"
+    servicemanager_version=$(awk '/tag:/{print $2}' ../../container-tag.yaml)
+    capif_version=$(awk '/tag:/{print $2}' ../../../capifcore/container-tag.yaml)
+    # Set the own Capificore and ServiceManager image versions
+    sed -i "s*nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-capifcore:CAPIF_VERSION*nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-capifcore:$capif_version*" ../manifests/capifcore.yaml
+    sed -i "s*nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-servicemanager:SERVICEMANAGER_VERSION*nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-servicemanager:$servicemanager_version*" ../manifests/servicemanager.yaml
 }
 
 add_env(){
@@ -140,7 +151,9 @@ create_env_from_template
 
 # Check if the development switch is enabled
 if [ "$USE_OWN_REPO" = true ]; then
-    substitute_repo $DOCKER_REPO
+    substitute_repos $DOCKER_REPO
+else
+    substitute_repo_versions
 fi
 
 kubectl create ns servicemanager

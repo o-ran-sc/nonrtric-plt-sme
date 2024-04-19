@@ -66,7 +66,7 @@ type Service struct {
 func KongClear(myEnv map[string]string, myPorts map[string]int) error {
 	log.Info("delete only ServiceManager Kong routes and services")
 
-	kongAdminApiUrl := fmt.Sprintf("%s://%s:%d/", myEnv["KONG_PROTOCOL"], myEnv["KONG_IPV4"], myPorts["KONG_CONTROL_PLANE_PORT"])
+	kongAdminApiUrl := fmt.Sprintf("%s://%s:%d/", myEnv["KONG_PROTOCOL"], myEnv["KONG_CONTROL_PLANE_IPV4"], myPorts["KONG_CONTROL_PLANE_PORT"])
 
 	err := deleteRoutes(kongAdminApiUrl)
 	if err != nil {
