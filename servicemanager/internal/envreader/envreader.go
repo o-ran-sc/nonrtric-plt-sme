@@ -97,9 +97,10 @@ func logConfig(myEnv map[string]string, envFile string) {
 
 	log.Infof("KONG_DOMAIN %s", myEnv["KONG_DOMAIN"])
 	log.Infof("KONG_PROTOCOL %s", myEnv["KONG_PROTOCOL"])
-	log.Infof("KONG_IPV4 %s", myEnv["KONG_IPV4"])
-	log.Infof("KONG_DATA_PLANE_PORT %s", myEnv["KONG_DATA_PLANE_PORT"])
+	log.Infof("KONG_CONTROL_PLANE_IPV4 %s", myEnv["KONG_CONTROL_PLANE_IPV4"])
 	log.Infof("KONG_CONTROL_PLANE_PORT %s", myEnv["KONG_CONTROL_PLANE_PORT"])
+	log.Infof("KONG_DATA_PLANE_IPV4 %s", myEnv["KONG_DATA_PLANE_IPV4"])
+	log.Infof("KONG_DATA_PLANE_PORT %s", myEnv["KONG_DATA_PLANE_PORT"])
 	log.Infof("CAPIF_PROTOCOL %s", myEnv["CAPIF_PROTOCOL"])
 	log.Infof("CAPIF_IPV4 %s", myEnv["CAPIF_IPV4"])
 	log.Infof("CAPIF_PORT %s", myEnv["CAPIF_PORT"])

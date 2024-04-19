@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: servicemanager
-        image: "nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-servicemanager:0.1.1"
+        image: "nexus3.o-ran-sc.org:10004/o-ran-sc/nonrtric-plt-servicemanager:0.1.2"
         imagePullPolicy: IfNotPresent
         env:
             - name: SERVICE_MANAGER_ENV
@@ -69,7 +69,7 @@ spec:
     app: servicemanager
   ports:
     - protocol: TCP
-      port: 80
+      port: 8095
       targetPort: 8095
       nodePort: 31575
   type: NodePort

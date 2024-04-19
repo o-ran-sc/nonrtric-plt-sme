@@ -36,22 +36,33 @@ import (
 type PublishService struct {
 	KongDomain				string;
 	KongProtocol			string;
-	KongIPv4        		common29122.Ipv4Addr;
-	KongDataPlanePort 		common29122.Port;
 	KongControlPlanePort	common29122.Port;
+	KongControlPlaneIPv4	common29122.Ipv4Addr;
+	KongDataPlaneIPv4       common29122.Ipv4Addr;
+	KongDataPlanePort 		common29122.Port;
 	CapifProtocol			string;
 	CapifIPv4        		common29122.Ipv4Addr;
 	CapifPort		 		common29122.Port;
 }
 
 // Creates a service that implements both the PublishRegister and the publishserviceapi.ServerInterface interfaces.
-func NewPublishService(kongDomain string, kongProtocol string, kongIPv4 common29122.Ipv4Addr, kongDataPlanePort common29122.Port, kongControlPlanePort common29122.Port, capifProtocol string, capifIPv4 common29122.Ipv4Addr, capifPort common29122.Port) *PublishService {
+func NewPublishService(
+		kongDomain 				string,
+		kongProtocol 			string,
+		kongControlPlaneIPv4 	common29122.Ipv4Addr,
+		kongControlPlanePort 	common29122.Port,
+		kongDataPlaneIPv4 		common29122.Ipv4Addr,
+		kongDataPlanePort 		common29122.Port,
+		capifProtocol 			string,
+		capifIPv4 				common29122.Ipv4Addr,
+		capifPort 				common29122.Port) *PublishService {
 	return &PublishService{
 		KongDomain 				: kongDomain,
 		KongProtocol			: kongProtocol,
-		KongIPv4				: kongIPv4,
-		KongDataPlanePort 		: kongDataPlanePort,
+		KongControlPlaneIPv4	: kongControlPlaneIPv4,
 		KongControlPlanePort	: kongControlPlanePort,
+		KongDataPlaneIPv4		: kongDataPlaneIPv4,
+		KongDataPlanePort 		: kongDataPlanePort,
 		CapifProtocol			: capifProtocol,
 		CapifIPv4				: capifIPv4,
 		CapifPort				: capifPort,
@@ -61,6 +72,8 @@ func NewPublishService(kongDomain string, kongProtocol string, kongIPv4 common29
 // Publish a new API.
 func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) error {
 	log.Tracef("entering PostApfIdServiceApis apfId %s", apfId)
+	log.Debugf("PostApfIdServiceApis KongControlPlaneIPv4 %s", ps.KongControlPlaneIPv4)
+	log.Debugf("PostApfIdServiceApis KongDataPlaneIPv4 %s", ps.KongDataPlaneIPv4)
 
 	capifcoreUrl := fmt.Sprintf("%s://%s:%d/published-apis/v1/", ps.CapifProtocol, ps.CapifIPv4, ps.CapifPort)
 	client, err := publishapi.NewClientWithResponses(capifcoreUrl)
@@ -82,7 +95,14 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 
 	newServiceAPIDescription.PrepareNewService()
 
-	statusCode, err := newServiceAPIDescription.RegisterKong(ps.KongDomain, ps.KongProtocol, ps.KongIPv4, ps.KongDataPlanePort, ps.KongControlPlanePort, apfId)
+	statusCode, err := newServiceAPIDescription.RegisterKong(
+			ps.KongDomain,
+			ps.KongProtocol,
+			ps.KongControlPlaneIPv4,
+			ps.KongControlPlanePort,
+			ps.KongDataPlaneIPv4,
+			ps.KongDataPlanePort,
+			apfId)
 	if (err != nil) || (statusCode != http.StatusCreated) {
 		// We can return with http.StatusForbidden if there is a http.StatusConflict detected by Kong
 		msg := err.Error()
@@ -107,7 +127,7 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 		log.Debugf("PostApfIdServiceApisWithResponse status code %d", rsp.StatusCode())
 		log.Debugf("PostApfIdServiceApisWithResponse error %s", msg)
 		if rsp.StatusCode() == http.StatusForbidden || rsp.StatusCode() == http.StatusBadRequest {
-			newServiceAPIDescription.UnregisterKong(ps.KongDomain, ps.KongProtocol, ps.KongIPv4, ps.KongDataPlanePort, ps.KongControlPlanePort)
+			newServiceAPIDescription.UnregisterKong(ps.KongDomain, ps.KongProtocol, ps.KongControlPlaneIPv4, ps.KongControlPlanePort)
 		}
 		return sendCoreError(ctx, rsp.StatusCode(), msg)
 	}
@@ -161,7 +181,8 @@ func (ps *PublishService) DeleteApfIdServiceApisServiceApiId(ctx echo.Context, a
 	}
 
 	rspServiceAPIDescription := *rsp.JSON200
-	statusCode, err = rspServiceAPIDescription.UnregisterKong(ps.KongDomain, ps.KongProtocol, ps.KongIPv4, ps.KongDataPlanePort, ps.KongControlPlanePort)
+
+	statusCode, err = rspServiceAPIDescription.UnregisterKong(ps.KongDomain, ps.KongProtocol, ps.KongControlPlaneIPv4, ps.KongControlPlanePort)
 	if (err != nil) || (statusCode != http.StatusNoContent) {
 		msg := err.Error()
 		log.Errorf("error on UnregisterKong %s", msg)
@@ -302,7 +323,7 @@ func (ps *PublishService) PutApfIdServiceApisServiceApiId(ctx echo.Context, apfI
 	if rsp.StatusCode() != http.StatusOK {
 		log.Errorf("PutApfIdServiceApisServiceApiIdWithResponse status code %d", rsp.StatusCode())
 		if rsp.StatusCode() == http.StatusBadRequest {
-			updatedServiceDescription.UnregisterKong(ps.KongDomain, ps.KongProtocol, ps.KongIPv4, ps.KongDataPlanePort, ps.KongControlPlanePort)
+			updatedServiceDescription.UnregisterKong(ps.KongDomain, ps.KongProtocol,ps.KongControlPlaneIPv4, ps.KongControlPlanePort)
 		}
 		msg := string(rsp.Body)
 		return sendCoreError(ctx, rsp.StatusCode(), msg)

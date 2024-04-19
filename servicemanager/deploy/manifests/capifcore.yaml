@@ -59,7 +59,7 @@ spec:
     app: capifcore
   ports:
     - protocol: TCP
-      port: 80
+      port: 8090
       targetPort: 8090
       nodePort: 31570
   type: NodePort
