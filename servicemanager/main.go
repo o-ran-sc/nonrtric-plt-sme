@@ -46,12 +46,12 @@ import (
 )
 
 func main() {
-    realConfigReader := &envreader.RealConfigReader{}
-    myEnv, myPorts, err := realConfigReader.ReadDotEnv()
-    if err != nil {
+	realConfigReader := &envreader.RealConfigReader{}
+	myEnv, myPorts, err := realConfigReader.ReadDotEnv()
+	if err != nil {
 		log.Fatal("error loading environment file")
-        return
-    }
+		return
+	}
 
 	eServiceManager := echo.New()
 	err = registerHandlers(eServiceManager, myEnv, myPorts)
@@ -77,9 +77,10 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	capifPort := common29122.Port(myPorts["CAPIF_PORT"])
 	kongDomain := myEnv["KONG_DOMAIN"]
 	kongProtocol := myEnv["KONG_PROTOCOL"]
-	kongIPv4 := common29122.Ipv4Addr(myEnv["KONG_IPV4"])
-	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
+	kongControlPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_CONTROL_PLANE_IPV4"])
 	kongControlPlanePort := common29122.Port(myPorts["KONG_CONTROL_PLANE_PORT"])
+	kongDataPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_DATA_PLANE_IPV4"])
+	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
 
 	var group *echo.Group
 
@@ -102,7 +103,11 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 		return err
 	}
 	publishServiceSwagger.Servers = nil
-	publishService := publishservice.NewPublishService(kongDomain, kongProtocol, kongIPv4, kongDataPlanePort, kongControlPlanePort, capifProtocol, capifIPv4, capifPort)
+	publishService := publishservice.NewPublishService(
+		kongDomain, kongProtocol,
+		kongControlPlaneIPv4, kongControlPlanePort,
+		kongDataPlaneIPv4, kongDataPlanePort,
+		capifProtocol, capifIPv4, capifPort)
 
 	group = e.Group("/published-apis/v1")
 	group.Use(middleware.OapiRequestValidator(publishServiceSwagger))

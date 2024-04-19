@@ -102,9 +102,10 @@ func setupTest() error {
 		MockedConfig: map[string]string{
 			"KONG_DOMAIN":             "kong",
 			"KONG_PROTOCOL":           "http",
-			"KONG_IPV4":               mockKongHost,
-			"KONG_DATA_PLANE_PORT":    "32080",
+			"KONG_CONTROL_PLANE_IPV4": mockKongHost,
 			"KONG_CONTROL_PLANE_PORT": mockKongControlPlanePort,
+			"KONG_DATA_PLANE_IPV4":    "10.101.1.101",
+			"KONG_DATA_PLANE_PORT":    "32080",
 			"CAPIF_PROTOCOL":          "http",
 			"CAPIF_IPV4":              capifHost,
 			"CAPIF_PORT":              capifPort,
