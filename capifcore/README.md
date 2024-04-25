@@ -114,3 +114,7 @@ Use docker compose file to start CAPIF core together with Keycloak:
 Before using CAPIF API invoker management, an invoker realm must be created in keycloak. Make sure it is created before running CAPIF core. After creating the realm in keycloak, set the name in the keycloak.yaml configuration file.
 
 To run CAPIF Core as a K8s pod together with ChartMuseum, start and stop scripts are provided. The pod configurations are provided in the `configs` folder. CAPIF Core is then available on port `31570`.
+
+## Postman
+
+A Postman collection has been included in this repo at sme/postman/CAPIF.postman_collection.json.

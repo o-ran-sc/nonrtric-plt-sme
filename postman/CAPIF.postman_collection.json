@@ -1,0 +1,453 @@
+{
+	"info": {
+		"_postman_id": "1bdb5498-440f-4bdd-ad8d-bea853343cdc",
+		"name": "CAPIF",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30653024"
+	},
+	"item": [
+		{
+			"name": "1. Register provider Domain",
+			"item": [
+				{
+					"name": "1.- rApp registers as provider domain",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"apiProvDomInfo\": \"Provider domain\",\n    \"apiProvFuncs\": [\n        {\n            \"apiProvFuncInfo\": \"rApp as APF\",\n            \"apiProvFuncRole\": \"APF\",\n            \"regInfo\": {\n                \"apiProvPubKey\": \"APF-PublicKey\"\n            }\n        },\n        {\n            \"apiProvFuncInfo\": \"rApp as AEF\",\n            \"apiProvFuncRole\": \"AEF\",\n            \"regInfo\": {\n                \"apiProvPubKey\": \"AEF-PublicKey\"\n            }\n        },\n        {\n            \"apiProvFuncInfo\": \"rApp as AMF\",\n            \"apiProvFuncRole\": \"AMF\",\n            \"regInfo\": {\n                \"apiProvPubKey\": \"AMF-PublicKey\"\n            }\n        },\n        {\n            \"apiProvFuncInfo\": \"Gateway as entrypoint AEF\",\n            \"apiProvFuncRole\": \"AEF\",\n            \"regInfo\": {\n                \"apiProvPubKey\": \"AEF-Gateway-PublicKey\"\n            }\n        }\n    ],\n    \"regSec\": \"PSK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/api-provider-management/v1/registrations",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"api-provider-management",
+								"v1",
+								"registrations"
+							]
+						},
+						"description": "StartFragment\n\nRegisters a new API Provider domain with API provider domain functions profiles.\n\nEndFragme"
+					},
+					"response": []
+				}
+			],
+			"description": "The CAPIF API provider management APIs, as defined in 3GPP TS 23.222 \\[2\\], allow API management functions via CAPIF-5 and CAPIF-5e reference points to register, deregister and update registration information of API provider domain functions (API Exposing Function, API Publishing Function, API management Function) as a recognized API provider domain of the CAPIF domain.\n\n| Service operation name | Description |\n| --- | --- |\n| Register_API_Provider | This service operation is used by an API management function to register API provider domain functions as a recognized API provider domain of the CAPIF domain. |\n| Update_API_Provider | This service operation is used by an API management function to update the API provider domain functions details in the CAPIF domain. |\n| Deregister_API_Provider | This service operation is used by an API management function to deregister API provider domain functions as a recognized API provider domain of the CAPIF domain. |"
+		},
+		{
+			"name": "2. Publish APIs",
+			"item": [
+				{
+					"name": "1. rApp publishes its API example A",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"apiName\": \"example A\",\n    \"description\": \"Example A API of rApp\",\n    \"aefProfiles\": [\n        {\n            \"aefId\": \"AEF_id_rApp_as_AEF\",\n            \"description\": \"Example A rApp as AEF\",\n            \"versions\": [\n                {\n                    \"apiVersion\": \"v1\",\n                    \"resources\": [\n                        {\n                            \"resourceName\": \"exampleA\",\n                            \"commType\": \"REQUEST_RESPONSE\",\n                            \"uri\": \"/exampleA/subscription/subscription_id_1\",\n                            \"operations\": [\n                                \"GET\"\n                            ]\n                        }\n                    ]\n                }\n            ],\n            \"protocol\": \"HTTP_1_1\",\n\t\t\t\"securityMethods\": [\"PSK\"],\n\t\t\t\"interfaceDescriptions\": [\n\t\t\t\t{\n\t\t\t\t  \"ipv4Addr\": \"string\",\n\t\t\t\t  \"port\": 65535,\n\t\t\t\t  \"securityMethods\": [\"PKI\"]\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t  \"ipv4Addr\": \"string\",\n\t\t\t\t  \"port\": 65535,\n\t\t\t\t  \"securityMethods\": [\"PKI\"]\n\t\t\t\t}\n\t\t\t  ]\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/published-apis/v1/APF_id_rApp_as_APF/service-apis",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"published-apis",
+								"v1",
+								"APF_id_rApp_as_APF",
+								"service-apis"
+							]
+						},
+						"description": "Publish a new API"
+					},
+					"response": []
+				},
+				{
+					"name": "2. rApp publishes its API example B",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"apiName\": \"example B\",\n    \"description\": \"Example B API of rApp\",\n    \"aefProfiles\": [\n        {\n            \"aefId\": \"AEF_id_rApp_as_AEF\",\n            \"description\": \"Example B rApp as AEF\",\n            \"versions\": [\n                {\n                    \"apiVersion\": \"v1\",\n                    \"resources\": [\n                        {\n                            \"resourceName\": \"exampleB\",\n                            \"commType\": \"REQUEST_RESPONSE\",\n                            \"uri\": \"/exampleB/subscription/subscription_id_1\",\n                            \"operations\": [\n                                \"GET\"\n                            ]\n                        }\n                    ]\n                }\n            ],\n            \"protocol\": \"HTTP_1_1\",\n\t\t\t\"securityMethods\": [\"PSK\"],\n\t\t\t\"interfaceDescriptions\": [\n\t\t\t\t{\n\t\t\t\t  \"ipv4Addr\": \"string\",\n\t\t\t\t  \"port\": 65535,\n\t\t\t\t  \"securityMethods\": [\"PKI\"]\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t  \"ipv4Addr\": \"string\",\n\t\t\t\t  \"port\": 65535,\n\t\t\t\t  \"securityMethods\": [\"PKI\"]\n\t\t\t\t}\n\t\t\t  ]\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/published-apis/v1/APF_id_rApp_as_APF/service-apis",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"published-apis",
+								"v1",
+								"APF_id_rApp_as_APF",
+								"service-apis"
+							]
+						},
+						"description": "Publish a new API"
+					},
+					"response": []
+				},
+				{
+					"name": "3. rApp updates published API example A",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"apiName\": \"example A\",\n    \"description\": \"Example A API of rApp\",\n    \"aefProfiles\": [\n        {\n            \"aefId\": \"AEF_id_rApp_as_AEF\",\n            \"description\": \"Example A rApp as AEF\",\n            \"versions\": [\n                {\n                    \"apiVersion\": \"v1\",\n                    \"resources\": [\n                        {\n                            \"resourceName\": \"exampleA\",\n                            \"commType\": \"REQUEST_RESPONSE\",\n                            \"uri\": \"/exampleA/subscription/subscription_id_1\",\n                            \"operations\": [\n                                \"GET\"\n                            ]\n                        }\n                    ]\n                },\n                {\n                    \"apiVersion\": \"v2\",\n                    \"resources\": [\n                        {\n                            \"resourceName\": \"exampleA\",\n                            \"commType\": \"REQUEST_RESPONSE\",\n                            \"uri\": \"/exampleA/subscription/subscription_id_2\",\n                            \"operations\": [\n                                \"GET\"\n                            ]\n                        }\n                    ]\n                }\n            ],\n            \"protocol\": \"HTTP_1_1\",\n\t\t\t\"securityMethods\": [\"PSK\"],\n\t\t\t\"interfaceDescriptions\": [\n\t\t\t\t{\n\t\t\t\t  \"ipv4Addr\": \"string\",\n\t\t\t\t  \"port\": 65535,\n\t\t\t\t  \"securityMethods\": [\"PKI\"]\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t  \"ipv4Addr\": \"string\",\n\t\t\t\t  \"port\": 65535,\n\t\t\t\t  \"securityMethods\": [\"PKI\"]\n\t\t\t\t}\n\t\t\t  ]\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/published-apis/v1/APF_id_rApp_as_APF/service-apis/api_id_example_A?serviceApiId =api_id_example_A&apfId =APF_id_rApp_as_APF",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"published-apis",
+								"v1",
+								"APF_id_rApp_as_APF",
+								"service-apis",
+								"api_id_example_A"
+							],
+							"query": [
+								{
+									"key": "serviceApiId ",
+									"value": "api_id_example_A"
+								},
+								{
+									"key": "apfId ",
+									"value": "APF_id_rApp_as_APF"
+								}
+							]
+						},
+						"description": "Update a published service API"
+					},
+					"response": []
+				},
+				{
+					"name": "4. rApp delete an API",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8090/published-apis/v1/APF_id_rApp_as_APF/service-apis/api_id_example?serviceApiId =api_id_example_B&apfId =APF_id_rApp_as_APF",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"published-apis",
+								"v1",
+								"APF_id_rApp_as_APF",
+								"service-apis",
+								"api_id_example"
+							],
+							"query": [
+								{
+									"key": "serviceApiId ",
+									"value": "api_id_example_B"
+								},
+								{
+									"key": "apfId ",
+									"value": "APF_id_rApp_as_APF"
+								}
+							]
+						},
+						"description": "Unpublish a published service API"
+					},
+					"response": []
+				}
+			],
+			"description": "The CAPIF publish service APIs, as defined in 3GPP TS 23.222 \\[2\\], allow API publishing function via CAPIF-4 and CAPIF-4e reference points to publish and manage published service APIs at the CAPIF core function, and allow CAPIF core function via CAPIF-6 and CAPIF-6e reference points to publish and manage published service APIs at other CAPIF core function.\n\n| **Service operation name** | **Description** |\n| --- | --- |\n| Publish_Service_API | This service operation is used by an API publishing function to publish service APIs on the CAPIF core function. This service operation is also used by CAPIF core function to publish service APIs on other CAPIF core function. |\n| Unpublish_Service_API | This service operation is used by an API publishing function to un-publish service APIs from the CAPIF core function. This service operation is also used by CAPIF core function to un-publish service APIs on other CAPIF core function. |\n| Get_Service_API | This service operation is used by an API publishing function to retrieve service APIs from the CAPIF core function. This service operation is also used by CAPIF core function to retrieve service APIs on other CAPIF core function. |\n| Update_Service_API | This service operation is used by an API publishing function to update published service APIs on the CAPIF core function. This service operation is also used by CAPIF core function to update published service APIs on other CAPIF core function. |"
+		},
+		{
+			"name": "3. Invoker Management",
+			"item": [
+				{
+					"name": "1. rApp onboards itself as invoker",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"apiInvokerInformation\": \"rApp as invoker 1\",\n\t \"apiList\": [\n\t\t{}\n\t],\n    \"NotificationDestination\": \"http://invoker-app:8086/callback\",\n    \"onboardingInformation\": {\n\t\t\"apiInvokerPublicKey\": \"{PUBLIC_KEY_INVOKER_1}\",\n\t\t\"apiInvokerCertificate\": \"apiInvokerCertificate\"\n  },\n  \"requestTestNotification\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/api-invoker-management/v1/onboardedInvokers",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"api-invoker-management",
+								"v1",
+								"onboardedInvokers"
+							]
+						},
+						"description": "Creates a new individual API Invoker profile."
+					},
+					"response": []
+				},
+				{
+					"name": "2. rApp onboards itself as invoker2",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"apiInvokerInformation\": \"rApp as invoker 2\",\n\t \"apiList\": [\n\t\t{}\n\t],\n    \"NotificationDestination\": \"http://invoker2-app:8086/callback\",\n    \"onboardingInformation\": {\n\t\t\"apiInvokerPublicKey\": \"{PUBLIC_KEY_INVOKER_2}\",\n\t\t\"apiInvokerCertificate\": \"apiInvokerCertificate\"\n  },\n  \"requestTestNotification\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/api-invoker-management/v1/onboardedInvokers",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"api-invoker-management",
+								"v1",
+								"onboardedInvokers"
+							]
+						},
+						"description": "Creates a new individual API Invoker profile"
+					},
+					"response": []
+				},
+				{
+					"name": "3. rApp invoker delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8090/api-invoker-management/v1/onboardedInvokers/api_invoker_id_rApp_as_invoker_2?onboardingId=api_invoker_id_rApp_as_invoker_2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"api-invoker-management",
+								"v1",
+								"onboardedInvokers",
+								"api_invoker_id_rApp_as_invoker_2"
+							],
+							"query": [
+								{
+									"key": "onboardingId",
+									"value": "api_invoker_id_rApp_as_invoker_2"
+								}
+							]
+						},
+						"description": "Deletes an individual API invoker"
+					},
+					"response": []
+				}
+			],
+			"description": "The CAPIF API invoker management APIs, as defined in 3GPP TS 23.222 \\[2\\], allow API invokers via CAPIF-1/1e reference points to on-board and off-board itself as a recognized user of the CAPIF or update the API invoker's details on the CAPIF core function.\n\n| **Service operation name** | **Description** |\n| --- | --- |\n| Onboard_API_Invoker | This service operation is used by an API invoker to on-board itself as a recognized user of CAPIF |\n| Offboard_API_Invoker | This service operation is used by an API invoker to off-board itself as a recognized user of CAPIF |\n| Update_API_Invoker_Details | This service operation is used by an API invoker to update API invoker's details in the CAPIF core function. |"
+		},
+		{
+			"name": "4. Discover Service API",
+			"item": [
+				{
+					"name": "1. Invoker discovers APIs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8090/service-apis/v1/allServiceAPIs?api-invoker-id=api_invoker_id_rApp_as_invoker_1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"service-apis",
+								"v1",
+								"allServiceAPIs"
+							],
+							"query": [
+								{
+									"key": "aef-id",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "api-cat",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "api-name",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "api-version",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "comm-type",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "data-format",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "preferred-aef-loc",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "protocol",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "supported-features",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "api-invoker-id",
+									"value": "api_invoker_id_rApp_as_invoker_1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Security API",
+			"item": [
+				{
+					"name": "1. Invoker obtains security context",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"notificationDestination\": \"http://invoker-app:8086/callback\",\r\n  \"supportedFeatures\": \"fffffff\",\r\n  \"securityInfo\": [\r\n    {\r\n      \"aefId\": \"AEF_id_rApp_as_AEF\",\r\n      \"apiId\": \"api_id_example\",\r\n      \"interfaceDetails\": \r\n        {\r\n            \"ipv4Addr\": \"string\",\r\n            \"port\": 65535,\r\n            \"securityMethods\": [\r\n                \"PKI\"\r\n            ]\r\n        },\r\n      \"prefSecurityMethods\": [\r\n        \"PKI\"\r\n      ]\r\n    }\r\n  ],\r\n  \"requestTestNotification\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/capif-security/v1/trustedInvokers/api_invoker_id_rApp_as_invoker_1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"capif-security",
+								"v1",
+								"trustedInvokers",
+								"api_invoker_id_rApp_as_invoker_1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Invoker rApp retrieves OAuth access token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "api_invoker_id_rApp_as_invoker_1",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "k5XSlZIywPUDesZloCCHIxSlrcYX0OBC",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "3gpp#aefId1:apiName1",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8090/capif-security/v1/securities/api_invoker_id_rApp_as_invoker_1/token",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"capif-security",
+								"v1",
+								"securities",
+								"api_invoker_id_rApp_as_invoker_1",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

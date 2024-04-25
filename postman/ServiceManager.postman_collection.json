@@ -1,0 +1,730 @@
+{
+	"info": {
+		"_postman_id": "79d4786e-1ada-4252-afc4-58c7c3f4da70",
+		"name": "Service Manager Demo Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30653024"
+	},
+	"item": [
+		{
+			"name": "Service Manager demo",
+			"item": [
+				{
+					"name": "rApp register K8s",
+					"item": [
+						{
+							"name": "health check service manager",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										""
+									]
+								},
+								"description": "StartFragment\n\nRegisters a new API Provider domain with API provider domain functions profiles.\n\nEndFragme"
+							},
+							"response": []
+						},
+						{
+							"name": "1. rApp registers as Kong provider",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"apiProvDomInfo\": \"Kong\",\n    \"apiProvFuncs\": [\n        {\n            \"apiProvFuncInfo\": \"rAppKong as APF\",\n            \"apiProvFuncRole\": \"APF\",\n            \"regInfo\": {\n                \"apiProvPubKey\": \"APF-PublicKey\"\n            }\n        },\n        {\n            \"apiProvFuncInfo\": \"rAppKong as AEF\",\n            \"apiProvFuncRole\": \"AEF\",\n            \"regInfo\": {\n                \"apiProvPubKey\": \"AEF-PublicKey\"\n            }\n        }\n    ],\n    \"regSec\": \"PSK1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/api-provider-management/v1/registrations",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"api-provider-management",
+										"v1",
+										"registrations"
+									]
+								},
+								"description": "StartFragment\n\nRegisters a new API Provider domain with API provider domain functions profiles.\n\nEndFragme"
+							},
+							"response": []
+						},
+						{
+							"name": "1. rApp registers as Kong provider",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/api-provider-management/v1/registrations/domain_id_Kong",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"api-provider-management",
+										"v1",
+										"registrations",
+										"domain_id_Kong"
+									]
+								},
+								"description": "StartFragment\n\nRegisters a new API Provider domain with API provider domain functions profiles.\n\nEndFragme"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "rApp publish",
+					"item": [
+						{
+							"name": "2. rApp publishes its API to Kong Service Stub",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"AefProfiles\": [\n        {\n            \"AefId\":      \"AEF_id_rAppKong_as_AEF\",\n            \"interfaceDescriptions\": [\n                {\n                    \"ipv4Addr\": \"10.101.1.101\",\n                    \"port\": 30951,\n                    \"securityMethods\": [\n                        \"PKI\"\n                    ]\n                }\n            ],\n            \"DomainName\": \"Kong\",\n            \"Protocol\":   \"HTTP_1_1\",\n            \"Versions\": [\n                {\n                    \"ApiVersion\": \"\",\n                    \"Resources\":  [\n                        {\n                            \"CommType\": \"REQUEST_RESPONSE\",\n                            \"Operations\": [\n                                \"GET\"\n                            ],\n                            \"ResourceName\": \"helloworld\",\n                            \"Uri\":          \"/helloworld\"\n                        },\n                        {\n                            \"CommType\": \"REQUEST_RESPONSE\",\n                            \"Operations\": [\n                                \"GET\"\n                            ],\n                            \"ResourceName\": \"helloworld_sme\",\n                            \"Uri\":          \"/helloworld/sme\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ],\n    \"ApiName\":     \"helloworld\",\n    \"Description\": \"Description,namespace,repoName,chartName,releaseName\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/published-apis/v1/APF_id_rAppKong_as_APF/service-apis",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"published-apis",
+										"v1",
+										"APF_id_rAppKong_as_APF",
+										"service-apis"
+									]
+								},
+								"description": "Publish a new API"
+							},
+							"response": []
+						},
+						{
+							"name": "2. rApp publishes its API to Kong",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/published-apis/v1/APF_id_rAppKong_as_APF/service-apis/api_id_helloworld",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"published-apis",
+										"v1",
+										"APF_id_rAppKong_as_APF",
+										"service-apis",
+										"api_id_helloworld"
+									]
+								},
+								"description": "Publish a new API"
+							},
+							"response": []
+						},
+						{
+							"name": "3. rApp gets all published APIs",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/published-apis/v1/APF_id_rAppKong_as_APF/service-apis",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"published-apis",
+										"v1",
+										"APF_id_rAppKong_as_APF",
+										"service-apis"
+									]
+								},
+								"description": "Publish a new API"
+							},
+							"response": []
+						},
+						{
+							"name": "4. rApp gets a published API",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/published-apis/v1/APF_id_rAppKong_as_APF/service-apis/api_id_helloworld",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"published-apis",
+										"v1",
+										"APF_id_rAppKong_as_APF",
+										"service-apis",
+										"api_id_helloworld"
+									]
+								},
+								"description": "Publish a new API"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "rApp onboarding",
+					"item": [
+						{
+							"name": "5. rApp onboards itself as invoker",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"apiInvokerInformation\": \"rAppKong as invoker 1\",\n\t \"apiList\": [\n        {\n            \"aefProfiles\": [\n                {\n                    \"aefId\": \"AEF_id_rAppKong_as_AEF\",\n                    \"domainName\": \"kong\",\n                    \"interfaceDescriptions\": [\n                        {\n                            \"ipv4Addr\": \"10.101.1.101\",\n                            \"port\": 32080\n                        }\n                    ],\n                    \"protocol\": \"HTTP_1_1\",\n                    \"versions\": [\n                        {\n                            \"apiVersion\": \"\",\n                            \"resources\": [\n                                {\n                                    \"commType\": \"REQUEST_RESPONSE\",\n                                    \"operations\": [\n                                        \"GET\"\n                                    ],\n                                    \"resourceName\": \"helloworld\",\n                                    \"uri\": \"/helloworld\"\n                                },\n                                {\n                                    \"commType\": \"REQUEST_RESPONSE\",\n                                    \"operations\": [\n                                        \"GET\"\n                                    ],\n                                    \"resourceName\": \"helloworld_sme\",\n                                    \"uri\": \"/helloworld/sme\"\n                                }\n                            ]\n                        }\n                    ]\n                }\n            ],\n            \"apiId\": \"api_id_helloworld\",\n            \"apiName\": \"helloworld\",\n            \"description\": \"Description,namespace,repoName,chartName,releaseName\"\n        }\n\t],\n    \"NotificationDestination\": \"http://invoker-app-kong:8086/callback\",\n    \"onboardingInformation\": {\n\t\t\"apiInvokerPublicKey\": \"{PUBLIC_KEY_INVOKER_KONG}\",\n\t\t\"apiInvokerCertificate\": \"apiInvokerCertificate\"\n  },\n  \"requestTestNotification\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/api-invoker-management/v1/onboardedInvokers",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"api-invoker-management",
+										"v1",
+										"onboardedInvokers"
+									]
+								},
+								"description": "Creates a new individual API Invoker profile."
+							},
+							"response": []
+						},
+						{
+							"name": "5. rApp onboards itself as invoker - empty apiList",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"apiInvokerInformation\": \"rAppKong as invoker 1\",\n\t\"apiList\": [],\n    \"NotificationDestination\": \"http://invoker-app-kong:8086/callback\",\n    \"onboardingInformation\": {\n\t\t\"apiInvokerPublicKey\": \"{PUBLIC_KEY_INVOKER_KONG}\",\n\t\t\"apiInvokerCertificate\": \"apiInvokerCertificate\"\n  },\n  \"requestTestNotification\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/api-invoker-management/v1/onboardedInvokers",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"api-invoker-management",
+										"v1",
+										"onboardedInvokers"
+									]
+								},
+								"description": "Creates a new individual API Invoker profile."
+							},
+							"response": []
+						},
+						{
+							"name": "5. rApp onboards itself as invoker",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://10.101.1.101:31575/api-invoker-management/v1/onboardedInvokers/api_invoker_id_rAppKong_as_invoker_1",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"api-invoker-management",
+										"v1",
+										"onboardedInvokers",
+										"api_invoker_id_rAppKong_as_invoker_1"
+									]
+								},
+								"description": "Creates a new individual API Invoker profile."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "rApp discovery",
+					"item": [
+						{
+							"name": "6. Invoker discovers APIs",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:31575/service-apis/v1/allServiceAPIs?api-invoker-id=api_invoker_id_rAppKong_as_invoker_1",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"service-apis",
+										"v1",
+										"allServiceAPIs"
+									],
+									"query": [
+										{
+											"key": "aef-id",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-cat",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-name",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-version",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "comm-type",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "data-format",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "preferred-aef-loc",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "protocol",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "supported-features",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-invoker-id",
+											"value": "api_invoker_id_rAppKong_as_invoker_1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "7. Invoker discovers APIs with api-invoker-id, aef-id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:31575/service-apis/v1/allServiceAPIs?api-invoker-id=api_invoker_id_rAppKong_as_invoker_1&aef-id=AEF_id_rAppKong_as_AEF",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"service-apis",
+										"v1",
+										"allServiceAPIs"
+									],
+									"query": [
+										{
+											"key": "aef-id",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-cat",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-name",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-version",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "comm-type",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "data-format",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "preferred-aef-loc",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "protocol",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "supported-features",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-invoker-id",
+											"value": "api_invoker_id_rAppKong_as_invoker_1"
+										},
+										{
+											"key": "aef-id",
+											"value": "AEF_id_rAppKong_as_AEF"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "8. Invoker discovers APIs with api-invoker-id, apiName",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:31575/service-apis/v1/allServiceAPIs?api-invoker-id=api_invoker_id_rAppKong_as_invoker_1&apiName=helloworld",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "31575",
+									"path": [
+										"service-apis",
+										"v1",
+										"allServiceAPIs"
+									],
+									"query": [
+										{
+											"key": "aef-id",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-cat",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-name",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-version",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "comm-type",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "data-format",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "preferred-aef-loc",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "protocol",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "supported-features",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "api-invoker-id",
+											"value": "api_invoker_id_rAppKong_as_invoker_1"
+										},
+										{
+											"key": "apiName",
+											"value": "helloworld"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Kong",
+					"item": [
+						{
+							"name": "Get Routes",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:32081/routes",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "32081",
+									"path": [
+										"routes"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Routes with Tags",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:32081/routes/?tags=apfId%3A%20APF_id_rAppKong_as_APF",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "32081",
+									"path": [
+										"routes",
+										""
+									],
+									"query": [
+										{
+											"key": "tags",
+											"value": "apfId%3A%20APF_id_rAppKong_as_APF"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Services",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:32081/services",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "32081",
+									"path": [
+										"services"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Services with Tags",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://10.101.1.101:32081/services/?tags=apfId%3A%20APF_id_rAppKong_as_APF",
+									"protocol": "http",
+									"host": [
+										"10",
+										"101",
+										"1",
+										"101"
+									],
+									"port": "32081",
+									"path": [
+										"services",
+										""
+									],
+									"query": [
+										{
+											"key": "tags",
+											"value": "apfId%3A%20APF_id_rAppKong_as_APF"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

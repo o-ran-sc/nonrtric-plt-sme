@@ -20,13 +20,13 @@ limitations under the License.
 
 -->
 
-# O-RAN-SC Non-RealTime RIC Service Management and Exposure
+# O-RAN-SC Non-RealTime RIC Service Manager
 
-This product is a Go implementation of a service that calls the CAPIF Core function. When publishing a service we create a Kong route and Kong service, https://konghq.com/. The InterfaceDescription that we return is updated to point to the Kong Data Plane. Therefore, the API interface that we return from Service Discovery has the Kong host and port, and not the original service's host and port. This allows the rApp's API call to be re-directed through Kong.
+Service Manager is a Go implementation of a service that calls the CAPIF Core function. When publishing a service we create a Kong route and Kong service, https://konghq.com/. The InterfaceDescription that we return is updated to point to the Kong Data Plane. Therefore, the API interface that we return from Service Discovery has the Kong host and port, and not the original service's host and port. This allows the rApp's API call to be re-directed through Kong.
 
 ## O-RAN-SC Non-RealTime RIC CAPIF Core Implementation
 
-This product is a Go implementation of the CAPIF Core function, which is based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
+Service Manager is a Go implementation of the CAPIF Core function, which is based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
 
 See [CAPIF Core](../capifcore/README.md)
 
@@ -142,3 +142,7 @@ The additional env file needs to exist in the sme/servicemanager folder so that 
 `./deploy-to-k8s.sh --env .env.development`
 
  ../../.env.development needs to exist.
+
+## Postman
+
+A Postman collection has been included in this repo at sme/postman/ServiceManager.postman_collection.json.
