@@ -3,7 +3,8 @@
    ========================LICENSE_START=================================
    O-RAN-SC
    %%
-   Copyright (C) 2022: Nordix Foundation
+   Copyright (C) 2022-2023: Nordix Foundation
+   Copyright (C) 2024 OpenInfra Foundation Europe. All rights reserved.
    %%
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,5 +23,5 @@
 
 # O-RAN-SC Non-RealTime RIC Service Management and Exposure
 
-See [CAPIF Core](capifcore/README.md)
-
+* [CAPIF Core](capifcore/README.md)
+* [Service Manager](servicemanager/README.md)

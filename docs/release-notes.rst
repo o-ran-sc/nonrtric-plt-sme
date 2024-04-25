@@ -1,7 +1,7 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright (C) 2022-2023 Nordix Foundation. All rights reserved
-.. Copyright (C) 2023 CloudInfra Foundation Europe. All rights reserved
+.. Copyright (C) 2023-2024 OpenInfra Foundation Europe. All rights reserved.
 
 =============
 Release-Notes
@@ -10,26 +10,36 @@ Release-Notes
 
 This document provides the release notes for the Non-RT RIC Service Management & Exposure (SME).
 
-Version history SME capifcore
+Version history SME CAPIFcore
 =============================
 
-+------------+----------+------------------+-----------------+
-| **Date**   | **Ver.** | **Author**       | **Comment**     |
-|            |          |                  |                 |
-+------------+----------+------------------+-----------------+
-| 2022-12-14 | 1.0.0    | Henrik Andersson | G Release       |
-|            |          |                  | Initial version |
-|            |          |                  | of capifcore    |
-+------------+----------+------------------+-----------------+
-| 2023-02-10 | 1.0.1    | Yennifer Chacon  | G Maintenance   |
-|            |          |                  | Release         |
-+------------+----------+------------------+-----------------+
-| 2023-06-16 | 1.1.0    | Yennifer Chacon  | H Release       |
-|            |          |                  |                 |
-+------------+----------+------------------+-----------------+
-| 2023-12-15 | 1.2.0    | John Keeney      | I Release       |
-|            |          |                  |                 |
-+------------+----------+------------------+-----------------+
++------------+----------+------------------+--------------------------------------+
+| **Date**   | **Ver.** | **Author**       | **Comment**                          |
+|            |          |                  |                                      |
++------------+----------+------------------+--------------------------------------+
+| 2022-12-14 | 1.0.0    | Henrik Andersson | G Release                            |
+|            |          |                  | Initial version of Capifcore         |
+|            |          |                  |                                      |
++------------+----------+------------------+--------------------------------------+
+| 2023-02-10 | 1.0.1    | Yennifer Chacon  | G Maintenance                        |
+|            |          |                  | Release                              |
++------------+----------+------------------+--------------------------------------+
+| 2023-06-16 | 1.1.0    | Yennifer Chacon  | H Release                            |
+|            |          |                  |                                      |
++------------+----------+------------------+--------------------------------------+
+| 2023-12-15 | 1.2.0    | John Keeney      | I Release                            |
+|            |          |                  |                                      |
++------------+----------+------------------+--------------------------------------+
+
+Version history SME Service Manager
+===================================
+
++------------+----------+------------------+--------------------------------------+
+| **Date**   | **Ver.** | **Author**       | **Comment**                          |
+|            |          |                  |                                      |
++------------+----------+------------------+--------------------------------------+
+| TBA        |          |                  | Initial release of Service Manager   |
++------------+----------+------------------+--------------------------------------+
 
 Release Data
 ============
@@ -50,7 +60,7 @@ G Release
 | **Release date**            | 2022-12-14                                        |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
-| **Purpose of the delivery** | Introduction of capifcore                         |
+| **Purpose of the delivery** | Introduction of Capifcore                         |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
 
@@ -70,7 +80,7 @@ G Maintenance
 | **Release date**            | 2023-02-10                                        |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
-| **Purpose of the delivery** | Refactor and improvements of capifcore            |
+| **Purpose of the delivery** | Refactor and improvements of Capifcore            |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
 
