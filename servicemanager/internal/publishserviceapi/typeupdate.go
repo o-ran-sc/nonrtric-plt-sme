@@ -38,26 +38,30 @@ func (sd *ServiceAPIDescription) PrepareNewService() {
 	sd.ApiId = &apiName
 }
 
-func (sd *ServiceAPIDescription) RegisterKong(kongDomain string,
-		kongProtocol string,
-		kongIPv4 common29122.Ipv4Addr,
-		kongDataPlanePort common29122.Port,
+func (sd *ServiceAPIDescription) RegisterKong(
+		kongDomain 			 string,
+		kongProtocol 		 string,
+		kongControlPlaneIPv4 common29122.Ipv4Addr,
 		kongControlPlanePort common29122.Port,
-		apfId string) (int, error) {
+		kongDataPlaneIPv4 	 common29122.Ipv4Addr,
+		kongDataPlanePort 	 common29122.Port,
+		apfId 				 string) (int, error) {
 
 	log.Trace("entering RegisterKong")
+	log.Debugf("RegisterKong kongDataPlaneIPv4 %s", kongDataPlaneIPv4)
+
 	var (
 		statusCode int
 		err        error
 	)
-	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongIPv4, kongControlPlanePort)
+	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongControlPlaneIPv4, kongControlPlanePort)
 
 	statusCode, err = sd.createKongRoutes(kongControlPlaneURL, apfId)
 	if (err != nil) || (statusCode != http.StatusCreated) {
 		return statusCode, err
 	}
 
-	sd.updateInterfaceDescription(kongIPv4, kongDataPlanePort, kongDomain)
+	sd.updateInterfaceDescription(kongDataPlaneIPv4, kongDataPlanePort, kongDomain)
 
 	log.Trace("exiting from RegisterKong")
 	return statusCode, nil
@@ -272,10 +276,12 @@ func (sd *ServiceAPIDescription) findFirstAEFProfile() (common29122.Ipv4Addr, co
 }
 
 // Update our exposures to point to Kong by replacing in incoming interface description with Kong interface descriptions.
-func (sd *ServiceAPIDescription) updateInterfaceDescription(kongIPv4 common29122.Ipv4Addr, kongDataPlanePort common29122.Port, kongDomain string) {
+func (sd *ServiceAPIDescription) updateInterfaceDescription(kongDataPlaneIPv4 common29122.Ipv4Addr, kongDataPlanePort common29122.Port, kongDomain string) {
 	log.Trace("updating InterfaceDescriptions")
+	log.Debugf("InterfaceDescriptions kongDataPlaneIPv4 %s", kongDataPlaneIPv4)
+
 	interfaceDesc := InterfaceDescription{
-		Ipv4Addr: &kongIPv4,
+		Ipv4Addr: &kongDataPlaneIPv4,
 		Port:     &kongDataPlanePort,
 	}
 	interfaceDescs := []InterfaceDescription{interfaceDesc}
@@ -288,14 +294,14 @@ func (sd *ServiceAPIDescription) updateInterfaceDescription(kongIPv4 common29122
 	}
 }
 
-func (sd *ServiceAPIDescription) UnregisterKong(kongDomain string, kongProtocol string, kongIPv4 common29122.Ipv4Addr, kongDataPlanePort common29122.Port, kongControlPlanePort common29122.Port) (int, error) {
+func (sd *ServiceAPIDescription) UnregisterKong(kongDomain string, kongProtocol string, kongControlPlaneIPv4 common29122.Ipv4Addr, kongControlPlanePort common29122.Port) (int, error) {
 	log.Trace("entering UnregisterKong")
 
 	var (
 		statusCode int
 		err        error
 	)
-	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongIPv4, kongControlPlanePort)
+	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongControlPlaneIPv4, kongControlPlanePort)
 
 	statusCode, err = sd.deleteKongRoutes(kongControlPlaneURL)
 	if (err != nil) || (statusCode != http.StatusNoContent) {
