@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0a5cf699_a43e465e",
+        "filename": "docs/release-notes.rst",
+        "patchSetId": 6
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1002240
+      },
+      "writtenOn": "2024-04-29T18:04:50Z",
+      "side": 0,
+      "message": "I think we need to keep the \u0027CloudInfra\u0027 copyright also If it is there in old.",
+      "range": {
+        "startLine": 4,
+        "startChar": 22,
+        "endLine": 4,
+        "endChar": 32
+      },
+      "revId": "cee6f2575f6aba0f09a1edd31937eadad66a397c",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
