@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a175e9eb_0aaefd2a",
+        "filename": "docs/overview.rst",
+        "patchSetId": 5
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-04-29T13:39:57Z",
+      "side": 1,
+      "message": "Can remove this.",
+      "range": {
+        "startLine": 54,
+        "startChar": 125,
+        "endLine": 54,
+        "endChar": 176
+      },
+      "revId": "864fbdfcb668028258263fb42513eba3a3469fff",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2c4e3c6a_7c7da177",
+        "filename": "docs/overview.rst",
+        "patchSetId": 5
+      },
+      "lineNbr": 218,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-04-29T13:39:57Z",
+      "side": 1,
+      "message": "Could reprhase this a little ... something like\n\n\"CAPIF (Common API Framework) is defined in 3GPP TS 29.222. Service manager provides CAPIF-aligned APIs for some of the specified CAPIF Core functionality, based on specification 3GPP TS 29.222 V17.5.0\"\n\nThats quite clumsy too though ...",
+      "range": {
+        "startLine": 218,
+        "startChar": 0,
+        "endLine": 218,
+        "endChar": 85
+      },
+      "revId": "864fbdfcb668028258263fb42513eba3a3469fff",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "24f2d493_e480c437",
+        "filename": "docs/release-notes.rst",
+        "patchSetId": 5
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-04-29T13:39:57Z",
+      "side": 1,
+      "message": "No need to put this in yet until it is actually released.\nOr maybe just change the dates to TBA or something.",
+      "range": {
+        "startLine": 33,
+        "startChar": 2,
+        "endLine": 35,
+        "endChar": 83
+      },
+      "revId": "864fbdfcb668028258263fb42513eba3a3469fff",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7e294a6b_9f2e3064",
+        "filename": "docs/release-notes.rst",
+        "patchSetId": 5
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-04-29T13:39:57Z",
+      "side": 1,
+      "message": "None of these have been \u0027released\u0027 so these lines can be removed, or merged into one below for use when the release happens..",
+      "range": {
+        "startLine": 45,
+        "startChar": 0,
+        "endLine": 47,
+        "endChar": 70
+      },
+      "revId": "864fbdfcb668028258263fb42513eba3a3469fff",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "983cbe37_4bfdf503",
+        "filename": "docs/release-notes.rst",
+        "patchSetId": 5
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-04-29T13:39:57Z",
+      "side": 1,
+      "message": "as above - this is the \u0027release\u0027 date. So can leave as \u0027TBA\u0027 or something.",
+      "range": {
+        "startLine": 49,
+        "startChar": 2,
+        "endLine": 49,
+        "endChar": 12
+      },
+      "revId": "864fbdfcb668028258263fb42513eba3a3469fff",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
