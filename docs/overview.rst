@@ -7,10 +7,119 @@
 Overview
 #############
 
-Service Management and Exposure has 2 components - CAPIF Core and Service Manager. Capifcore is found in the "capifcore" directory,
-and Service Manager is in the "servicemanager" directory.
+Service Management and Exposure has 2 components - Service Manager and  CAPIF Core . Service Manager is in the "servicemanager" directory. Capifcore is found in the "capifcore" directory.
 
 This product is a part of :doc:`NONRTRIC <nonrtric:index>`.
+
+***************
+Service Manager
+***************
+
+Service Manager Overview
+************************
+
+Service Manager implements the R1 interface by providing a wrapper for R1 APIs that are produced and/or consumed by rApps. Service Manager also provides a wrapper for the Kong API Gateway.
+
+If an rApp app needs access to a published service, it needs to go through Service Manager. It cannot access the published service directly.
+
+.. image:: ./images/Service-Manager-Architecture.svg
+   :width: 400pt
+   :alt: High level architecture for Service Manager
+
+Service Manager and the R1 API
+******************************
+
+CAPIF stands for Common API Framework and it was developed by 3GPP to enable a unified Northbound API framework across 3GPP network functions, and to ensure that there is a single and harmonized approach for API development. CAPIF (Common API Framework) is defined in 3GPP TS 29.222.  Among CAPIF's key features are the following.
+
+* Register/deregister APIs
+* Publishing Service APIs
+* Onboarding/offboarding API invoker
+* Discovery APIs
+* CAPIF events subscription/notification
+* Entity authentication/authorization
+* Support for 3rd party domains i.e., allow 3rd party API providers to leverage the CAPIF framework
+* Support interconnection between two CAPIF providers
+
+Service Manager wraps CAPIF to provide the following Northbound service APIs.
+
+* Register/deregister APIs
+* Publishing Service APIs
+* Onboarding/offboarding API invoker
+* Discovery APIs
+
+If you only need the above APIs, then Service Manager is a plugin-in replacement for CAPIF.
+
+
+CAPIF APIs wrapped by Service Manager
+*************************************
+
+* **CAPIF_API_Provider_Management** API: This API enables the API Management Function to communicate with the CAPIF core function to register the API provider domain functions.
+* **CAPIF_Publish_Service_API** API:This API enables the API publishing function to communicate with the CAPIF core function to publish the service API information and manage the published service API information.
+* **CAPIF_API_Invoker_Management** API: This API enables the API invoker to communicate with the CAPIF core function to enroll as a registered user of CAPIF and manage the enrollment information.
+* **CAPIF_Discover_Service_API** API: This API enables the API invoker to communicate with the CAPIF core function to discover the published service API information.
+
++-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|     **Service Name**              | **Service Operations**       | **Operation Semantics**                      | **Consumer(s)**                                                                        |
++-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+| CAPIF_API_Provider_Management_API | Register_API_Provider        | POST /registrations                          | API Management Function                                                                |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Update_API_Provider          | PUT /registrations/{registrationId}          | API Management Function                                                                |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Deregister_API_Provider      | DELETE /registrations/{registrationId}       | API Management Function                                                                |
++-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+| CAPIF_Publish_Service_API         | Publish_Service_API          | POST /{apfId}/service-apis                   | API Publishing Function, CAPIF core function                                           |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Unpublish_Service_API        | DELETE /{apfId/service-apis/{serviceApiId}   | API Publishing Function, CAPIF core function                                           |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Update_Service_API           | PUT /{apfId/service-apis/{serviceApiId}      | API Publishing Function, CAPIF core function                                           |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Get_Service_API              | GET /{apfId}/service-apis                    | API Publishing Function, CAPIF core function                                           |
++-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+| CAPIF_API_Invoker_Management_API  | Onboard_API_Invoker          | POST /onboardedInvokers                      | API Invoker                                                                            |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Offboard_API_Invoker         | DELETE /onboardedInvokers/{onboardingId}     | API Invoker                                                                            |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Notify_Onboarding_Completion | Subscribe/Notify                             | API Invoker                                                                            |
++                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Update_API_Invoker_Details   | PUT /onboardedInvokers/{onboardingId}        | API Invoker                                                                            |
+|                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+|                                   | Notify_Update_Completion     | Subscribe/Notify                             | API Invoker                                                                            |
++-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+| CAPIF_Discover_Service_API        | Discover_Service_API         | GET /allServiceAPIs                          | API Invoker, CAPIF core function                                                       |
++-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
+
+Generation of OpenAPI Code
+**************************
+
+* The R1 APIs are generated from the OpenAPI specifications provided by 3GPP.
+* The generate.sh script downloads the specifications from 3GPP, fixes them and then generates the northbound APIs.
+* The specifications are downloaded from https://www.3gpp.org/ftp/Specs/archive/29_series.
+* CAPIF needs the server implementation while Service Manager needs both server and client implementations. Service Manager needs the client to access CAPIF and the server to provide access to the rApps.
+
+Service Manager Integration with Kong
+*************************************
+
+* Service Manager is a Go implementation of a service that wraps both CAPIF and Kong.
+* When publishing a service through Service Manager, we create a Kong service and Kong route.
+* The JSON element that we return in the response body is updated to point to the Kong data plane. Therefore, the API interface that we return from Service Discovery has the Kong host and port, and not the original service's host and port.
+* The rApp can only access the Published function through Service Manager. It cannot access the Published function directly.
+* We use Kong as a reverse proxy. Instead of calling the Publishing service directly, our Invoker's API request is proxied through Kong. This gives us the advantages of using a proxied service, such as providing caching and load balancing.
+* When service invocations are routed through Kong, in an R1 SME scenario where services are selectively exposed to rApps, the Kong API gateway can be used to enforce R1 SME exposure and access.
+* Service exposure is achieved by restricting rApps to have access only to the Kong API gateway, and so only services exposed to the rApps through the API gateway can be accessed.
+
+Service Manager Deployment
+**************************
+
+* We have a stand-alone deployment and a deployment as part of NONRTRIC.
+* We use the NONRTRIC deployment from the Git repo at https://gerrit.o-ran-sc.org/r/admin/repos/it/dep.
+* The stand-alone deployment is in this repo at sme/servicemanager/deploy. Please see the Service Manager README.
+* The Service Manager configuration is stored in a config file, ``.env``.
+* For both the stand-alone and it/dep deployments, ``.env`` is volume-mounted into the Docker container from a Kubernetes config map at container run-time.
+
+Postman
+*******
+A Postman collection has been included in this repo at sme/postman/ServiceManager.postman_collection.json.
+
 
 *************
 CAPIF
@@ -191,102 +300,3 @@ Postman
 *******
 
 A Postman collection has been included in this repo at sme/postman/CAPIF.postman_collection.json.
-
-***************
-Service Manager
-***************
-
-Service Manager, CAPIF and Kong
-*******************************
-
-Service Manager builds on CAPIF and depends on the Kong API Gateway. CAPIF stands for Common API Framework and it was developed by 3GPP to enable a unified Northbound API framework across 3GPP network functions, and to ensure that there is a single and harmonized approach for API development.
-Among CAPIF's key features are the following.
-
-* Register/deregister APIs
-* Publishing Service APIs
-* Onboarding/offboarding API invoker
-* Discovery APIs
-* CAPIF events subscription/notification
-* Entity authentication/authorization
-* Support for 3rd party domains i.e., allow 3rd party API providers to leverage the CAPIF framework
-* Support interconnection between two CAPIF providers
-
-Service Manager and CAPIF APIs
-******************************
-
-CAPIF (Common API Framework) is defined in 3GPP TS 29.222. Service Manager implements a subset of the CAPIF APIs to provide the following APIs.
-
-* Register/deregister APIs
-* Publishing Service APIs
-* Onboarding/offboarding API invoker
-* Discovery APIs
-
-If you only need the above APIs, then Service Manager is a plugin-in replacement for CAPIF.
-
-CAPIF APIs implemented by Service Manager
-*****************************************
-
-* **CAPIF_API_Provider_Management** API: This API enables the API Management Function to communicate with the CAPIF core function to register the API provider domain functions.
-* **CAPIF_Publish_Service_API** API:This API enables the API publishing function to communicate with the CAPIF core function to publish the service API information and manage the published service API information.
-* **CAPIF_API_Invoker_Management** API: This API enables the API invoker to communicate with the CAPIF core function to enroll as a registered user of CAPIF and manage the enrollment information.
-* **CAPIF_Discover_Service_API** API: This API enables the API invoker to communicate with the CAPIF core function to discover the published service API information.
-
-+-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|     **Service Name**              | **Service Operations**       | **Operation Semantics**                      | **Consumer(s)**                                                                        |
-+-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-| CAPIF_API_Provider_Management_API | Register_API_Provider        | POST /registrations                          | API Management Function                                                                |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Update_API_Provider          | PUT /registrations/{registrationId}          | API Management Function                                                                |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Deregister_API_Provider      | DELETE /registrations/{registrationId}       | API Management Function                                                                |
-+-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-| CAPIF_Publish_Service_API         | Publish_Service_API          | POST /{apfId}/service-apis                   | API Publishing Function, CAPIF core function                                           |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Unpublish_Service_API        | DELETE /{apfId/service-apis/{serviceApiId}   | API Publishing Function, CAPIF core function                                           |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Update_Service_API           | PUT /{apfId/service-apis/{serviceApiId}      | API Publishing Function, CAPIF core function                                           |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Get_Service_API              | GET /{apfId}/service-apis                    | API Publishing Function, CAPIF core function                                           |
-+-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-| CAPIF_API_Invoker_Management_API  | Onboard_API_Invoker          | POST /onboardedInvokers                      | API Invoker                                                                            |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Offboard_API_Invoker         | DELETE /onboardedInvokers/{onboardingId}     | API Invoker                                                                            |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Notify_Onboarding_Completion | Subscribe/Notify                             | API Invoker                                                                            |
-+                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Update_API_Invoker_Details   | PUT /onboardedInvokers/{onboardingId}        | API Invoker                                                                            |
-|                                   +------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-|                                   | Notify_Update_Completion     | Subscribe/Notify                             | API Invoker                                                                            |
-+-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-| CAPIF_Discover_Service_API        | Discover_Service_API         | GET /allServiceAPIs                          | API Invoker, CAPIF core function                                                       |
-+-----------------------------------+------------------------------+----------------------------------------------+----------------------------------------------------------------------------------------+
-
-Generation of CAPIF OpenAPI Code
-********************************
-
-* The CAPIF APIs are generated from the OpenAPI specifications provided by 3GPP.
-* The generate.sh script downloads the specifications from 3GPP, fixes them and then generates the APIs.
-* The specifications are downloaded from https://www.3gpp.org/ftp/Specs/archive/29_series.
-
-Service Manager Integration with Kong
-*************************************
-
-* Service Manager is a Go implementation of a service that builds on CAPIF Core and integrates with Kong.
-* When publishing a service through Service Manager, we create a Kong service and Kong route.
-* The JSON element that we return in the response body is updated to point to the Kong data plane. Therefore, the API interface that we return from Service Discovery has the Kong host and port, and not the original service's host and port.
-* The rApp can only access the Published function through Service Manager. It cannot access the Published function directly.
-* We use Kong as a reverse proxy. Instead of calling the Publishing service directly, our Invoker's API request is proxied through Kong. This gives us the advantages of using a proxied service, such as providing caching and load balancing.
-* When service invocations are routed through Kong, in an R1 SME scenario where services are selectively exposed to rApps, the Kong API gateway can be used to enforce R1 SME exposure & access. This can be achieved by restricting rApps to have access only to the Kong API gateway, and so only services exposed to the rApps through the API gateway can be accessed.
-
-Service Manager Deployment
-**************************
-
-* We have a stand-alone deployment and a deployment as part of NONRTRIC.
-* We use the NONRTRIC deployment from the Git repo at https://gerrit.o-ran-sc.org/r/admin/repos/it/dep.
-* The stand-alone deployment is in this repo at sme/servicemanager/deploy. Please see the Service Manager README.
-* The Service Manager configuration is stored in a config file, ``.env``.
-* For both the stand-alone and it/dep deployments, ``.env`` is volume-mounted into the Docker container from a Kubernetes config map at container run-time.
-
-Postman
-*******
-A Postman collection has been included in this repo at sme/postman/ServiceManager.postman_collection.json.
