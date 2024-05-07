@@ -15,3 +15,4 @@ coverage.txt
 .env*
 # Except for .env.example
 !.env.example
+*Zone.Identifier
