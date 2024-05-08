@@ -25,6 +25,13 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  # jobs:
+  #   pre_create_environment:
+  #     - echo "$(date) Command run at 'pre_create_environment' step"
+  #   post_build:
+  #     - echo "$(date) Command run at 'post_build' step"
+  #     - mkdir -vp $READTHEDOCS_OUTPUT/html
+  #     - cp -vr docs/openapi/* $READTHEDOCS_OUTPUT/html/
 
 python:
   install:
