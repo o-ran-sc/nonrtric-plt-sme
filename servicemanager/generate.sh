@@ -169,6 +169,67 @@ generate_apis_from_spec () {
     oapi-codegen --config "gogeneratorspecs/discoverserviceapi/generator_settings_client.yaml" specs/TS29222_CAPIF_Discover_Service_API.yaml
 }
 
+generate_html2_from_spec() {
+    cd $cwd
+
+    echo "Generating Provider_Management HTML"
+    docker run --rm \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -v ${PWD}:/local openapitools/openapi-generator-cli generate \
+        -i /local/specs/TS29222_CAPIF_API_Provider_Management_API.yaml \
+        -g html2 \
+        -o /local/openapi/html2/Provider_Management
+    mv -v openapi/html2/Provider_Management/index.html openapi/html2/Provider_Management/Provider_Management.html
+
+    echo "Generating Publish_Service HTML"
+    docker run --rm \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -v ${PWD}:/local openapitools/openapi-generator-cli generate \
+        -i /local/specs/TS29222_CAPIF_Publish_Service_API.yaml \
+        -g html2 \
+        -o /local/openapi/html2/Publish_Service
+    mv -v openapi/html2/Publish_Service/index.html openapi/html2/Publish_Service/Publish_Service.html
+
+    echo "Generating Invoker_Management HTML"
+    docker run --rm \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -v ${PWD}:/local openapitools/openapi-generator-cli generate \
+        -i /local/specs/TS29222_CAPIF_API_Invoker_Management_API.yaml \
+        -g html2 \
+        -o /local/openapi/html2/Invoker_Management
+    mv -v openapi/html2/Invoker_Management/index.html openapi/html2/Invoker_Management/Invoker_Management.html
+
+    echo "Generating Discover_Service HTML"
+    docker run --rm \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -v ${PWD}:/local openapitools/openapi-generator-cli generate \
+        -i /local/specs/TS29222_CAPIF_Discover_Service_API.yaml \
+        -g html2 \
+        -o /local/openapi/html2/Discover_Service
+    mv -v openapi/html2/Discover_Service/index.html openapi/html2/Discover_Service/Discover_Service.html
+
+    echo "Generating Events HTML"
+    docker run --rm \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -v ${PWD}:/local openapitools/openapi-generator-cli generate \
+        -i /local/specs/TS29222_CAPIF_Events_API.yaml \
+        -g html2 \
+        -o /local/openapi/html2/Events
+    mv -v openapi/html2/Events/index.html openapi/html2/Events/Events.html
+
+    echo "Generating Security HTML"
+    docker run --rm \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -v ${PWD}:/local openapitools/openapi-generator-cli generate \
+        -i /local/specs/TS29222_CAPIF_Security_API.yaml \
+        -g html2 \
+        -o /local/openapi/html2/Security
+    mv -v openapi/html2/Security/index.html openapi/html2/Security/Security.html
+
+    mkdir -vp ../docs/openapi
+    find openapi/html2 -type f -name "*.html" -exec cp -v {} ../docs/openapi \;
+}
+
 run_tests () {
     # Make sure that SERVICE_MANAGER_ENV is configured with the required .env file, e.g.
     # export SERVICE_MANAGER_ENV=development
@@ -202,6 +263,9 @@ spec_extraction
 fix_with_sed
 gentools
 generate_apis_from_spec
+generate_html2_from_spec
+
+cd $cwd
 
 # Check if the run-tests switch is enabled
 if [ "$RUN_TESTS" = true ]; then
