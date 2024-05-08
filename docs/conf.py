@@ -1,5 +1,6 @@
 #  ============LICENSE_START===============================================
-#  Copyright (C) 2022 Nordix Foundation. All rights reserved.
+#  Copyright (C) 2022-2023 Nordix Foundation. All rights reserved.
+#  Copyright (C) 2024: OpenInfra Foundation Europe
 #  ========================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,7 +28,19 @@ linkcheck_ignore = [
     'https://gerrit.o-ran-sc.org.*',
 ]
 
-extensions = ['sphinx.ext.intersphinx',]
+extensions = [
+    'sphinx.ext.intersphinx',
+]
+
+html_extra_path = [
+    'openapi',
+]
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+}
+
+exclude_patterns = ['_build', 'requirements-docs.txt']
 
 #intershpinx mapping with other projects
 intersphinx_mapping = {}
