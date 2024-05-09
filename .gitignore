@@ -7,6 +7,7 @@ docs/_build/
 .pydevproject
 go.work*
 servicemanager.tar.gz
+servicemanager/openapi
 servicemanager/specs
 servicemanager/servicemanager
 servicemanager/internal/kongclearup
