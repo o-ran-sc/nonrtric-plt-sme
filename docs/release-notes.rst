@@ -4,7 +4,7 @@
 .. Copyright (C) 2023-2024 OpenInfra Foundation Europe. All rights reserved.
 
 =============
-Release-Notes
+Release Notes
 =============
 
 
