@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cdcb6337_e7e7b054",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-06-13T14:41:16Z",
+      "side": 1,
+      "message": "Tested running the servicemanager-preload.sh script and it works as expected.",
+      "revId": "36718abc0fb386770a182c2c01358e1ce3621c75",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
