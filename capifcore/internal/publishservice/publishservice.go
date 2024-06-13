@@ -121,16 +121,28 @@ func join(a, b []publishapi.ServiceAPIDescription) []publishapi.ServiceAPIDescri
 
 // Retrieve all published APIs.
 func (ps *PublishService) GetApfIdServiceApis(ctx echo.Context, apfId string) error {
-	if !ps.serviceRegister.IsPublishingFunctionRegistered(apfId) {
-		errorMsg := fmt.Sprintf("Unable to get the service due to %s api is only available for publishers", apfId)
-		return sendCoreError(ctx, http.StatusNotFound, errorMsg)
-	}
+	ps.lock.Lock()
+	serviceDescriptions, ok := ps.publishedServices[apfId]
+	ps.lock.Unlock()
 
-	serviceDescriptions := ps.publishedServices[apfId]
-	err := ctx.JSON(http.StatusOK, serviceDescriptions)
-	if err != nil {
-		// Something really bad happened, tell Echo that our handler failed
-		return err
+	if ok {
+		err := ctx.JSON(http.StatusOK, serviceDescriptions)
+		if err != nil {
+			// Something really bad happened, tell Echo that our handler failed
+			return err
+		}
+	} else {
+		if !ps.serviceRegister.IsPublishingFunctionRegistered(apfId) {
+			errorMsg := fmt.Sprintf("Unable to get the service due to %s api is only available for publishers", apfId)
+			return sendCoreError(ctx, http.StatusNotFound, errorMsg)
+		}
+
+		serviceDescriptions = []publishapi.ServiceAPIDescription{}
+		err := ctx.JSON(http.StatusOK, serviceDescriptions)
+		if err != nil {
+			// Something really bad happened, tell Echo that our handler failed
+			return err
+		}
 	}
 	return nil
 }
