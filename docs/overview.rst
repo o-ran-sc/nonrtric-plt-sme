@@ -118,7 +118,7 @@ Service Manager Deployment
 
 Postman
 *******
-A Postman collection has been included in this repo at sme/postman/ServiceManager.postman_collection.json.
+A Postman collection has been included in this repo at sme/postman/ServiceManager.postman_collection.json
 
 
 *************

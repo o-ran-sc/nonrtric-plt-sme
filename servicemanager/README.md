@@ -3,7 +3,7 @@
 ========================LICENSE_START=================================
 O-RAN-SC
 %%
-Copyright (C) 2024 OpenInfra Foundation Europe. All rights reserved.
+Copyright (C) 2024 OpenInfra Foundation Europe. All rights reserved
 %%
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ export SERVICE_MANAGER_ENV=development
 
 ### CAPIFcore and Kong
 
-We also need Kong and CAPIFcore to be running. Please see the examples in the `deploy` folder. You can also use https://gerrit.o-ran-sc.org/r/it/dep for deployment. Please see the notes at https://wiki.o-ran-sc.org/display/RICNR/%5BWIP%5D+Service+Manager.
+We also need Kong and CAPIFcore to be running. Please see the examples in the `deploy` folder. You can also use https://gerrit.o-ran-sc.org/r/it/dep for deployment. Please see the notes at https://wiki.o-ran-sc.org/display/RICNR/Release+J%3A+Service+Manager
 
 ## Build
 
