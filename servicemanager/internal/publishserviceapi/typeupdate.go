@@ -77,15 +77,16 @@ func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string, ap
 	client := resty.New()
 
 	profiles := *sd.AefProfiles
-	for _, profile := range profiles {
+	for i, profile := range profiles {
 		log.Debugf("createKongRoutes, AefId %s", profile.AefId)
-		for _, version := range profile.Versions {
+		for j, version := range profile.Versions {
 			log.Debugf("createKongRoutes, apiVersion \"%s\"", version.ApiVersion)
-			for _, resource := range *version.Resources {
-				statusCode, err = sd.createKongRoute(kongControlPlaneURL, client, resource, apfId, profile.AefId, version.ApiVersion)
+			for k, resource := range *version.Resources {
+				statusCode, err = sd.createKongRoute(kongControlPlaneURL, client, &resource, apfId, profile.AefId, version.ApiVersion)
 				if (err != nil) || (statusCode != http.StatusCreated) {
 					return statusCode, err
 				}
+				(*profiles[i].Versions[j].Resources)[k] = resource
 			}
 		}
 	}
@@ -95,7 +96,7 @@ func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string, ap
 func (sd *ServiceAPIDescription) createKongRoute(
 		kongControlPlaneURL string,
 		client *resty.Client,
-		resource Resource,
+		resource *Resource,
 		apfId string,
 		aefId string,
 		apiVersion string ) (int, error) {
@@ -114,8 +115,12 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	log.Debugf("createKongRoute, routeName %s", routeName)
 	log.Debugf("createKongRoute, aefId %s", aefId)
 
-	uri := buildUriWithVersion(apiVersion, resource.Uri)
+	uri := buildUri(apiVersion, resource.Uri)
 	log.Debugf("createKongRoute, uri %s", uri)
+
+	routeUri := buildUri(sd.ApiName, uri)
+	log.Debugf("createKongRoute, routeUri %s", routeUri)
+	resource.Uri = routeUri
 
 	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, uri, tags)
 	if (err != nil) || (statusCode != http.StatusCreated) {
@@ -127,7 +132,7 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	// Define the route information for Kong
 	kongRouteInfo := map[string]interface{}{
 		"name":       routeName,
-		"paths":      []string{uri},
+		"paths":      []string{routeUri},
 		"methods":    resource.Operations,
 		"tags":       tags,
 		"strip_path": true,
@@ -159,15 +164,15 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	return resp.StatusCode(), nil
 }
 
-func buildUriWithVersion(apiVersion string, uri string) string {
-	if apiVersion != "" {
-		if apiVersion[0] != '/' {
-			apiVersion = "/" + apiVersion
+func buildUri(prependUri string, uri string) string {
+	if prependUri != "" {
+		if prependUri[0] != '/' {
+			prependUri = "/" + prependUri
 		}
-		if apiVersion[len(apiVersion)-1] != '/' && uri[0] != '/' {
-			apiVersion = apiVersion + "/"
+		if prependUri[len(prependUri)-1] != '/' && uri[0] != '/' {
+			prependUri = prependUri + "/"
 		}
-		uri = apiVersion + uri
+		uri = prependUri + uri
 	}
 	return uri
 }

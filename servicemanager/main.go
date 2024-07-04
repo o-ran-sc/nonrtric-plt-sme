@@ -155,7 +155,7 @@ func keepServerAlive() {
 }
 
 func hello(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!")
+	return c.String(http.StatusOK, "Hello World, from Service Manager!")
 }
 
 func getSwagger(c echo.Context) error {
