@@ -85,6 +85,78 @@ func RegisterHandlers(e *echo.Echo) {
 		return c.String(http.StatusCreated, string(body))
 	})
 
+	e.POST("/services/api_id_apiName_helloworld-id/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName_helloworld-no-version/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-v1-id_helloworld-id/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-v1_helloworld/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-no-version_helloworld-no-version/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_apiName_helloworld-id/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_apiName_helloworld-no-version/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_helloworld-v1-id_helloworld-id/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_helloworld-no-version_helloworld-no-version/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
 	e.GET("/services", func(c echo.Context) error {
 		return c.String(http.StatusOK, "{}")
 	})
@@ -130,6 +202,38 @@ func RegisterHandlers(e *echo.Echo) {
 	})
 
 	e.DELETE("/services/api_id_apiName2_app", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("/routes/api_id_apiName_helloworld-id", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("/routes/api_id_apiName_helloworld-no-version", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("/routes/api_id_helloworld-v1_helloworld", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("/services/api_id_apiName_helloworld-id", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("/services/api_id_apiName_helloworld-no-version", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("/services/api_id_helloworld-v1_helloworld", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("routes/api_id_helloworld-no-version_helloworld-no-version", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	e.DELETE("services/api_id_helloworld-no-version_helloworld-no-version", func(c echo.Context) error {
 		return c.NoContent(http.StatusNoContent)
 	})
 }
