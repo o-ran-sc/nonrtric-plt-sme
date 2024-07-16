@@ -115,33 +115,62 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	log.Debugf("createKongRoute, routeName %s", routeName)
 	log.Debugf("createKongRoute, aefId %s", aefId)
 
-	uri := buildUri(apiVersion, resource.Uri)
+	// uri := prependUri(apiVersion, resource.Uri)
+	uri := resource.Uri
 	log.Debugf("createKongRoute, uri %s", uri)
 
-	routeUri := buildUri(sd.ApiName, uri)
+	// Create a url.Values map to hold the form data
+	data := url.Values{}
+	serviceUri := uri
+
+	if strings.HasPrefix(uri, "~") {
+		log.Debug("createKongRoute, found regex prefix")
+		data.Set("strip_path", "false")
+		serviceUri = "/"
+	} else {
+		log.Debug("createKongRoute, no regex prefix found")
+		data.Set("strip_path", "true")
+	}
+
+	log.Debugf("createKongRoute, serviceUri %s", serviceUri)
+	log.Debugf("createKongRoute, strip_path %s", data.Get("strip_path"))
+	
+	routeUri := prependUri(sd.ApiName, uri)
 	log.Debugf("createKongRoute, routeUri %s", routeUri)
 	resource.Uri = routeUri
 
-	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, uri, tags)
-	if (err != nil) || (statusCode != http.StatusCreated) {
+	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, serviceUri, tags)
+	if (err != nil) || ((statusCode != http.StatusCreated) && (statusCode != http.StatusForbidden)) {
+		// We carry on if we tried to create a duplicate service. We depend on Kong route matching.
 		return statusCode, err
 	}
 
-	kongRoutesURL := kongControlPlaneURL + "/services/" + serviceName + "/routes"
+	data.Set("name", routeName)
 
-	// Define the route information for Kong
-	kongRouteInfo := map[string]interface{}{
-		"name":       routeName,
-		"paths":      []string{routeUri},
-		"methods":    resource.Operations,
-		"tags":       tags,
-		"strip_path": true,
-	}
+	routeUriPaths := []string{routeUri}
+	for _, path := range routeUriPaths {
+		log.Debugf("createKongRoute, path %s", path)
+		data.Add("paths", path)
+    }
+
+	for _, tag := range tags {
+		log.Debugf("createKongRoute, tag %s", tag)
+		data.Add("tags", tag)
+    }
+
+	for _, op := range *resource.Operations {
+		log.Debugf("createKongRoute, op %s", string(op))
+		data.Add("methods", string(op))
+    }
+
+	// Encode the data to application/x-www-form-urlencoded format
+	encodedData := data.Encode()
 
 	// Make the POST request to create the Kong service
+	kongRoutesURL := kongControlPlaneURL + "/services/" + serviceName + "/routes"
 	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(kongRouteInfo).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetBody(strings.NewReader(encodedData)).
 		Post(kongRoutesURL)
 
 	// Check for errors in the request
@@ -164,15 +193,27 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	return resp.StatusCode(), nil
 }
 
-func buildUri(prependUri string, uri string) string {
+func prependUri(prependUri string, uri string) string {
 	if prependUri != "" {
+		trimmedUri := uri
+		foundRegEx := false
+		if strings.HasPrefix(uri, "~") {
+			log.Debug("prependUri, found regex prefix")
+			foundRegEx = true
+			trimmedUri = strings.TrimPrefix(uri, "~")
+			log.Debugf("prependUri, TrimPrefix trimmedUri %s", trimmedUri)
+		}
+	
 		if prependUri[0] != '/' {
 			prependUri = "/" + prependUri
 		}
-		if prependUri[len(prependUri)-1] != '/' && uri[0] != '/' {
+		if prependUri[len(prependUri)-1] != '/' && trimmedUri[0] != '/' {
 			prependUri = prependUri + "/"
 		}
-		uri = prependUri + uri
+		uri = prependUri + trimmedUri
+		if foundRegEx {
+			uri = "~" + uri
+		}
 	}
 	return uri
 }
