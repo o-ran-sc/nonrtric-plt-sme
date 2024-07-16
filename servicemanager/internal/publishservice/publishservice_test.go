@@ -202,6 +202,24 @@ func capifCleanUp() {
 	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusNoContent, result.Code())
 
+	apiName = "helloworld-v1"
+	apiId = "api_id_" + apiName
+
+	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
+	assert.Equal(t, http.StatusNoContent, result.Code())
+
+	apiName = "helloworld-v1-id"
+	apiId = "api_id_" + apiName
+
+	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
+	assert.Equal(t, http.StatusNoContent, result.Code())
+
+	apiName = "helloworld-no-version"
+	apiId = "api_id_" + apiName
+
+	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+apiId).Go(t, eServiceManager)
+	assert.Equal(t, http.StatusNoContent, result.Code())
+
 	// Delete the provider
 	domainID := "domain_id_Kong"
 	result = testutil.NewRequest().Delete("/api-provider-management/v1/registrations/"+domainID).Go(t, eServiceManager)
@@ -262,7 +280,11 @@ func TestPostUnpublishedServiceWithUnregisteredPublisher(t *testing.T) {
 	assert.NotZero(t, testServicePort, "TEST_SERVICE_PORT is required in .env file for unit testing")
 
 	apiName := "apiName"
-	newServiceDescription := getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort)
+	apiVersion := "v1"
+	resourceName := "helloworld"
+	uri := "/helloworld"
+
+	newServiceDescription := getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort, apiVersion, resourceName, uri)
 
 	// Attempt to publish a service for provider
 	result = testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
@@ -288,7 +310,7 @@ func TestRegisterValidProvider(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 }
 
-func TestPublishUnpublishService(t *testing.T) {
+func TestPublishUnpublishServiceMissingInterface(t *testing.T) {
 	apfId := "APF_id_rApp_Kong_as_APF"
 	apiName := "apiName"
 
@@ -331,11 +353,37 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.NoError(t, err, "error unmarshaling response")
 
 	assert.Contains(t, *resultError.Cause, "cannot read interfaceDescription")
+}
 
-	newServiceDescription = getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort)
+
+func TestPublishUnpublishWithoutVersionId(t *testing.T) {
+	apfId := "APF_id_rApp_Kong_as_APF"
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
+	assert.Nil(t, err, "error reading env file")
+
+	testServiceIpv4 := common29122.Ipv4Addr(myEnv["TEST_SERVICE_IPV4"])
+	testServicePort := common29122.Port(myPorts["TEST_SERVICE_PORT"])
+
+	assert.NotEmpty(t, testServiceIpv4, "TEST_SERVICE_IPV4 is required in .env file for unit testing")
+	assert.NotZero(t, testServicePort, "TEST_SERVICE_PORT is required in .env file for unit testing")
+
+	apiVersion := "v1"
+	resourceName := "helloworld"
+	uri := "/helloworld"
+	apiName := "helloworld-v1"
+
+	aefId := "AEF_id_rApp_Kong_as_AEF"
+	namespace := "namespace"
+	repoName := "repoName"
+	chartName := "chartName"
+	releaseName := "releaseName"
+	description := fmt.Sprintf("Description,%s,%s,%s,%s", namespace, repoName, chartName, releaseName)
+
+	newServiceDescription := getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort, apiVersion, resourceName, uri)
 
 	// Publish a service for provider
-	result = testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
+	result := testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusCreated, result.Code())
 
 	if result.Code() != http.StatusCreated {
@@ -374,30 +422,184 @@ func TestPublishUnpublishService(t *testing.T) {
 	assert.Equal(t, kongDataPlaneIPv4, resultServiceIpv4)
 	assert.Equal(t, kongDataPlanePort, resultServicePort)
 
-	// Publish the same service again should result in Forbidden
-	newServiceDescription.ApiId = &newApiId
-	result = testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
-	assert.Equal(t, http.StatusForbidden, result.Code())
+	// Check Versions structure
+	version := aefProfile.Versions[0]
+	assert.Equal(t, "v1", version.ApiVersion)
 
-	err = result.UnmarshalBodyToObject(&resultError)
+	resource := (*version.Resources)[0]
+	communicationType := publishapi.CommunicationType("REQUEST_RESPONSE")
+	assert.Equal(t, communicationType, resource.CommType)
+
+	assert.Equal(t, 1, len(*resource.Operations))
+	var operation publishapi.Operation = "GET"
+	assert.Equal(t, operation, (*resource.Operations)[0])
+	assert.Equal(t, "helloworld", resource.ResourceName)
+	assert.Equal(t, "/helloworld-v1/helloworld", resource.Uri)
+}
+
+func TestPublishUnpublishVersionId(t *testing.T) {
+	apfId := "APF_id_rApp_Kong_as_APF"
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
+	assert.Nil(t, err, "error reading env file")
+
+	testServiceIpv4 := common29122.Ipv4Addr(myEnv["TEST_SERVICE_IPV4"])
+	testServicePort := common29122.Port(myPorts["TEST_SERVICE_PORT"])
+
+	assert.NotEmpty(t, testServiceIpv4, "TEST_SERVICE_IPV4 is required in .env file for unit testing")
+	assert.NotZero(t, testServicePort, "TEST_SERVICE_PORT is required in .env file for unit testing")
+
+	apiVersion := "v1"
+	resourceName := "helloworld-id"
+	uri := "~/helloworld/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)"
+	apiName := "helloworld-v1-id"
+
+	aefId := "AEF_id_rApp_Kong_as_AEF"
+	namespace := "namespace"
+	repoName := "repoName"
+	chartName := "chartName"
+	releaseName := "releaseName"
+	description := fmt.Sprintf("Description,%s,%s,%s,%s", namespace, repoName, chartName, releaseName)
+
+	newServiceDescription := getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort, apiVersion, resourceName, uri)
+
+	// Publish a service for provider
+	result := testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
+	assert.Equal(t, http.StatusCreated, result.Code())
+
+	if result.Code() != http.StatusCreated {
+		log.Fatalf("failed to publish the service with HTTP result code %d", result.Code())
+		return
+	}
+
+	var resultService publishapi.ServiceAPIDescription
+	err = result.UnmarshalJsonToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
-	assert.Contains(t, *resultError.Cause, "already published")
-	assert.Equal(t, http.StatusForbidden, *resultError.Status)
+	newApiId := "api_id_" + apiName
+	assert.Equal(t, newApiId, *resultService.ApiId)
 
-	// Delete the service
-	result = testutil.NewRequest().Delete("/published-apis/v1/"+apfId+"/service-apis/"+newApiId).Go(t, eServiceManager)
-	assert.Equal(t, http.StatusNoContent, result.Code())
+	assert.Equal(t, "http://example.com/published-apis/v1/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
 
-	// Check no services published
-	result = testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis").Go(t, eServiceManager)
+	// Check that the service is published for the provider
+	result = testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis/"+newApiId).Go(t, eServiceManager)
 	assert.Equal(t, http.StatusOK, result.Code())
 
-	// Parse JSON from the response body
-	err = result.UnmarshalJsonToObject(&resultServices)
+	err = result.UnmarshalJsonToObject(&resultService)
 	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, newApiId, *resultService.ApiId)
 
-	// Check if the parsed array is empty
-	assert.Zero(t, len(resultServices))
+	aefProfile := (*resultService.AefProfiles)[0]
+	interfaceDescription := (*aefProfile.InterfaceDescriptions)[0]
+
+	resultServiceIpv4 := *interfaceDescription.Ipv4Addr
+	resultServicePort := *interfaceDescription.Port
+
+	kongDataPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_DATA_PLANE_IPV4"])
+	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
+
+	assert.NotEmpty(t, kongDataPlaneIPv4, "KONG_DATA_PLANE_IPV4 is required in .env file for unit testing")
+	assert.NotZero(t, kongDataPlanePort, "KONG_DATA_PLANE_PORT is required in .env file for unit testing")
+
+	assert.Equal(t, kongDataPlaneIPv4, resultServiceIpv4)
+	assert.Equal(t, kongDataPlanePort, resultServicePort)
+
+	// Check Versions structure
+	version := aefProfile.Versions[0]
+	assert.Equal(t, "v1", version.ApiVersion)
+
+	resource := (*version.Resources)[0]
+	communicationType := publishapi.CommunicationType("REQUEST_RESPONSE")
+	assert.Equal(t, communicationType, resource.CommType)
+
+	assert.Equal(t, 1, len(*resource.Operations))
+	var operation publishapi.Operation = "GET"
+	assert.Equal(t, operation, (*resource.Operations)[0])
+
+	assert.Equal(t, "helloworld-id", resource.ResourceName)
+	assert.Equal(t, "~/helloworld-v1-id/helloworld/v1/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", resource.Uri)
+}
+
+func TestPublishUnpublishServiceNoVersionWithId(t *testing.T) {
+	apfId := "APF_id_rApp_Kong_as_APF"
+
+	myEnv, myPorts, err := mockConfigReader.ReadDotEnv()
+	assert.Nil(t, err, "error reading env file")
+
+	testServiceIpv4 := common29122.Ipv4Addr(myEnv["TEST_SERVICE_IPV4"])
+	testServicePort := common29122.Port(myPorts["TEST_SERVICE_PORT"])
+
+	assert.NotEmpty(t, testServiceIpv4, "TEST_SERVICE_IPV4 is required in .env file for unit testing")
+	assert.NotZero(t, testServicePort, "TEST_SERVICE_PORT is required in .env file for unit testing")
+
+	apiVersion := ""
+	resourceName := "helloworld-no-version"
+	uri := "~/helloworld/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)"
+	apiName := "helloworld-no-version"
+
+	aefId := "AEF_id_rApp_Kong_as_AEF"
+	namespace := "namespace"
+	repoName := "repoName"
+	chartName := "chartName"
+	releaseName := "releaseName"
+	description := fmt.Sprintf("Description,%s,%s,%s,%s", namespace, repoName, chartName, releaseName)
+
+	newServiceDescription := getServiceAPIDescription(aefId, apiName, description, testServiceIpv4, testServicePort, apiVersion, resourceName, uri)
+
+	// Publish a service for provider
+	result := testutil.NewRequest().Post("/published-apis/v1/"+apfId+"/service-apis").WithJsonBody(newServiceDescription).Go(t, eServiceManager)
+	assert.Equal(t, http.StatusCreated, result.Code())
+
+	if result.Code() != http.StatusCreated {
+		log.Fatalf("failed to publish the service with HTTP result code %d", result.Code())
+		return
+	}
+
+	var resultService publishapi.ServiceAPIDescription
+	err = result.UnmarshalJsonToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+	newApiId := "api_id_" + apiName
+	assert.Equal(t, newApiId, *resultService.ApiId)
+
+	assert.Equal(t, "http://example.com/published-apis/v1/"+apfId+"/service-apis/"+*resultService.ApiId, result.Recorder.Header().Get(echo.HeaderLocation))
+
+	// Check that the service is published for the provider
+	result = testutil.NewRequest().Get("/published-apis/v1/"+apfId+"/service-apis/"+newApiId).Go(t, eServiceManager)
+	assert.Equal(t, http.StatusOK, result.Code())
+
+	err = result.UnmarshalJsonToObject(&resultService)
+	assert.NoError(t, err, "error unmarshaling response")
+	assert.Equal(t, newApiId, *resultService.ApiId)
+
+	aefProfile := (*resultService.AefProfiles)[0]
+	interfaceDescription := (*aefProfile.InterfaceDescriptions)[0]
+
+	resultServiceIpv4 := *interfaceDescription.Ipv4Addr
+	resultServicePort := *interfaceDescription.Port
+
+	kongDataPlaneIPv4 := common29122.Ipv4Addr(myEnv["KONG_DATA_PLANE_IPV4"])
+	kongDataPlanePort := common29122.Port(myPorts["KONG_DATA_PLANE_PORT"])
+
+	assert.NotEmpty(t, kongDataPlaneIPv4, "KONG_DATA_PLANE_IPV4 is required in .env file for unit testing")
+	assert.NotZero(t, kongDataPlanePort, "KONG_DATA_PLANE_PORT is required in .env file for unit testing")
+
+	assert.Equal(t, kongDataPlaneIPv4, resultServiceIpv4)
+	assert.Equal(t, kongDataPlanePort, resultServicePort)
+
+	// Check Versions structure
+	version := aefProfile.Versions[0]
+	assert.Equal(t, "", version.ApiVersion)
+
+	resource := (*version.Resources)[0]
+	communicationType := publishapi.CommunicationType("REQUEST_RESPONSE")
+	assert.Equal(t, communicationType, resource.CommType)
+
+	assert.Equal(t, 1, len(*resource.Operations))
+	var operation publishapi.Operation = "GET"
+	assert.Equal(t, operation, (*resource.Operations)[0])
+
+	assert.Equal(t, "helloworld-no-version", resource.ResourceName)
+	assert.Equal(t, "~/helloworld-no-version/helloworld/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", resource.Uri)
+
 	capifCleanUp()
 }
 
@@ -449,7 +651,16 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	return err
 }
 
-func getServiceAPIDescription(aefId, apiName, description string, testServiceIpv4 common29122.Ipv4Addr, testServicePort common29122.Port) publishapi.ServiceAPIDescription {
+func getServiceAPIDescription(
+	aefId string,
+	apiName string,
+	description string,
+	testServiceIpv4 common29122.Ipv4Addr,
+	testServicePort common29122.Port,
+	apiVersion string,
+	resourceName string,
+	uri string) publishapi.ServiceAPIDescription {
+
 	domainName := "Kong"
 	var protocol publishapi.Protocol = "HTTP_1_1"
 
@@ -470,15 +681,15 @@ func getServiceAPIDescription(aefId, apiName, description string, testServiceIpv
 				Protocol:   &protocol,
 				Versions: []publishapi.Version{
 					{
-						ApiVersion: "v1",
+						ApiVersion: apiVersion,
 						Resources: &[]publishapi.Resource{
 							{
 								CommType: "REQUEST_RESPONSE",
 								Operations: &[]publishapi.Operation{
 									"GET",
 								},
-								ResourceName: "helloworld",
-								Uri:          "/helloworld",
+								ResourceName: resourceName,
+								Uri:          uri,
 							},
 						},
 					},
