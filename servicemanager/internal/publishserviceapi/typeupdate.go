@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	resty "github.com/go-resty/resty/v2"
@@ -115,33 +116,64 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	log.Debugf("createKongRoute, routeName %s", routeName)
 	log.Debugf("createKongRoute, aefId %s", aefId)
 
-	uri := buildUri(apiVersion, resource.Uri)
+	// uri := prependUri(apiVersion, resource.Uri)
+	uri := resource.Uri
 	log.Debugf("createKongRoute, uri %s", uri)
 
-	routeUri := buildUri(sd.ApiName, uri)
+	// Create a url.Values map to hold the form data
+	data := url.Values{}
+	serviceUri := uri
+
+	foundRegEx := false
+	if strings.HasPrefix(uri, "~") {
+		log.Debug("createKongRoute, found regex prefix")
+		foundRegEx = true
+		data.Set("strip_path", "false")
+		serviceUri = "/"
+	} else {
+		log.Debug("createKongRoute, no regex prefix found")
+		data.Set("strip_path", "true")
+	}
+
+	log.Debugf("createKongRoute, serviceUri %s", serviceUri)
+	log.Debugf("createKongRoute, strip_path %s", data.Get("strip_path"))
+
+	routeUri := prependUri(sd.ApiName, uri)
 	log.Debugf("createKongRoute, routeUri %s", routeUri)
 	resource.Uri = routeUri
 
-	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, uri, tags)
-	if (err != nil) || (statusCode != http.StatusCreated) {
+	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, serviceUri, tags)
+	if (err != nil) || ((statusCode != http.StatusCreated) && (statusCode != http.StatusForbidden)) {
+		// We carry on if we tried to create a duplicate service. We depend on Kong route matching.
 		return statusCode, err
 	}
 
-	kongRoutesURL := kongControlPlaneURL + "/services/" + serviceName + "/routes"
+	data.Set("name", routeName)
 
-	// Define the route information for Kong
-	kongRouteInfo := map[string]interface{}{
-		"name":       routeName,
-		"paths":      []string{routeUri},
-		"methods":    resource.Operations,
-		"tags":       tags,
-		"strip_path": true,
-	}
+	routeUriPaths := []string{routeUri}
+	for _, path := range routeUriPaths {
+		log.Debugf("createKongRoute, path %s", path)
+		data.Add("paths", path)
+    }
+
+	for _, tag := range tags {
+		log.Debugf("createKongRoute, tag %s", tag)
+		data.Add("tags", tag)
+    }
+
+	for _, op := range *resource.Operations {
+		log.Debugf("createKongRoute, op %s", string(op))
+		data.Add("methods", string(op))
+    }
+
+	// Encode the data to application/x-www-form-urlencoded format
+	encodedData := data.Encode()
 
 	// Make the POST request to create the Kong service
+	kongRoutesURL := kongControlPlaneURL + "/services/" + serviceName + "/routes"
 	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(kongRouteInfo).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetBody(strings.NewReader(encodedData)).
 		Post(kongRoutesURL)
 
 	// Check for errors in the request
@@ -153,6 +185,12 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	// Check the response status code
 	if resp.StatusCode() == http.StatusCreated {
 		log.Infof("kong route %s created successfully", routeName)
+		if (foundRegEx) {
+			statusCode, err := sd.createRequestTransformer(kongControlPlaneURL, client, routeName, uri)
+			if (err != nil) || ((statusCode != http.StatusCreated) && (statusCode != http.StatusForbidden)) {
+				return statusCode, err
+			}
+		}
 	} else {
 		log.Debugf("kongRoutesURL %s", kongRoutesURL)
 		err = fmt.Errorf("error creating Kong route. Status code: %d", resp.StatusCode())
@@ -164,15 +202,112 @@ func (sd *ServiceAPIDescription) createKongRoute(
 	return resp.StatusCode(), nil
 }
 
-func buildUri(prependUri string, uri string) string {
+func (sd *ServiceAPIDescription) createRequestTransformer(
+	kongControlPlaneURL string,
+	client *resty.Client,
+	routeName string,
+	routePattern string) (int, error) {
+
+	log.Trace("entering createRequestTransformer")
+
+	// Make the POST request to create the Kong Request Transformer
+	kongRequestTransformerURL := kongControlPlaneURL + "/routes/" + routeName + "/plugins"
+
+	transformPattern, _ := deriveTransformPattern(routePattern)
+
+	// Create the form data
+	formData := url.Values{
+		"name":                  {"request-transformer"},
+		"config.replace.uri":    {transformPattern},
+	}
+	encodedData := formData.Encode()
+
+	// Create a new HTTP POST request
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetBody(strings.NewReader(encodedData)).
+		Post(kongRequestTransformerURL)
+
+	// Check for errors in the request
+	if err != nil {
+		log.Debugf("createRequestTransformer POST Error: %v", err)
+		return resp.StatusCode(), err
+	}
+
+	// Check the response status code
+	if resp.StatusCode() == http.StatusCreated {
+		log.Infof("kong request transformer %s created successfully for route ", routeName)
+	} else {
+		log.Debugf("kongRequestTransformerURL %s", kongRequestTransformerURL)
+		err = fmt.Errorf("error creating Kong request transformer. Status code: %d", resp.StatusCode())
+		log.Error(err.Error())
+		log.Errorf("response body: %s", resp.Body())
+		return resp.StatusCode(), err
+	}
+
+	return resp.StatusCode(), nil
+}
+
+// Function to derive the transform pattern from the route pattern
+func deriveTransformPattern(routePattern string) (string, error) {
+	log.Trace("entering deriveTransformPattern")
+
+	log.Debugf("deriveTransformPattern routePattern %s", routePattern)
+
+	routePattern = strings.TrimPrefix(routePattern, "~")
+	log.Debugf("deriveTransformPattern, TrimPrefix trimmed routePattern %s", routePattern)
+
+	// Append a slash to handle an edge case for matching a trailing capture group.
+	appendedSlash := false
+	if routePattern[len(routePattern)-1] != '/' {
+		routePattern = routePattern + "/"
+		appendedSlash = true
+		log.Debugf("deriveTransformPattern, append / routePattern %s", routePattern)
+	}
+
+	// Regular expression to match named capture groups
+	re := regexp.MustCompile(`/\(\?<([^>]+)>([^\/]+)/`)
+	// Find all matches in the route pattern
+	matches := re.FindAllStringSubmatch(routePattern, -1)
+
+	transformPattern := routePattern
+	for _, match := range matches {
+		// match[0] is the full match, match[1] is the capture group name, match[2] is the pattern
+		placeholder := fmt.Sprintf("/$(uri_captures[\"%s\"])/", match[1])
+		// Replace the capture group with the corresponding placeholder
+		transformPattern = strings.Replace(transformPattern, match[0], placeholder, 1)
+	}
+	log.Debugf("deriveTransformPattern transformPattern %s", transformPattern)
+
+	if appendedSlash {
+		transformPattern = strings.TrimSuffix(transformPattern, "/")
+		log.Debugf("deriveTransformPattern, remove / transformPattern %s", transformPattern)
+	}
+
+	return transformPattern, nil
+}
+
+func prependUri(prependUri string, uri string) string {
 	if prependUri != "" {
+		trimmedUri := uri
+		foundRegEx := false
+		if strings.HasPrefix(uri, "~") {
+			log.Debug("prependUri, found regex prefix")
+			foundRegEx = true
+			trimmedUri = strings.TrimPrefix(uri, "~")
+			log.Debugf("prependUri, TrimPrefix trimmedUri %s", trimmedUri)
+		}
+
 		if prependUri[0] != '/' {
 			prependUri = "/" + prependUri
 		}
-		if prependUri[len(prependUri)-1] != '/' && uri[0] != '/' {
+		if prependUri[len(prependUri)-1] != '/' && trimmedUri[0] != '/' {
 			prependUri = prependUri + "/"
 		}
-		uri = prependUri + uri
+		uri = prependUri + trimmedUri
+		if foundRegEx {
+			uri = "~" + uri
+		}
 	}
 	return uri
 }
