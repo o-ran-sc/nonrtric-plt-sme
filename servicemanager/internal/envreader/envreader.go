@@ -21,6 +21,8 @@
 package envreader
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -75,6 +77,14 @@ func (r *RealConfigReader) ReadDotEnv() (map[string]string, map[string]int, erro
 	logConfig(myEnv, envFile)
 
 	myPorts, err := createMapPorts(myEnv)
+	if err == nil {
+		err = validateEnv(myEnv)
+	}
+
+	if err == nil {
+		err = validateUrls(myEnv, myPorts)
+	}
+
 	return myEnv, myPorts, err
 }
 
@@ -110,31 +120,98 @@ func logConfig(myEnv map[string]string, envFile string) {
 	log.Infof("TEST_SERVICE_PORT %s", myEnv["TEST_SERVICE_PORT"])
 }
 
+func validateUrls(myEnv map[string]string, myPorts map[string]int) error {
+	capifProtocol := myEnv["CAPIF_PROTOCOL"]
+	capifIPv4 := myEnv["CAPIF_IPV4"]
+	capifPort := myPorts["CAPIF_PORT"]
+	capifcoreUrl := fmt.Sprintf("%s://%s:%d", capifProtocol, capifIPv4, capifPort)
+
+	kongProtocol := myEnv["KONG_PROTOCOL"]
+	kongControlPlaneIPv4 := myEnv["KONG_CONTROL_PLANE_IPV4"]
+	kongControlPlanePort := myPorts["KONG_CONTROL_PLANE_PORT"]
+	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongControlPlaneIPv4, kongControlPlanePort)
+
+	kongDataPlaneIPv4 := myEnv["KONG_DATA_PLANE_IPV4"]
+	kongDataPlanePort := myPorts["KONG_DATA_PLANE_PORT"]
+	kongDataPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongDataPlaneIPv4, kongDataPlanePort)
+
+	log.Infof("Capifcore URL %s", capifcoreUrl)
+	log.Infof("Kong Control Plane URL %s", kongControlPlaneURL)
+	log.Infof("Kong Data Plane URL %s", kongDataPlaneURL)
+
+	// Very basic checks
+	_, err := url.ParseRequestURI(capifcoreUrl)
+	if err != nil {
+		err = fmt.Errorf("error parsing Capifcore URL: %s", err)
+		return err
+	}
+	_, err = url.ParseRequestURI(kongControlPlaneURL)
+	if err != nil {
+		err = fmt.Errorf("error parsing Kong Control Plane URL: %s", err)
+		return err
+	}
+	_, err = url.ParseRequestURI(kongDataPlaneURL)
+	if err != nil {
+		err = fmt.Errorf("error parsing Kong Data Plane URL: %s", err)
+		return err
+	}
+
+	return nil
+}
+
+func validateEnv(myEnv map[string]string) error {
+	var err error = nil
+
+	kongDomain := myEnv["KONG_DOMAIN"]
+	kongProtocol := myEnv["KONG_PROTOCOL"]
+	kongControlPlaneIPv4 := myEnv["KONG_CONTROL_PLANE_IPV4"]
+	kongDataPlaneIPv4 := myEnv["KONG_DATA_PLANE_IPV4"]
+	capifProtocol := myEnv["CAPIF_PROTOCOL"]
+	capifIPv4 := myEnv["CAPIF_IPV4"]
+
+	if kongDomain == "" || kongDomain == "<string>" {
+		err = fmt.Errorf("error loading KONG_DOMAIN from .env file: %s", kongDomain)
+	} else if kongProtocol == "" || kongProtocol == "<http or https protocol scheme>" {
+		err = fmt.Errorf("error loading KONG_PROTOCOL from .env file: %s", kongProtocol)
+	} else if kongControlPlaneIPv4 == "" || kongControlPlaneIPv4 == "<host string>" {
+		err = fmt.Errorf("error loading KONG_CONTROL_PLANE_IPV4 from .env file: %s", kongControlPlaneIPv4)
+	} else if kongDataPlaneIPv4 == "" || kongDataPlaneIPv4 == "<host string>" {
+		err = fmt.Errorf("error loading KONG_DATA_PLANE_IPV4 from .env file: %s", kongDataPlaneIPv4)
+	} else if capifProtocol == "" || capifProtocol == "<http or https protocol scheme>" {
+		err = fmt.Errorf("error loading CAPIF_PROTOCOL from .env file: %s", capifProtocol)
+	} else if capifIPv4 == "" || capifIPv4 == "<host string>" || capifIPv4 == "<host>" {
+		err = fmt.Errorf("error loading CAPIF_IPV4 from .env file: %s", capifIPv4)
+	}
+	// TEST_SERVICE_IPV4 is used only by the unit tests and are validated in the unit tests.
+
+	return err
+}
+
 func createMapPorts(myEnv map[string]string) (map[string]int, error) {
     myPorts := make(map[string]int)
 	var err error
 
 	myPorts["KONG_DATA_PLANE_PORT"], err = strconv.Atoi(myEnv["KONG_DATA_PLANE_PORT"])
 	if err != nil {
-		log.Fatalf("error loading KONG_DATA_PLANE_PORT from .env file: %s", err)
+		err = fmt.Errorf("error loading KONG_DATA_PLANE_PORT from .env file: %s", err)
 		return nil, err
 	}
 
 	myPorts["KONG_CONTROL_PLANE_PORT"], err = strconv.Atoi(myEnv["KONG_CONTROL_PLANE_PORT"])
 	if err != nil {
-		log.Fatalf("error loading KONG_CONTROL_PLANE_PORT from .env file: %s", err)
+		err = fmt.Errorf("error loading KONG_CONTROL_PLANE_PORT from .env file: %s", err)
 		return nil, err
 	}
 
 	myPorts["CAPIF_PORT"], err = strconv.Atoi(myEnv["CAPIF_PORT"])
 	if err != nil {
-		log.Fatalf("error loading CAPIF_PORT from .env file: %s", err)
+		err = fmt.Errorf("error loading CAPIF_PORT from .env file: %s", err)
 		return nil, err
 	}
 
 	myPorts["SERVICE_MANAGER_PORT"], err = strconv.Atoi(myEnv["SERVICE_MANAGER_PORT"])
 	if err != nil {
-		log.Fatalf("error loading SERVICE_MANAGER_PORT from .env file: %s", err)
+		err = fmt.Errorf("error loading SERVICE_MANAGER_PORT from .env file: %s", err)
 		return nil, err
 	}
 
@@ -142,7 +219,7 @@ func createMapPorts(myEnv map[string]string) (map[string]int, error) {
 	if myEnv["TEST_SERVICE_PORT"] != "" {
 		myPorts["TEST_SERVICE_PORT"], err = strconv.Atoi(myEnv["TEST_SERVICE_PORT"])
 		if err != nil {
-			log.Fatalf("error loading TEST_SERVICE_PORT from .env file: %s", err)
+			err = fmt.Errorf("error loading TEST_SERVICE_PORT from .env file: %s", err)
 			return nil, err
 		}
 	}

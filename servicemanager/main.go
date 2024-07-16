@@ -48,8 +48,9 @@ import (
 func main() {
 	realConfigReader := &envreader.RealConfigReader{}
 	myEnv, myPorts, err := realConfigReader.ReadDotEnv()
+
 	if err != nil {
-		log.Fatal("error loading environment file")
+		log.Fatalf("error loading environment file, %v", err)
 		return
 	}
 
@@ -87,7 +88,7 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	// Register ProviderManagement
 	providerManagerSwagger, err := providermanagementapi.GetSwagger()
 	if err != nil {
-		log.Fatalf("error loading ProviderManagement swagger spec\n: %s", err)
+		log.Fatalf("error loading ProviderManagement swagger spec\n: %v", err)
 		return err
 	}
 	providerManagerSwagger.Servers = nil
@@ -99,7 +100,7 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	// Register PublishService
 	publishServiceSwagger, err := publishserviceapi.GetSwagger()
 	if err != nil {
-		log.Fatalf("error loading PublishService swagger spec\n: %s", err)
+		log.Fatalf("error loading PublishService swagger spec\n: %v", err)
 		return err
 	}
 	publishServiceSwagger.Servers = nil
@@ -116,7 +117,7 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	// Register InvokerManagement
 	invokerManagerSwagger, err := invokermanagementapi.GetSwagger()
 	if err != nil {
-		log.Fatalf("error loading InvokerManagement swagger spec\n: %s", err)
+		log.Fatalf("error loading InvokerManagement swagger spec\n: %v", err)
 		return err
 	}
 	invokerManagerSwagger.Servers = nil
@@ -128,7 +129,7 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 	// Register DiscoverService
 	discoverServiceSwagger, err := discoverserviceapi.GetSwagger()
 	if err != nil {
-		log.Fatalf("error loading DiscoverService swagger spec\n: %s", err)
+		log.Fatalf("error loading DiscoverService swagger spec\n: %v", err)
 		return err
 	}
 
