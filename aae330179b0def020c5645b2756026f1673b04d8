@@ -22,6 +22,30 @@
       },
       "revId": "aae330179b0def020c5645b2756026f1673b04d8",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d5dc4797_8565f480",
+        "filename": "servicemanager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 7
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1002243
+      },
+      "writtenOn": "2024-07-24T17:40:49Z",
+      "side": 1,
+      "message": "This value can\u0027t be nil as it is not a pointer. The string is read from the .env file, so it can be empty or invalid. I added some basic checks for the empty string, and if the user just used the example template without modifying it. Also, did some light validation using ParseRequestURI(). In addition, I now print out the URL when Service Manager starts up, as opposed to just printing the scheme, host and port separately.",
+      "parentUuid": "30f48ce7_346b9eec",
+      "range": {
+        "startLine": 172,
+        "startChar": 18,
+        "endLine": 172,
+        "endChar": 38
+      },
+      "revId": "aae330179b0def020c5645b2756026f1673b04d8",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
