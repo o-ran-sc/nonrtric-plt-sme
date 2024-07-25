@@ -46,6 +46,30 @@
       },
       "revId": "aae330179b0def020c5645b2756026f1673b04d8",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b42024af_76cf3799",
+        "filename": "servicemanager/internal/publishserviceapi/typeupdate.go",
+        "patchSetId": 7
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1002433
+      },
+      "writtenOn": "2024-07-25T09:37:14Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "d5dc4797_8565f480",
+      "range": {
+        "startLine": 172,
+        "startChar": 18,
+        "endLine": 172,
+        "endChar": 38
+      },
+      "revId": "aae330179b0def020c5645b2756026f1673b04d8",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
