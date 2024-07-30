@@ -1,0 +1,9 @@
+Code-Review+2: John Keeney <john.keeney@est.tech>
+Verified+1: ORAN Required GHA <releng+oran.required.gha@linuxfoundation.org>
+Verified+1: ORAN Jobbuilder <releng+oran-jobbuilder@linuxfoundation.org>
+Code-Review+1: Francesco Davide Lapenta <francesco.lapenta@est.tech>
+Submitted-by: John Keeney <john.keeney@est.tech>
+Submitted-at: Tue, 30 Jul 2024 10:37:15 +0000
+Reviewed-on: https://gerrit.o-ran-sc.org/r/c/nonrtric/plt/sme/+/13182
+Project: nonrtric/plt/sme
+Branch: refs/heads/master
