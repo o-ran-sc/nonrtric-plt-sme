@@ -17,9 +17,14 @@ Version history SME Service Manager
 | **Date**   | **Ver.** | **Author**       | **Comment**                          |
 |            |          |                  |                                      |
 +------------+----------+------------------+--------------------------------------+
-| 2024-06-26 | 0.1.2    |                  | J Release (Service Manager)          |
+| 2024-06-26 | 0.1.2    |  Denis G Noonan  | J Release (Service Manager)          |
 |            |          |                  | Initial version of Service Manager   |
 |            |          |                  |                                      |
++------------+----------+------------------+--------------------------------------+
+| TBA        | TBA      |  Denis G Noonan  | Service Manager includes support for |
+|            |          |                  | dynamic URIs, multiple interface     |
+|            |          |                  | descriptions, and improved schema    |
+|            |          |                  | validation.                          |
 +------------+----------+------------------+--------------------------------------+
 
 Version history SME CAPIFCore
