@@ -85,6 +85,166 @@ func RegisterHandlers(e *echo.Echo) {
 		return c.String(http.StatusCreated, string(body))
 	})
 
+	e.POST("/services/api_id_apiName_helloworld-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-v1-id_helloworld-id-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-v1_helloworld-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_helloworld-v1-id_helloworld-id-04478a3a-d0ef-5a05-a575-db5ee2e33403/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-no-version_helloworld-no-version-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_helloworld-no-version_helloworld-no-version-04478a3a-d0ef-5a05-a575-db5ee2e33403/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName1_helloworld-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName2_helloworld-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName1_app-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName2_app-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-v1-helloworld-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-v1-id-helloworld-id-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_helloworld-v1-id-helloworld-id-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_helloworld-no-version-helloworld-no-version-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/routes/api_id_helloworld-no-version-helloworld-no-version-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/plugins", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName-helloworld-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName1-helloworld-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName1-app-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName2-helloworld-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
+	e.POST("/services/api_id_apiName2-app-port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/routes", func(c echo.Context) error {
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Error reading request body")
+		}
+		return c.String(http.StatusCreated, string(body))
+	})
+
 	e.POST("/services/api_id_apiName_helloworld-id/routes", func(c echo.Context) error {
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
