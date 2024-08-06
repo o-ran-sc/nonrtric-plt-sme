@@ -352,7 +352,7 @@ func TestPublishUnpublishServiceMissingInterface(t *testing.T) {
 	err = result.UnmarshalJsonToObject(&resultError)
 	assert.NoError(t, err, "error unmarshaling response")
 
-	assert.Contains(t, *resultError.Cause, "cannot read interfaceDescription")
+	assert.Contains(t, *resultError.Cause, "cannot read InterfaceDescriptions")
 }
 
 
@@ -434,7 +434,7 @@ func TestPublishUnpublishWithoutVersionId(t *testing.T) {
 	var operation publishapi.Operation = "GET"
 	assert.Equal(t, operation, (*resource.Operations)[0])
 	assert.Equal(t, "helloworld", resource.ResourceName)
-	assert.Equal(t, "/helloworld-v1/helloworld", resource.Uri)
+	assert.Equal(t, "/helloworld-v1/port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/helloworld", resource.Uri)
 }
 
 func TestPublishUnpublishVersionId(t *testing.T) {
@@ -516,7 +516,7 @@ func TestPublishUnpublishVersionId(t *testing.T) {
 	assert.Equal(t, operation, (*resource.Operations)[0])
 
 	assert.Equal(t, "helloworld-id", resource.ResourceName)
-	assert.Equal(t, "~/helloworld-v1-id/helloworld/v1/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", resource.Uri)
+	assert.Equal(t, "~/helloworld-v1-id/port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/helloworld/v1/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", resource.Uri)
 }
 
 func TestPublishUnpublishServiceNoVersionWithId(t *testing.T) {
@@ -598,7 +598,7 @@ func TestPublishUnpublishServiceNoVersionWithId(t *testing.T) {
 	assert.Equal(t, operation, (*resource.Operations)[0])
 
 	assert.Equal(t, "helloworld-no-version", resource.ResourceName)
-	assert.Equal(t, "~/helloworld-no-version/helloworld/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", resource.Uri)
+	assert.Equal(t, "~/helloworld-no-version/port-30951-hash-04478a3a-d0ef-5a05-a575-db5ee2e33403/helloworld/(?<helloworld-id>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", resource.Uri)
 
 	capifCleanUp()
 }

@@ -731,15 +731,13 @@ func registerHandlers(e *echo.Echo, myEnv map[string]string, myPorts map[string]
 func getServiceAPIDescription(aefId string, apiName string, apiCategory string, apiVersion string, protocol *publishapi.Protocol, dataFormat *publishapi.DataFormat, description string, testServiceIpv4 common29122.Ipv4Addr, testServicePort common29122.Port, commType publishapi.CommunicationType) publishapi.ServiceAPIDescription {
 	domainName := "Kong"
 	otherDomainName := "otherDomain"
-
 	var otherProtocol publishapi.Protocol = "HTTP_2"
+	var DataFormatOther publishapi.DataFormat = "OTHER"
 
 	categoryPointer := &apiCategory
 	if apiCategory == "" {
 		categoryPointer = nil
 	}
-
-	var DataFormatOther publishapi.DataFormat = "OTHER"
 
 	return publishapi.ServiceAPIDescription{
 		AefProfiles: &[]publishapi.AefProfile{
@@ -775,6 +773,15 @@ func getServiceAPIDescription(aefId string, apiName string, apiCategory string, 
 			},
 			{
 				AefId:      aefId, // "otherAefId"
+				InterfaceDescriptions: &[]publishapi.InterfaceDescription{
+					{
+						Ipv4Addr: &testServiceIpv4,
+						Port:     &testServicePort,
+						SecurityMethods: &[]publishapi.SecurityMethod{
+							"PSK",
+						},
+					},
+				},
 				DomainName: &otherDomainName,
 				Protocol:   &otherProtocol,
 				DataFormat: &DataFormatOther,
