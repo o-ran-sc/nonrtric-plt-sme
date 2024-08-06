@@ -26,9 +26,11 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	resty "github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	common29122 "oransc.org/nonrtric/servicemanager/internal/common29122"
@@ -57,7 +59,7 @@ func (sd *ServiceAPIDescription) RegisterKong(
 	)
 	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongControlPlaneIPv4, kongControlPlanePort)
 
-	statusCode, err = sd.createKongRoutes(kongControlPlaneURL, apfId)
+	statusCode, err = sd.createKongInterfaceDescriptions(kongControlPlaneURL, apfId)
 	if (err != nil) || (statusCode != http.StatusCreated) {
 		return statusCode, err
 	}
@@ -68,107 +70,332 @@ func (sd *ServiceAPIDescription) RegisterKong(
 	return statusCode, nil
 }
 
-func (sd *ServiceAPIDescription) createKongRoutes(kongControlPlaneURL string, apfId string) (int, error) {
-	log.Trace("entering createKongRoutes")
+func (sd *ServiceAPIDescription) createKongInterfaceDescriptions(kongControlPlaneURL string, apfId string) (int, error) {
+	log.Trace("entering createKongInterfaceDescriptions")
+
 	var (
 		statusCode int
 		err        error
 	)
-
 	client := resty.New()
+	outputUris := []string{}
+
+	if sd == nil  {
+		err = errors.New("cannot read ServiceAPIDescription")
+		log.Errorf(err.Error())
+		return http.StatusBadRequest, err
+	}
+
+	if (sd.AefProfiles == nil) || (len(*sd.AefProfiles) < 1) {
+		err = errors.New("cannot read AefProfiles")
+		log.Errorf(err.Error())
+		return http.StatusBadRequest, err
+	}
 
 	profiles := *sd.AefProfiles
-	for i, profile := range profiles {
-		log.Debugf("createKongRoutes, AefId %s", profile.AefId)
-		for j, version := range profile.Versions {
-			log.Debugf("createKongRoutes, apiVersion \"%s\"", version.ApiVersion)
-			for k, resource := range *version.Resources {
-				statusCode, err = sd.createKongRoute(kongControlPlaneURL, client, &resource, apfId, profile.AefId, version.ApiVersion)
-				if (err != nil) || (statusCode != http.StatusCreated) {
-					return statusCode, err
+	for _, profile := range profiles {
+		log.Debugf("createKongInterfaceDescriptions, AefId %s", profile.AefId)
+
+		if (profile.Versions == nil) || (len(profile.Versions) < 1) {
+			err := errors.New("cannot read Versions")
+			log.Errorf(err.Error())
+			return http.StatusBadRequest, err
+		}
+
+		for _, version := range profile.Versions {
+			log.Debugf("createKongInterfaceDescriptions, apiVersion \"%s\"", version.ApiVersion)
+
+			if (profile.InterfaceDescriptions == nil) || (len(*profile.InterfaceDescriptions) < 1) {
+				err := errors.New("cannot read InterfaceDescriptions")
+				log.Errorf(err.Error())
+				return http.StatusBadRequest, err
+			}
+
+			for _, interfaceDescription := range *profile.InterfaceDescriptions {
+				log.Debugf("createKongInterfaceDescriptions, Ipv4Addr %s", *interfaceDescription.Ipv4Addr)
+				log.Debugf("createKongInterfaceDescriptions, Port %d", *interfaceDescription.Port)
+				if uint(*interfaceDescription.Port) > 65535 {
+					err := errors.New("invalid Port")
+					log.Errorf(err.Error())
+					return http.StatusBadRequest, err
 				}
-				(*profiles[i].Versions[j].Resources)[k] = resource
+
+				if interfaceDescription.SecurityMethods == nil {
+					err := errors.New("cannot read SecurityMethods")
+					log.Errorf(err.Error())
+					return http.StatusBadRequest, err
+				}
+
+				for _, securityMethod := range *interfaceDescription.SecurityMethods {
+					log.Debugf("createKongInterfaceDescriptions, SecurityMethod %s", securityMethod)
+
+					if (securityMethod != SecurityMethodOAUTH) && (securityMethod != SecurityMethodPKI) && (securityMethod != SecurityMethodPSK) {
+						msg := fmt.Sprintf("invalid SecurityMethod %s", securityMethod)
+						err := errors.New(msg)
+						log.Errorf(err.Error())
+						return http.StatusBadRequest, err
+					}
+				}
+
+				if (version.Resources == nil) || (len(*version.Resources) < 1) {
+					err := errors.New("cannot read Resources")
+					log.Errorf(err.Error())
+					return http.StatusBadRequest, err
+				}
+
+				for _, resource := range *version.Resources {
+					var kongRouteUri string
+					kongRouteUri, statusCode, err = sd.createKongServiceRoute(kongControlPlaneURL, client, interfaceDescription, resource, apfId, profile.AefId, version.ApiVersion)
+					if (err != nil) || (statusCode != http.StatusCreated) {
+						return statusCode, err
+					}
+					log.Debugf("createKongInterfaceDescriptions, kongRouteUri %s", kongRouteUri)
+					outputUris = append(outputUris, kongRouteUri)
+					log.Tracef("createKongInterfaceDescriptions, len(outputUris) %d", len(outputUris))
+					log.Tracef("createKongInterfaceDescriptions, outputUris %v", outputUris)
+				}
 			}
 		}
 	}
+
+	// Our list of returned resources has the new resource with the hash code and version number
+	m := 0
+	for i, profile := range profiles {
+		for j, version := range profile.Versions {
+			var newResources []Resource
+			for range *profile.InterfaceDescriptions {
+				log.Tracef("createKongInterfaceDescriptions, range over *profile.InterfaceDescriptions")
+				for _, resource := range *version.Resources {
+					log.Tracef("createKongInterfaceDescriptions, m %d outputUris[m] %s", m, outputUris[m])
+					resource.Uri = outputUris[m]
+					m = m + 1
+					// Build a new list of resources with updated uris
+					newResources = append(newResources, resource)
+					log.Tracef("createKongInterfaceDescriptions, newResources %v", newResources)
+				}
+			}
+			// Swap over to the new list of uris
+			*profiles[i].Versions[j].Resources = newResources
+			log.Tracef("createKongInterfaceDescriptions, assigned *profiles[i].Versions[j].Resources %v", *profiles[i].Versions[j].Resources)
+		}
+	}
+	log.Tracef("exiting createKongInterfaceDescriptions statusCode %d", statusCode)
+
 	return statusCode, nil
 }
 
-func (sd *ServiceAPIDescription) createKongRoute(
+func (sd *ServiceAPIDescription) createKongServiceRoute(
 		kongControlPlaneURL string,
 		client *resty.Client,
-		resource *Resource,
+		interfaceDescription InterfaceDescription,
+		resource Resource,
 		apfId string,
 		aefId string,
-		apiVersion string ) (int, error) {
-	log.Trace("entering createKongRoute")
+		apiVersion string ) (string, int, error) {
+	log.Trace("entering createKongServiceRoute")
+	log.Debugf("createKongServiceRoute, aefId %s", aefId)
 
-	resourceName := resource.ResourceName
-	apiId := *sd.ApiId
+	if (resource.Operations == nil) || (len(*resource.Operations) < 1) {
+		err := errors.New("cannot read Resource.Operations")
+		log.Errorf(err.Error())
+		return "", http.StatusBadRequest, err
+	}
 
-	tags := buildTags(apfId, aefId, apiId, apiVersion, resourceName)
-	log.Debugf("createKongRoute, tags %s", tags)
+	log.Debugf("createKongServiceRoute, resource.Uri %s", resource.Uri)
+	if resource.Uri == "" {
+		err := errors.New("cannot read Resource.Uri")
+		log.Errorf(err.Error())
+		return "", http.StatusBadRequest, err
+	}
 
-	serviceName := apiId + "_" + resourceName
-	routeName := serviceName
+	log.Debugf("createKongServiceRoute, ResourceName %v", resource.ResourceName)
 
-	log.Debugf("createKongRoute, serviceName %s", serviceName)
-	log.Debugf("createKongRoute, routeName %s", routeName)
-	log.Debugf("createKongRoute, aefId %s", aefId)
+	if resource.ResourceName == "" {
+		err := errors.New("cannot read Resource.ResourceName")
+		log.Errorf(err.Error())
+		return "", http.StatusBadRequest, err
+	}
+
+	if (resource.CommType != CommunicationTypeREQUESTRESPONSE) && (resource.CommType != CommunicationTypeSUBSCRIBENOTIFY) {
+		err := errors.New("invalid Resource.CommType")
+		log.Errorf(err.Error())
+		return "", http.StatusBadRequest, err
+	}
 
 	uri := insertVersion(apiVersion, resource.Uri)
-	log.Debugf("createKongRoute, uri %s", uri)
+	log.Debugf("createKongServiceRoute, uri %s", uri)
+
+	kongRouteUri, statusCode, err := sd.createKongService(kongControlPlaneURL, client, interfaceDescription, uri, apfId, aefId, apiVersion, resource)
+	if (err != nil) || ((statusCode != http.StatusCreated) ) {
+		// We carry on if we tried to create a duplicate service. We depend on Kong route matching.
+		return kongRouteUri, statusCode, err
+	}
+
+	return kongRouteUri, statusCode, err
+}
+
+func (sd *ServiceAPIDescription) createKongService(
+		kongControlPlaneURL string,
+		client *resty.Client,
+		interfaceDescription InterfaceDescription,
+		uri string,
+		apfId string,
+		aefId string,
+		apiVersion string,
+		resource Resource) (string, int, error) {
+	log.Tracef("entering createKongService")
+
+	var (
+		statusCode int
+		err error
+	)
+
+	kongControlPlaneURLParsed, err := url.Parse(kongControlPlaneURL)
+	if err != nil {
+		return "", http.StatusInternalServerError, err
+	}
+	log.Debugf("createKongService, kongControlPlaneURL %s", kongControlPlaneURL)
+	log.Debugf("createKongService, kongControlPlaneURLParsed.Scheme %s", kongControlPlaneURLParsed.Scheme)
+
+	kongServiceUri := uri
+	foundRegEx := false
+	if strings.HasPrefix(uri, "~") {
+		log.Debug("createKongService, found regex prefix")
+		foundRegEx = true
+
+		// For our Kong Service path, we omit the leading ~ and take the path up to the regex, not including the '('
+		kongServiceUri = uri[1:]
+		index := strings.Index(kongServiceUri, "(")
+		if (index != -1 ) {
+			kongServiceUri = kongServiceUri[:index]
+		} else {
+			log.Errorf("createKongService, character '(' not found in the regex %s", kongServiceUri)
+		}
+	} else {
+		log.Debug("createKongService, no regex prefix found")
+	}
+
+	log.Debugf("createKongService, kongServiceUri %s", kongServiceUri)
+
+	ipv4Addr := *interfaceDescription.Ipv4Addr
+	port := *interfaceDescription.Port
+
+	portAsInt := int(port)
+	interfaceDescriptionSeed := string(ipv4Addr) + strconv.Itoa(portAsInt)
+	interfaceDescUuid := uuid.NewSHA1(uuid.NameSpaceURL, []byte(interfaceDescriptionSeed))
+	uriPrefix := "port-" + strconv.Itoa(portAsInt) + "-hash-" + interfaceDescUuid.String()
+
+	resourceName := resource.ResourceName
+
+	apiId := *sd.ApiId
+	kongServiceName := apiId + "-" + resourceName
+	kongServiceNamePrefix := kongServiceName + "-" + uriPrefix
+
+	log.Infof("createKongService, kongServiceName %s", kongServiceName)
+	log.Infof("createKongService, kongServiceNamePrefix %s", kongServiceNamePrefix)
+
+	tags := buildTags(apfId, aefId, apiId, apiVersion, resourceName)
+	log.Debugf("createKongServiceRoute, tags %s", tags)
+
+	kongServiceInfo := map[string]interface{}{
+		"host":     ipv4Addr,
+		"name":     kongServiceNamePrefix,
+		"port":     port,
+		"protocol": kongControlPlaneURLParsed.Scheme,
+		"path":     kongServiceUri,
+		"tags":     tags,
+	}
+
+	// Kong admin API endpoint for creating a service
+	kongServicesURL := kongControlPlaneURL + "/services"
+
+	// Make the POST request to create the Kong service
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(kongServiceInfo).
+		Post(kongServicesURL)
+
+	// Check for errors in the request
+	if err != nil {
+		log.Errorf("createKongService, Request Error: %v", err)
+		return "", http.StatusInternalServerError, err
+	}
+
+	// Check the response status code
+	statusCode = resp.StatusCode()
+	if statusCode == http.StatusCreated {
+		log.Infof("kong service %s created successfully", kongServiceNamePrefix)
+	} else if resp.StatusCode() == http.StatusConflict {
+		log.Errorf("kong service already exists. Status code: %d", resp.StatusCode())
+		err = fmt.Errorf("service with identical apiName is already published") // for compatibilty with Capif error message on a duplicate service
+		statusCode = http.StatusForbidden                                       // for compatibilty with the spec, TS29222_CAPIF_Publish_Service_API
+	} else {
+		err = fmt.Errorf("error creating Kong service. Status code: %d", resp.StatusCode())
+	}
+	if err != nil {
+		log.Errorf(err.Error())
+		log.Errorf("response body: %s", resp.Body())
+		return "", statusCode, err
+	}
+
+	// Create matching route
+	routeName := kongServiceNamePrefix
+	kongRouteUri := uri
+
+	kongRouteUri = prependUri(uriPrefix, kongRouteUri)
+	log.Debugf("createKongService, kongRouteUri with uriPrefix %s", kongRouteUri)
+
+	kongRouteUri = prependUri(sd.ApiName, kongRouteUri)
+	log.Debugf("createKongService, kongRouteUri with apiName %s", kongRouteUri)
+
+	kongRouteUri, statusCode, err = sd.createRouteForService(kongControlPlaneURL, client, resource, routeName, kongRouteUri, uri, tags, foundRegEx)
+	if err != nil {
+		log.Errorf(err.Error())
+		return kongRouteUri, statusCode, err
+	}
+
+	return kongRouteUri, statusCode, err
+}
+
+func (sd *ServiceAPIDescription) createRouteForService(
+		kongControlPlaneURL string,
+		client *resty.Client,
+		resource Resource,
+		routeName string,
+		kongRouteUri string,
+		uri string,
+		tags []string,
+		foundRegEx bool) (string, int, error)  {
+
+	log.Debugf("createRouteForService, kongRouteUri %s", kongRouteUri)
 
 	// Create a url.Values map to hold the form data
 	data := url.Values{}
-	serviceUri := uri
-
-	foundRegEx := false
-	if strings.HasPrefix(uri, "~") {
-		log.Debug("createKongRoute, found regex prefix")
-		foundRegEx = true
-		data.Set("strip_path", "false")
-		serviceUri = "/"
-	} else {
-		log.Debug("createKongRoute, no regex prefix found")
-		data.Set("strip_path", "true")
-	}
-
-	log.Debugf("createKongRoute, serviceUri %s", serviceUri)
-	log.Debugf("createKongRoute, strip_path %s", data.Get("strip_path"))
-
-	routeUri := prependUri(sd.ApiName, uri)
-	log.Debugf("createKongRoute, routeUri %s", routeUri)
-	resource.Uri = routeUri
-
-	statusCode, err := sd.createKongService(kongControlPlaneURL, serviceName, serviceUri, tags)
-	if (err != nil) || ((statusCode != http.StatusCreated) && (statusCode != http.StatusForbidden)) {
-		// We carry on if we tried to create a duplicate service. We depend on Kong route matching.
-		return statusCode, err
-	}
-
+	data.Set("strip_path", "true")
+	log.Debugf("createKongServiceRoute, strip_path %s", data.Get("strip_path"))
 	data.Set("name", routeName)
 
-	routeUriPaths := []string{routeUri}
+	routeUriPaths := []string{kongRouteUri}
 	for _, path := range routeUriPaths {
-		log.Debugf("createKongRoute, path %s", path)
+		log.Debugf("createRouteForService, path %s", path)
 		data.Add("paths", path)
-    }
+	}
 
 	for _, tag := range tags {
-		log.Debugf("createKongRoute, tag %s", tag)
+		log.Debugf("createRouteForService, tag %s", tag)
 		data.Add("tags", tag)
-    }
+	}
 
 	for _, op := range *resource.Operations {
-		log.Debugf("createKongRoute, op %s", string(op))
+		log.Debugf("createRouteForService, op %s", string(op))
 		data.Add("methods", string(op))
-    }
+	}
 
 	// Encode the data to application/x-www-form-urlencoded format
 	encodedData := data.Encode()
 
 	// Make the POST request to create the Kong service
+	serviceName := routeName
 	kongRoutesURL := kongControlPlaneURL + "/services/" + serviceName + "/routes"
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/x-www-form-urlencoded").
@@ -177,8 +404,8 @@ func (sd *ServiceAPIDescription) createKongRoute(
 
 	// Check for errors in the request
 	if err != nil {
-		log.Debugf("createKongRoute POST Error: %v", err)
-		return resp.StatusCode(), err
+		log.Debugf("createRouteForService POST Error: %v", err)
+		return kongRouteUri, resp.StatusCode(), err
 	}
 
 	// Check the response status code
@@ -187,7 +414,7 @@ func (sd *ServiceAPIDescription) createKongRoute(
 		if (foundRegEx) {
 			statusCode, err := sd.createRequestTransformer(kongControlPlaneURL, client, routeName, uri)
 			if (err != nil) || ((statusCode != http.StatusCreated) && (statusCode != http.StatusForbidden)) {
-				return statusCode, err
+				return kongRouteUri, statusCode, err
 			}
 		}
 	} else {
@@ -195,10 +422,10 @@ func (sd *ServiceAPIDescription) createKongRoute(
 		err = fmt.Errorf("error creating Kong route. Status code: %d", resp.StatusCode())
 		log.Error(err.Error())
 		log.Errorf("response body: %s", resp.Body())
-		return resp.StatusCode(), err
+		return kongRouteUri, resp.StatusCode(), err
 	}
 
-	return resp.StatusCode(), nil
+	return kongRouteUri, resp.StatusCode(), nil
 }
 
 func (sd *ServiceAPIDescription) createRequestTransformer(
@@ -362,90 +589,6 @@ func buildTags(apfId string, aefId string, apiId string, apiVersion string, reso
 	}
 
 	return tagsSlice
-}
-
-func (sd *ServiceAPIDescription) createKongService(kongControlPlaneURL string, kongServiceName string, kongServiceUri string, tags []string) (int, error) {
-	log.Tracef("entering createKongService")
-	log.Tracef("createKongService, kongServiceName %s", kongServiceName)
-
-	// Define the service information for Kong
-	firstAEFProfileIpv4Addr, firstAEFProfilePort, err := sd.findFirstAEFProfile()
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
-
-	kongControlPlaneURLParsed, err := url.Parse(kongControlPlaneURL)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	log.Debugf("kongControlPlaneURL %s", kongControlPlaneURL)
-	log.Debugf("kongControlPlaneURLParsed.Scheme %s", kongControlPlaneURLParsed.Scheme)
-
-	kongServiceInfo := map[string]interface{}{
-		"host":     firstAEFProfileIpv4Addr,
-		"name":     kongServiceName,
-		"port":     firstAEFProfilePort,
-		"protocol": kongControlPlaneURLParsed.Scheme,
-		"path":     kongServiceUri,
-		"tags":     tags,
-	}
-
-	// Kong admin API endpoint for creating a service
-	kongServicesURL := kongControlPlaneURL + "/services"
-
-	// Create a new Resty client
-	client := resty.New()
-
-	// Make the POST request to create the Kong service
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(kongServiceInfo).
-		Post(kongServicesURL)
-
-	// Check for errors in the request
-	if err != nil {
-		log.Errorf("create Kong Service Request Error: %v", err)
-		return http.StatusInternalServerError, err
-	}
-
-	// Check the response status code
-	statusCode := resp.StatusCode()
-	if statusCode == http.StatusCreated {
-		log.Infof("kong service %s created successfully", kongServiceName)
-	} else if resp.StatusCode() == http.StatusConflict {
-		log.Errorf("kong service already exists. Status code: %d", resp.StatusCode())
-		err = fmt.Errorf("service with identical apiName is already published") // for compatibilty with Capif error message on a duplicate service
-		statusCode = http.StatusForbidden                                       // for compatibilty with the spec, TS29222_CAPIF_Publish_Service_API
-	} else {
-		err = fmt.Errorf("error creating Kong service. Status code: %d", resp.StatusCode())
-	}
-	if err != nil {
-		log.Errorf(err.Error())
-		log.Errorf("response body: %s", resp.Body())
-	}
-
-	return statusCode, err
-}
-
-func (sd *ServiceAPIDescription) findFirstAEFProfile() (common29122.Ipv4Addr, common29122.Port, error) {
-	log.Tracef("entering findFirstAEFProfile")
-	var aefProfile AefProfile
-	if *sd.AefProfiles != nil {
-		aefProfile = (*sd.AefProfiles)[0]
-	}
-	if (*sd.AefProfiles == nil) || (aefProfile.InterfaceDescriptions == nil) {
-		err := errors.New("cannot read interfaceDescription")
-		log.Errorf(err.Error())
-		return "", common29122.Port(0), err
-	}
-
-	interfaceDescription := (*aefProfile.InterfaceDescriptions)[0]
-	firstIpv4Addr := *interfaceDescription.Ipv4Addr
-	firstPort := *interfaceDescription.Port
-
-	log.Debugf("findFirstAEFProfile firstIpv4Addr %s firstPort %d", firstIpv4Addr, firstPort)
-
-	return firstIpv4Addr, firstPort, nil
 }
 
 // Update our exposures to point to Kong by replacing in incoming interface description with Kong interface descriptions.
