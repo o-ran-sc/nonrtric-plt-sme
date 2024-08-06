@@ -103,10 +103,18 @@ func (ps *PublishService) PostApfIdServiceApis(ctx echo.Context, apfId string) e
 			ps.KongDataPlaneIPv4,
 			ps.KongDataPlanePort,
 			apfId)
-	if (err != nil) || (statusCode != http.StatusCreated) {
-		// We can return with http.StatusForbidden if there is a http.StatusConflict detected by Kong
+
+	log.Trace("After RegisterKong")
+
+	if err != nil {
 		msg := err.Error()
-		log.Errorf("error on RegisterKong %s", msg)
+		log.Errorf("PostApfIdServiceApis, error on RegisterKong %s", msg)
+		return sendCoreError(ctx, statusCode, msg)
+	}
+	if  statusCode != http.StatusCreated {
+		// We can return with http.StatusForbidden if there is a http.StatusConflict detected by Kong
+		msg := "error detected by Kong"
+		log.Errorf(msg)
 		return sendCoreError(ctx, statusCode, msg)
 	}
 
