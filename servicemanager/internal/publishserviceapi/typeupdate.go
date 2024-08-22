@@ -144,13 +144,13 @@ func (sd *ServiceAPIDescription) createKongInterfaceDescriptions(kongControlPlan
 				}
 
 				for _, resource := range *version.Resources {
-					var kongRouteUri string
-					kongRouteUri, statusCode, err = sd.createKongServiceRoutePrecheck(kongControlPlaneURL, client, interfaceDescription, resource, apfId, profile.AefId, version.ApiVersion)
+					var specUri string
+					specUri, statusCode, err = sd.createKongServiceRoutePrecheck(kongControlPlaneURL, client, interfaceDescription, resource, apfId, profile.AefId, version.ApiVersion)
 					if (err != nil) || (statusCode != http.StatusCreated) {
 						return statusCode, err
 					}
-					log.Debugf("createKongInterfaceDescriptions, kongRouteUri %s", kongRouteUri)
-					outputUris = append(outputUris, kongRouteUri)
+					log.Debugf("createKongInterfaceDescriptions, specUri %s", specUri)
+					outputUris = append(outputUris, specUri)
 					log.Tracef("createKongInterfaceDescriptions, len(outputUris) %d", len(outputUris))
 					log.Tracef("createKongInterfaceDescriptions, outputUris %v", outputUris)
 				}
@@ -222,16 +222,16 @@ func (sd *ServiceAPIDescription) createKongServiceRoutePrecheck(
 		return "", http.StatusBadRequest, err
 	}
 
-	uri := insertVersion(apiVersion, resource.Uri)
-	log.Debugf("createKongServiceRoutePrecheck, uri %s", uri)
+	specUri := resource.Uri
+	kongRegexUri, _ := deriveKongPattern(resource.Uri)
 
-	kongRouteUri, statusCode, err := sd.createKongServiceRoute(kongControlPlaneURL, client, interfaceDescription, uri, apfId, aefId, apiVersion, resource)
+	specUri, statusCode, err := sd.createKongServiceRoute(kongControlPlaneURL, client, interfaceDescription, kongRegexUri, specUri, apfId, aefId, apiVersion, resource)
 	if (err != nil) || ((statusCode != http.StatusCreated) ) {
 		// We carry on if we tried to create a duplicate service. We depend on Kong route matching.
-		return kongRouteUri, statusCode, err
+		return specUri, statusCode, err
 	}
 
-	return kongRouteUri, statusCode, err
+	return specUri, statusCode, err
 }
 
 func insertVersion(version string, route string) string {
@@ -272,7 +272,8 @@ func (sd *ServiceAPIDescription) createKongServiceRoute(
 		kongControlPlaneURL string,
 		client *resty.Client,
 		interfaceDescription InterfaceDescription,
-		uri string,
+		kongRegexUri string,
+		specUri string,
 		apfId string,
 		aefId string,
 		apiVersion string,
@@ -291,14 +292,21 @@ func (sd *ServiceAPIDescription) createKongServiceRoute(
 	log.Debugf("createKongServiceRoute, kongControlPlaneURL %s", kongControlPlaneURL)
 	log.Debugf("createKongServiceRoute, kongControlPlaneURLParsed.Scheme %s", kongControlPlaneURLParsed.Scheme)
 
-	kongServiceUri := uri
-	foundRegEx := false
-	if strings.HasPrefix(uri, "~") {
+	log.Debugf("createKongServiceRoute, kongRegexUri %s", kongRegexUri)
+	log.Debugf("createKongServiceRoute, specUri %s", specUri)
+
+	kongRegexUri = insertVersion(apiVersion, kongRegexUri)
+	kongServiceUri := kongRegexUri
+	log.Debugf("createKongServiceRoute, kongServiceUri after insertVersion, %s", kongServiceUri)
+
+	specUri = insertVersion(apiVersion, specUri)
+	log.Debugf("createKongServiceRoute, specUri after insertVersion, %s", specUri)
+
+	if strings.HasPrefix(kongServiceUri, "~") {
 		log.Debug("createKongServiceRoute, found regex prefix")
-		foundRegEx = true
 
 		// For our Kong Service path, we omit the leading ~ and take the path up to the regex, not including the '('
-		kongServiceUri = uri[1:]
+		kongServiceUri = kongServiceUri[1:]
 		index := strings.Index(kongServiceUri, "(?")
 		if (index != -1 ) {
 			kongServiceUri = kongServiceUri[:index]
@@ -309,8 +317,6 @@ func (sd *ServiceAPIDescription) createKongServiceRoute(
 	} else {
 		log.Debug("createKongServiceRoute, no regex prefix found")
 	}
-
-	log.Debugf("createKongServiceRoute, kongServiceUri %s", kongServiceUri)
 
 	ipv4Addr := *interfaceDescription.Ipv4Addr
 	port := *interfaceDescription.Port
@@ -375,21 +381,26 @@ func (sd *ServiceAPIDescription) createKongServiceRoute(
 
 	// Create matching route
 	routeName := kongServiceNamePrefix
-	kongRouteUri := uri
 
-	kongRouteUri = prependUri(uriPrefix, kongRouteUri)
+	kongRouteUri := prependUri(uriPrefix, kongRegexUri)
 	log.Debugf("createKongServiceRoute, kongRouteUri with uriPrefix %s", kongRouteUri)
 
 	kongRouteUri = prependUri(sd.ApiName, kongRouteUri)
 	log.Debugf("createKongServiceRoute, kongRouteUri with apiName %s", kongRouteUri)
 
-	kongRouteUri, statusCode, err = sd.createRouteForService(kongControlPlaneURL, client, resource, routeName, kongRouteUri, uri, tags, foundRegEx)
+	specUri = prependUri(uriPrefix, specUri)
+	log.Debugf("createKongServiceRoute, specUri with uriPrefix %s", specUri)
+
+	specUri = prependUri(sd.ApiName, specUri)
+	log.Debugf("createKongServiceRoute, specUri with apiName %s", specUri)
+
+	statusCode, err = sd.createRouteForService(kongControlPlaneURL, client, resource, routeName, kongRouteUri, kongRegexUri, tags)
 	if err != nil {
 		log.Errorf(err.Error())
 		return kongRouteUri, statusCode, err
 	}
 
-	return kongRouteUri, statusCode, err
+	return specUri, statusCode, err
 }
 
 func buildTags(apfId string, aefId string, apiId string, apiVersion string, resourceName string) []string  {
@@ -442,9 +453,8 @@ func (sd *ServiceAPIDescription) createRouteForService(
 		resource Resource,
 		routeName string,
 		kongRouteUri string,
-		uri string,
-		tags []string,
-		foundRegEx bool) (string, int, error)  {
+		kongRegexUri string,
+		tags []string) (int, error)  {
 
 	log.Debugf("createRouteForService, kongRouteUri %s", kongRouteUri)
 
@@ -484,27 +494,35 @@ func (sd *ServiceAPIDescription) createRouteForService(
 	// Check for errors in the request
 	if err != nil {
 		log.Debugf("createRouteForService POST Error: %v", err)
-		return kongRouteUri, resp.StatusCode(), err
+		return resp.StatusCode(), err
 	}
 
 	// Check the response status code
 	if resp.StatusCode() == http.StatusCreated {
 		log.Infof("kong route %s created successfully", routeName)
-		if (foundRegEx) {
-			statusCode, err := sd.createRequestTransformer(kongControlPlaneURL, client, routeName, uri)
+
+		index := strings.Index(kongRegexUri, "(?")
+		if index != -1 {
+			log.Debugf("createRouteForService, found regex in %s", kongRegexUri)
+			requestTransformerUri := strings.TrimPrefix(kongRegexUri, "~")
+			log.Debugf("createRouteForService, requestTransformerUri %s", requestTransformerUri)
+
+			statusCode, err := sd.createRequestTransformer(kongControlPlaneURL, client, routeName, requestTransformerUri)
 			if (err != nil) || ((statusCode != http.StatusCreated) && (statusCode != http.StatusForbidden)) {
-				return kongRouteUri, statusCode, err
+				return statusCode, err
 			}
+		} else {
+			log.Debug("createRouteForService, no variable name found")
 		}
 	} else {
 		log.Debugf("kongRoutesURL %s", kongRoutesURL)
 		err = fmt.Errorf("error creating Kong route. Status code: %d", resp.StatusCode())
 		log.Error(err.Error())
 		log.Errorf("response body: %s", resp.Body())
-		return kongRouteUri, resp.StatusCode(), err
+		return resp.StatusCode(), err
 	}
 
-	return kongRouteUri, resp.StatusCode(), nil
+	return resp.StatusCode(), nil
 }
 
 func (sd *ServiceAPIDescription) createRequestTransformer(
@@ -554,13 +572,44 @@ func (sd *ServiceAPIDescription) createRequestTransformer(
 }
 
 // Function to derive the transform pattern from the route pattern
+func deriveKongPattern(routePattern string) (string, error) {
+	log.Trace("entering deriveKongPattern")
+	log.Debugf("deriveKongPattern routePattern %s", routePattern)
+
+	// Regular expression to match variable names
+	re := regexp.MustCompile(`\{([a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)\}`)
+	log.Debugf("deriveKongPattern MustCompile %v", re)
+
+	// Find all matches in the route pattern
+	matches := re.FindAllStringSubmatch(routePattern, -1)
+	log.Debugf("deriveKongPattern FindAllStringSubmatch %v", re)
+
+	transformPattern := routePattern
+	for _, match := range matches {
+		// match[0] is the full match with braces
+		// match[1] is the uri variable name
+		log.Debugf("deriveKongPattern match %v", match)
+		log.Debugf("deriveKongPattern match[0] %v", match[0])
+		log.Debugf("deriveKongPattern match[1] %v", match[1])
+		placeholder := fmt.Sprintf("(?<%s>[a-zA-Z0-9]+([-_][a-zA-Z0-9]+)*)", match[1])
+		// Replace the variable with the Kong regex placeholder
+		transformPattern = strings.Replace(transformPattern, match[0], placeholder, 1)
+	}
+	log.Debugf("deriveKongPattern transformPattern %s", transformPattern)
+
+	if len(matches) != 0 {
+		transformPattern = "~" + transformPattern
+		log.Debugf("deriveKongPattern transformPattern with prefix %s", transformPattern)
+	}
+
+	return transformPattern, nil
+}
+
+
+// Function to derive the transform pattern from the route pattern
 func deriveTransformPattern(routePattern string) (string, error) {
 	log.Trace("entering deriveTransformPattern")
-
 	log.Debugf("deriveTransformPattern routePattern %s", routePattern)
-
-	routePattern = strings.TrimPrefix(routePattern, "~")
-	log.Debugf("deriveTransformPattern, TrimPrefix trimmed routePattern %s", routePattern)
 
 	// Append a slash to handle an edge case for matching a trailing capture group.
 	appendedSlash := false
