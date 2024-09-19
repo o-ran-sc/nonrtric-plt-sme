@@ -621,14 +621,14 @@ func deriveTransformPattern(routePattern string) (string, error) {
 	}
 
 	// Regular expression to match named capture groups
-	re := regexp.MustCompile(`/\(\?<([^>]+)>([^\/]+)/`)
+	re := regexp.MustCompile(`\(\?<([^>]+)>([^\/]+)`)
 	// Find all matches in the route pattern
 	matches := re.FindAllStringSubmatch(routePattern, -1)
 
 	transformPattern := routePattern
 	for _, match := range matches {
 		// match[0] is the full match, match[1] is the capture group name, match[2] is the pattern
-		placeholder := fmt.Sprintf("/$(uri_captures[\"%s\"])/", match[1])
+		placeholder := fmt.Sprintf("$(uri_captures[\"%s\"])", match[1])
 		// Replace the capture group with the corresponding placeholder
 		transformPattern = strings.Replace(transformPattern, match[0], placeholder, 1)
 	}
