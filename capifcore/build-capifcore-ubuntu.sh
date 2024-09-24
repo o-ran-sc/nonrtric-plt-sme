@@ -1,7 +1,8 @@
 #!/bin/bash
 ##############################################################################
 #
-#   Copyright (C) 2022: Nordix Foundation
+#   Copyright (C) 2022-2024: Nordix Foundation
+#   Copyright (C) 2024: OpenInfra Foundation Europe
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -28,7 +29,7 @@ go version
 cd capifcore/
 
 # install the go coverage tool helper
-go install github.com/ory/go-acc
+go install github.com/ory/go-acc@v0.2.8
 
 go get github.com/stretchr/testify/mock@v1.7.1
 
