@@ -27,7 +27,7 @@ export GO111MODULE=on
 go version
 
 # Get the go coverage tool helper
-go install github.com/ory/go-acc
+go install github.com/ory/go-acc@v0.2.8
 go get github.com/stretchr/testify/mock@v1.7.1
 go-acc ./... --ignore mockkong,common,discoverserviceapi,invokermanagementapi,publishserviceapi,providermanagementapi
 
