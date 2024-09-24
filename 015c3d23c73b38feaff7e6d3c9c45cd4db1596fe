@@ -1,5 +1,23 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ae2b05a3_e1927d05",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1002433
+      },
+      "writtenOn": "2024-09-24T08:25:55Z",
+      "side": 1,
+      "message": "I think the GitHub action is complaining about this line 30\n\nhttps://gerrit.o-ran-sc.org/r/gitweb?p\u003dnonrtric/plt/sme.git;a\u003dblob;f\u003dservicemanager/build-servicemanager-ubuntu.sh;hb\u003d015c3d23c73b38feaff7e6d3c9c45cd4db1596fe#l30\n\nBut I see the same is done for capifcore, so maybe we could fix that too?\nhttps://gerrit.o-ran-sc.org/r/gitweb?p\u003dnonrtric/plt/sme.git;a\u003dblob;f\u003dcapifcore/build-capifcore-ubuntu.sh;hb\u003d015c3d23c73b38feaff7e6d3c9c45cd4db1596fe",
+      "revId": "015c3d23c73b38feaff7e6d3c9c45cd4db1596fe",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ],
   "submitRequirementResults": [
     {
       "submitRequirement": {
