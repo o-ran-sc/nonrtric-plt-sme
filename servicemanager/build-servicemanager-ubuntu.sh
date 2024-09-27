@@ -25,6 +25,7 @@ echo "--> build-servicemanager-ubuntu.sh"
 export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
 export GO111MODULE=on
 go version
+cd servicemanager/
 
 # Get the go coverage tool helper
 go install github.com/ory/go-acc@v0.2.8
