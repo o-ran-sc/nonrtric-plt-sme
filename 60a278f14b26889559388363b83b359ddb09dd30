@@ -33,6 +33,24 @@
       "message": "Still seeing a failure in calling the GO script here. \nAny ideas?",
       "revId": "60a278f14b26889559388363b83b359ddb09dd30",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "879225fc_11c9c175",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1001877
+      },
+      "writtenOn": "2024-10-02T16:10:59Z",
+      "side": 1,
+      "message": "Pushed a new patch set for the fix https://gerrit.o-ran-sc.org/r/c/nonrtric/plt/sme/+/13502.\nThese changes cannot be tested in sandbox as the sonar builds always uses the latest master even if we specify a specific in progress commit.",
+      "parentUuid": "50aad7d0_514d8624",
+      "revId": "60a278f14b26889559388363b83b359ddb09dd30",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ],
   "submitRequirementResults": [
