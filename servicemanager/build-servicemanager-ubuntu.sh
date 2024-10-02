@@ -25,11 +25,10 @@ echo "--> build-servicemanager-ubuntu.sh"
 export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
 export GO111MODULE=on
 go version
-cd servicemanager/
 
 # Get the go coverage tool helper
 go install github.com/ory/go-acc@v0.2.8
-go get github.com/stretchr/testify/mock@v1.7.1
+go install github.com/stretchr/testify/mock@v1.7.1
 go-acc ./... --ignore mockkong,common,discoverserviceapi,invokermanagementapi,publishserviceapi,providermanagementapi
 
 sed -i 's/oransc\.org\/nonrtric\/servicemanager/servicemanager/' coverage.txt
