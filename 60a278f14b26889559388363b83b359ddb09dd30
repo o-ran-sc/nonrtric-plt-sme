@@ -16,6 +16,23 @@
       "message": "run-sonar",
       "revId": "60a278f14b26889559388363b83b359ddb09dd30",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "50aad7d0_514d8624",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000103
+      },
+      "writtenOn": "2024-10-02T09:21:27Z",
+      "side": 1,
+      "message": "Still seeing a failure in calling the GO script here. \nAny ideas?",
+      "revId": "60a278f14b26889559388363b83b359ddb09dd30",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ],
   "submitRequirementResults": [
