@@ -1,10 +1,10 @@
 ---
 distribution_type: container
-container_release_tag: 0.1.2
+container_release_tag: 0.2.0
 container_pull_registry: nexus3.o-ran-sc.org:10004
 container_push_registry: nexus3.o-ran-sc.org:10002
 project: nonrtric
-ref: 36718abc0fb386770a182c2c01358e1ce3621c75
+ref: 12bf42c9cef25b0d697d3cbde1a95f0ced253135
 containers:
     - name: nonrtric-plt-servicemanager
-      version: 0.1.2
+      version: 0.2.0
