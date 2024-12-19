@@ -21,8 +21,8 @@ Version history SME Service Manager
 |            |          |                  | Initial version of Service Manager   |
 |            |          |                  |                                      |
 +------------+----------+------------------+--------------------------------------+
-| TBA        | TBA      |  Denis G Noonan  | Service Manager includes support for |
-|            |          |                  | dynamic URIs, multiple interface     |
+| 2024-12-19 | 0.2.0    |  Denis G Noonan  | Service Manager includes support for |
+|            |          |  John Keeney     | dynamic URIs, multiple interface     |
 |            |          |                  | descriptions, and improved schema    |
 |            |          |                  | validation.                          |
 +------------+----------+------------------+--------------------------------------+
@@ -173,5 +173,29 @@ J Release
 +-----------------------------+---------------------------------------------------+
 | **Purpose of the delivery** | o-ran-sc/nonrtric-plt-capifcore:1.3.1             |
 |                             |    Small updates & improvements                   |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+
+
+K Release
+---------
++-----------------------------+---------------------------------------------------+
+| **Project**                 | Non-RT RIC Service Manager                        |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Repo/commit-ID**          | nonrtric/plt/sme/                                 |
+|                             | 12bf42c9cef25b0d697d3cbde1a95f0ced253135          |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Release designation**     | K release                                         |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Release date**            | 2024-12-19                                        |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Purpose of the delivery** | o-ran-sc/nonrtric-plt-servicemanager:0.2.0        |
+|                             |     Service Manager includes support for          |
+|                             |     dynamic URIs, multiple interface              |
+|                             |     descriptions, and improved schema validation  |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
