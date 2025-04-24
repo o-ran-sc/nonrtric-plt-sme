@@ -1,7 +1,7 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright (C) 2022-2023 Nordix Foundation. All rights reserved
-.. Copyright (C) 2023-2024 OpenInfra Foundation Europe. All rights reserved.
+.. Copyright (C) 2023-2025 OpenInfra Foundation Europe. All rights reserved.
 
 =============
 Release Notes
@@ -25,6 +25,9 @@ Version history SME Service Manager
 |            |          |  John Keeney     | dynamic URIs, multiple interface     |
 |            |          |                  | descriptions, and improved schema    |
 |            |          |                  | validation.                          |
++------------+----------+------------------+--------------------------------------+
+| 2025-04-24 | 0.2.1    |  John Keeney     | Service Manager L Pre-release,       |
+|            |          |                  | with bugfix                          |
 +------------+----------+------------------+--------------------------------------+
 
 Version history SME CAPIFCore
@@ -199,3 +202,27 @@ K Release
 |                             |     descriptions, and improved schema validation  |
 |                             |                                                   |
 +-----------------------------+---------------------------------------------------+
+
+L Pre-Release
+-------------
++-----------------------------+---------------------------------------------------+
+| **Project**                 | Non-RT RIC Service Manager                        |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Repo/commit-ID**          | nonrtric/plt/sme/                                 |
+|                             | d091f3a871e3d3b66401bb999bf4035676efb5ee          |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Release designation**     | L pre-release                                     |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Release date**            | 2025-04-24                                        |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+| **Purpose of the delivery** | o-ran-sc/nonrtric-plt-servicemanager:0.2.1        |
+|                             |     Service Manager bug fix to allow optionality  |
+|                             |     of Security method in Interface               |
+|                             |     part of AEFProfile                            |
+|                             |                                                   |
++-----------------------------+---------------------------------------------------+
+
