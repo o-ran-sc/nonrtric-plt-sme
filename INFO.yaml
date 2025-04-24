@@ -12,7 +12,7 @@ project_lead: &oran_nonrtric_ptl
 primary_contact: *oran_nonrtric_ptl
 issue_tracking:
     type: 'jira'
-    url: 'https://jira.o-ran-sc.org/projects/NONRTRIC'
+    url: 'https://lf-o-ran-sc.atlassian.net/browse/NONRTRIC'
     key: 'NONRTRIC'
 mailing_list:
     type: 'groups.io'
@@ -24,35 +24,20 @@ realtime_discussion:
 meetings:
     - type: 'zoom'
       agenda: ''
-      url: 'https://wiki.o-ran-sc.org/display/RICNR/Meetings'
+      url: 'https://lf-o-ran-sc.atlassian.net/wiki/spaces/RICNR/pages/15073287/Meetings'
       server: 'n/a'
       channel: 'n/a'
       repeats: 'weekly'
-      time: 'Wednesdays, 16:00/17:00 UTC'
+      time: 'Wednesdays, 15:00/16:00 UTC'
 repositories:
     - 'nonrtric/plt/sme'
 committers:
     - <<: *oran_nonrtric_ptl
-    - name: 'Yennifer Chacon'
-      email: 'yennifer.chacon@est.tech'
+    - name: 'Aravindhan Ayyanathan'
+      email: ' aravindhan.a@est.tech'
       company: 'Ericsson Software Technology'
-      id: 'ychacon'
-      timezone: 'Sweden/Stockholm'
-    - name: 'Patrik Buhr'
-      email: 'patrik.buhr@est.tech'
-      company: 'Ericsson Software Technology'
-      id: 'PatrikBuhr'
-      timezone: 'Sweden/Stockholm'
-    - name: 'Kevin Timoney'
-      email: 'kevin.timoney@est.tech'
-      company: 'Ericsson Software Technology'
-      id: 'ktimoney'
+      id: 'aravind.est'
       timezone: 'Europe/Dublin'
-    - name: 'Bjorn Magnusson'
-      email: 'bjorn.magnusson@est.tech'
-      company: 'Ericsson Software Technology'
-      id: 'BjornMagnussonXA'
-      timezone: 'Sweden/Stockholm'
 tsc:
     # yamllint disable-line rule:line-length
     approval: 'https://wiki.o-ran-sc.org/display/TOC#ORANSCTechnicalOversightCommittee(TOC)-20221006 #3.a.i'
