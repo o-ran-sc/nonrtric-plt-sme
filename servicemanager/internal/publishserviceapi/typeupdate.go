@@ -42,13 +42,13 @@ func (sd *ServiceAPIDescription) PrepareNewService() {
 }
 
 func (sd *ServiceAPIDescription) RegisterKong(
-		kongDomain 			 string,
-		kongProtocol 		 string,
-		kongControlPlaneIPv4 common29122.Ipv4Addr,
-		kongControlPlanePort common29122.Port,
-		kongDataPlaneIPv4 	 common29122.Ipv4Addr,
-		kongDataPlanePort 	 common29122.Port,
-		apfId 				 string) (int, error) {
+	kongDomain string,
+	kongProtocol string,
+	kongControlPlaneIPv4 common29122.Ipv4Addr,
+	kongControlPlanePort common29122.Port,
+	kongDataPlaneIPv4 common29122.Ipv4Addr,
+	kongDataPlanePort common29122.Port,
+	apfId string) (int, error) {
 
 	log.Trace("entering RegisterKong")
 	log.Debugf("RegisterKong kongDataPlaneIPv4 %s", kongDataPlaneIPv4)
@@ -80,7 +80,7 @@ func (sd *ServiceAPIDescription) createKongInterfaceDescriptions(kongControlPlan
 	client := resty.New()
 	outputUris := []string{}
 
-	if sd == nil  {
+	if sd == nil {
 		err = errors.New("cannot read ServiceAPIDescription")
 		log.Errorf(err.Error())
 		return http.StatusBadRequest, err
@@ -121,19 +121,21 @@ func (sd *ServiceAPIDescription) createKongInterfaceDescriptions(kongControlPlan
 				}
 
 				if interfaceDescription.SecurityMethods == nil {
-					err := errors.New("cannot read SecurityMethods")
+					log.Debugf("createKongInterfaceDescriptions, SecurityMethods: null")
+				} else if len(*interfaceDescription.SecurityMethods) < 1 {
+					err := errors.New("cannot read any SecurityMethod")
 					log.Errorf(err.Error())
 					return http.StatusBadRequest, err
-				}
+				} else {
+					for _, securityMethod := range *interfaceDescription.SecurityMethods {
+						log.Debugf("createKongInterfaceDescriptions, SecurityMethod %s", securityMethod)
 
-				for _, securityMethod := range *interfaceDescription.SecurityMethods {
-					log.Debugf("createKongInterfaceDescriptions, SecurityMethod %s", securityMethod)
-
-					if (securityMethod != SecurityMethodOAUTH) && (securityMethod != SecurityMethodPKI) && (securityMethod != SecurityMethodPSK) {
-						msg := fmt.Sprintf("invalid SecurityMethod %s", securityMethod)
-						err := errors.New(msg)
-						log.Errorf(err.Error())
-						return http.StatusBadRequest, err
+						if (securityMethod != SecurityMethodOAUTH) && (securityMethod != SecurityMethodPKI) && (securityMethod != SecurityMethodPSK) {
+							msg := fmt.Sprintf("invalid SecurityMethod %s", securityMethod)
+							err := errors.New(msg)
+							log.Errorf(err.Error())
+							return http.StatusBadRequest, err
+						}
 					}
 				}
 
@@ -185,13 +187,13 @@ func (sd *ServiceAPIDescription) createKongInterfaceDescriptions(kongControlPlan
 }
 
 func (sd *ServiceAPIDescription) createKongServiceRoutePrecheck(
-		kongControlPlaneURL string,
-		client *resty.Client,
-		interfaceDescription InterfaceDescription,
-		resource Resource,
-		apfId string,
-		aefId string,
-		apiVersion string ) (string, int, error) {
+	kongControlPlaneURL string,
+	client *resty.Client,
+	interfaceDescription InterfaceDescription,
+	resource Resource,
+	apfId string,
+	aefId string,
+	apiVersion string) (string, int, error) {
 	log.Trace("entering createKongServiceRoutePrecheck")
 	log.Debugf("createKongServiceRoutePrecheck, aefId %s", aefId)
 
@@ -226,7 +228,7 @@ func (sd *ServiceAPIDescription) createKongServiceRoutePrecheck(
 	kongRegexUri, _ := deriveKongPattern(resource.Uri)
 
 	specUri, statusCode, err := sd.createKongServiceRoute(kongControlPlaneURL, client, interfaceDescription, kongRegexUri, specUri, apfId, aefId, apiVersion, resource)
-	if (err != nil) || ((statusCode != http.StatusCreated) ) {
+	if (err != nil) || (statusCode != http.StatusCreated) {
 		// We carry on if we tried to create a duplicate service. We depend on Kong route matching.
 		return specUri, statusCode, err
 	}
@@ -269,20 +271,20 @@ func insertVersion(version string, route string) string {
 }
 
 func (sd *ServiceAPIDescription) createKongServiceRoute(
-		kongControlPlaneURL string,
-		client *resty.Client,
-		interfaceDescription InterfaceDescription,
-		kongRegexUri string,
-		specUri string,
-		apfId string,
-		aefId string,
-		apiVersion string,
-		resource Resource) (string, int, error) {
+	kongControlPlaneURL string,
+	client *resty.Client,
+	interfaceDescription InterfaceDescription,
+	kongRegexUri string,
+	specUri string,
+	apfId string,
+	aefId string,
+	apiVersion string,
+	resource Resource) (string, int, error) {
 	log.Tracef("entering createKongServiceRoute")
 
 	var (
 		statusCode int
-		err error
+		err        error
 	)
 
 	kongControlPlaneURLParsed, err := url.Parse(kongControlPlaneURL)
@@ -308,7 +310,7 @@ func (sd *ServiceAPIDescription) createKongServiceRoute(
 		// For our Kong Service path, we omit the leading ~ and take the path up to the regex, not including the '('
 		kongServiceUri = kongServiceUri[1:]
 		index := strings.Index(kongServiceUri, "(?")
-		if (index != -1 ) {
+		if index != -1 {
 			kongServiceUri = kongServiceUri[:index]
 		} else {
 			log.Errorf("createKongServiceRoute, regex characters '(?' not found in the regex %s", kongServiceUri)
@@ -404,12 +406,12 @@ func (sd *ServiceAPIDescription) createKongServiceRoute(
 	return specUri, statusCode, err
 }
 
-func buildTags(apfId string, aefId string, apiId string, apiVersion string, resourceName string) []string  {
+func buildTags(apfId string, aefId string, apiId string, apiVersion string, resourceName string) []string {
 	tagsMap := map[string]string{
-		"apfId": apfId,
-		"aefId": aefId,
-		"apiId": apiId,
-		"apiVersion": apiVersion,
+		"apfId":        apfId,
+		"aefId":        aefId,
+		"apiId":        apiId,
+		"apiVersion":   apiVersion,
 		"resourceName": resourceName,
 	}
 
@@ -449,13 +451,13 @@ func prependUri(prependUri string, uri string) string {
 }
 
 func (sd *ServiceAPIDescription) createRouteForService(
-		kongControlPlaneURL string,
-		client *resty.Client,
-		resource Resource,
-		routeName string,
-		kongRouteUri string,
-		kongRegexUri string,
-		tags []string) (int, error)  {
+	kongControlPlaneURL string,
+	client *resty.Client,
+	resource Resource,
+	routeName string,
+	kongRouteUri string,
+	kongRegexUri string,
+	tags []string) (int, error) {
 
 	log.Debugf("createRouteForService, kongRouteUri %s", kongRouteUri)
 
@@ -541,8 +543,8 @@ func (sd *ServiceAPIDescription) createRequestTransformer(
 
 	// Create the form data
 	formData := url.Values{
-		"name":                  {"request-transformer"},
-		"config.replace.uri":    {transformPattern},
+		"name":               {"request-transformer"},
+		"config.replace.uri": {transformPattern},
 	}
 	encodedData := formData.Encode()
 
@@ -605,7 +607,6 @@ func deriveKongPattern(routePattern string) (string, error) {
 
 	return transformPattern, nil
 }
-
 
 // Function to derive the transform pattern from the route pattern
 func deriveTransformPattern(routePattern string) (string, error) {
