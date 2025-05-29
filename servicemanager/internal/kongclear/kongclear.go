@@ -2,7 +2,7 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2024: OpenInfra Foundation Europe
+//   Copyright (C) 2024-2025: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ type KongServiceResponse struct {
 }
 
 type ServiceResponse struct {
-	Data []KongService `json:"data"`
+	Offset string        `json:"offset"`
+	Data   []KongService `json:"data"`
 }
 
 type KongRoute struct {
@@ -56,7 +57,8 @@ type KongRoute struct {
 }
 
 type RouteResponse struct {
-	Data []KongRoute `json:"data"`
+	Offset string      `json:"offset"`
+	Data   []KongRoute `json:"data"`
 }
 
 type Service struct {
@@ -68,13 +70,13 @@ func KongClear(myEnv map[string]string, myPorts map[string]int) error {
 
 	kongAdminApiUrl := fmt.Sprintf("%s://%s:%d/", myEnv["KONG_PROTOCOL"], myEnv["KONG_CONTROL_PLANE_IPV4"], myPorts["KONG_CONTROL_PLANE_PORT"])
 
-	err := deleteRoutes(kongAdminApiUrl)
+	err := deleteRoutes(kongAdminApiUrl, "")
 	if err != nil {
 		log.Fatalf("error deleting routes %v", err)
 		return err
 	}
 
-	err = deleteServices(kongAdminApiUrl)
+	err = deleteServices(kongAdminApiUrl, "")
 	if err != nil {
 		log.Fatalf("error deleting services %v", err)
 		return err
@@ -84,11 +86,18 @@ func KongClear(myEnv map[string]string, myPorts map[string]int) error {
 	return err
 }
 
-func deleteRoutes(kongAdminApiUrl string) error {
-	routes, err := listRoutes(kongAdminApiUrl)
+func deleteRoutes(kongAdminApiUrl string, offset string) error {
+	kongRoutesApiUrl := kongAdminApiUrl + "routes"
+	if offset != "" {
+		log.Tracef("using offset %s for kong routes", offset)
+		kongRoutesApiUrl += "?offset=" + offset
+	}
+
+	routes, nextOffset, err := listRoutes(kongRoutesApiUrl)
 	if err != nil {
 		return err
 	}
+	log.Infof("Fetched kong routes size is %d", len(routes))
 
 	for _, route := range routes {
 		if areServiceManagerTags(route.Tags) {
@@ -98,14 +107,29 @@ func deleteRoutes(kongAdminApiUrl string) error {
 		}
 	}
 
+	// If the offset is not empty, it means there are more routes to process
+	if nextOffset != "" {
+		log.Tracef("More routes to process, offset is %s", nextOffset)
+		if err := deleteRoutes(kongAdminApiUrl, nextOffset); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func deleteServices(kongAdminApiUrl string) error {
-	services, err := listServices(kongAdminApiUrl)
+func deleteServices(kongAdminApiUrl string, offset string) error {
+	kongServiceApiUrl := kongAdminApiUrl + "services"
+	if offset != "" {
+		log.Tracef("Using offset %s for kong services", offset)
+		kongServiceApiUrl += "?offset=" + offset
+	}
+	services, nextOffset, err := listServices(kongServiceApiUrl)
 	if err != nil {
 		return err
 	}
+
+	log.Infof("Fetched Kong services size is %d", len(services))
 
 	for _, service := range services {
 		if areServiceManagerTags(service.Tags) {
@@ -115,54 +139,64 @@ func deleteServices(kongAdminApiUrl string) error {
 		}
 	}
 
+	// If the offset is not empty, it means there are more services to process
+	if nextOffset != "" {
+		log.Tracef("More services to process, offset is %s", nextOffset)
+		if err := deleteServices(kongAdminApiUrl, nextOffset); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func listRoutes(kongAdminApiUrl string) ([]KongRoute, error) {
+func listRoutes(kongRoutesApiUrl string) ([]KongRoute, string, error) {
+	log.Debugf("List kong routes from %s", kongRoutesApiUrl)
 	client := resty.New()
 	resp, err := client.R().
-		Get(kongAdminApiUrl + "routes")
+		Get(kongRoutesApiUrl)
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if resp.StatusCode() != http.StatusOK {
 		err := fmt.Errorf("failed to list routes, status code %d", resp.StatusCode())
-		return nil, err
+		return nil, "", err
 	}
 
 	var routeResponse RouteResponse
 	err = json.Unmarshal(resp.Body(), &routeResponse)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	log.Infof("kong routes %v", routeResponse.Data)
-	return routeResponse.Data, nil
+	log.Debugf("Kong routes %v", routeResponse.Data)
+	return routeResponse.Data, routeResponse.Offset, nil
 }
 
-func listServices(kongAdminApiUrl string) ([]KongService, error) {
+func listServices(kongServicesApiUrl string) ([]KongService, string, error) {
+	log.Debugf("List kong services from %s", kongServicesApiUrl)
 	client := resty.New()
-	resp, err := client.R().Get(kongAdminApiUrl + "services")
+	resp, err := client.R().Get(kongServicesApiUrl)
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if resp.StatusCode() != http.StatusOK {
 		err := fmt.Errorf("failed to list services, status code %d", resp.StatusCode())
-		return nil, err
+		return nil, "", err
 	}
 
 	var serviceResponse ServiceResponse
 	err = json.Unmarshal(resp.Body(), &serviceResponse)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	log.Infof("kong services %v", serviceResponse.Data)
-	return serviceResponse.Data, nil
+	log.Debugf("Kong services %v", serviceResponse.Data)
+	return serviceResponse.Data, serviceResponse.Offset, nil
 }
 
 func areServiceManagerTags(tags []string) bool {
@@ -173,7 +207,7 @@ func areServiceManagerTags(tags []string) bool {
 		tagSlice := strings.Split(tag, ":")
 		log.Debugf("tag slice %v", tagSlice)
 		if (len(tagSlice) > 0) && (tagSlice[0] != "") {
-			if (len(tagSlice) > 1) {
+			if len(tagSlice) > 1 {
 				tagMap[tagSlice[0]] = tagSlice[1]
 			} else {
 				tagMap[tagSlice[0]] = ""
