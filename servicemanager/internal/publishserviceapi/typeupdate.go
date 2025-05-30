@@ -2,7 +2,7 @@
 //   ========================LICENSE_START=================================
 //   O-RAN-SC
 //   %%
-//   Copyright (C) 2023-2024: OpenInfra Foundation Europe
+//   Copyright (C) 2023-2025: OpenInfra Foundation Europe
 //   %%
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	common29122 "oransc.org/nonrtric/servicemanager/internal/common29122"
+	"oransc.org/nonrtric/servicemanager/internal/kongclear"
 )
 
 func (sd *ServiceAPIDescription) PrepareNewService() {
@@ -669,7 +670,7 @@ func (sd *ServiceAPIDescription) UnregisterKong(kongDomain string, kongProtocol 
 		statusCode int
 		err        error
 	)
-	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d", kongProtocol, kongControlPlaneIPv4, kongControlPlanePort)
+	kongControlPlaneURL := fmt.Sprintf("%s://%s:%d/", kongProtocol, kongControlPlaneIPv4, kongControlPlanePort)
 
 	statusCode, err = sd.deleteKongRoutes(kongControlPlaneURL)
 	if (err != nil) || (statusCode != http.StatusNoContent) {
@@ -683,88 +684,22 @@ func (sd *ServiceAPIDescription) UnregisterKong(kongDomain string, kongProtocol 
 func (sd *ServiceAPIDescription) deleteKongRoutes(kongControlPlaneURL string) (int, error) {
 	log.Trace("entering deleteKongRoutes")
 
-	var (
-		statusCode int
-		err        error
-	)
-
-	client := resty.New()
-
 	profiles := *sd.AefProfiles
 	for _, profile := range profiles {
-		log.Debugf("deleteKongRoutes, AefId %s", profile.AefId)
-		for _, version := range profile.Versions {
-			log.Debugf("deleteKongRoutes, apiVersion \"%s\"", version.ApiVersion)
-			for _, resource := range *version.Resources {
-				statusCode, err = sd.deleteKongRoute(kongControlPlaneURL, client, resource, profile.AefId, version.ApiVersion)
-				if (err != nil) || (statusCode != http.StatusNoContent) {
-					return statusCode, err
-				}
-			}
+		log.Debugf("deleteKongRoutes, AefId %s, ApiId %s", profile.AefId, *sd.ApiId)
+		tagToSearch := "aefId: " + profile.AefId + "," + "apiId: " + *sd.ApiId
+
+		err := kongclear.DeleteRoutes(kongControlPlaneURL, "", tagToSearch)
+		if err != nil {
+			log.Errorf("error deleting Kong routes for AefId %s, ApiId %s: %v", profile.AefId, *sd.ApiId, err)
+			return http.StatusInternalServerError, err
+		}
+
+		err = kongclear.DeleteServices(kongControlPlaneURL, "", tagToSearch)
+		if err != nil {
+			log.Errorf("error deleting Kong services for AefId %s, ApiId %s: %v", profile.AefId, *sd.ApiId, err)
+			return http.StatusInternalServerError, err
 		}
 	}
-	return statusCode, nil
-}
-
-func (sd *ServiceAPIDescription) deleteKongRoute(kongControlPlaneURL string, client *resty.Client, resource Resource, aefId string, apiVersion string) (int, error) {
-	log.Trace("entering deleteKongRoute")
-	routeName := *sd.ApiId + "_" + resource.ResourceName
-	kongRoutesURL := kongControlPlaneURL + "/routes/" + routeName + "?tags=" + aefId
-	log.Debugf("deleteKongRoute, routeName %s, tag %s", routeName, aefId)
-
-	// Make the DELETE request to delete the Kong route
-	resp, err := client.R().Delete(kongRoutesURL)
-
-	// Check for errors in the request
-	if err != nil {
-		log.Errorf("error on Kong route delete: %v", err)
-		return resp.StatusCode(), err
-	}
-
-	// Check the response status code
-	if resp.StatusCode() == http.StatusNoContent {
-		log.Infof("kong route %s deleted successfully", routeName)
-	} else {
-		log.Debugf("kongRoutesURL: %s", kongRoutesURL)
-		log.Errorf("error deleting Kong route. Status code: %d", resp.StatusCode())
-		log.Errorf("response body: %s", resp.Body())
-		return resp.StatusCode(), err
-	}
-
-	statusCode, err := sd.deleteKongService(kongControlPlaneURL, routeName, aefId)
-	if (err != nil) || (statusCode != http.StatusNoContent) {
-		return statusCode, err
-	}
-	return statusCode, err
-}
-
-func (sd *ServiceAPIDescription) deleteKongService(kongControlPlaneURL string, serviceName string, aefId string) (int, error) {
-	log.Trace("entering deleteKongService")
-	// Define the service information for Kong
-	// Kong admin API endpoint for deleting a service
-	kongServicesURL := kongControlPlaneURL + "/services/" + serviceName + "?tags=" + aefId
-
-	// Create a new Resty client
-	client := resty.New()
-
-	// Make the DELETE request to delete the Kong service
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		Delete(kongServicesURL)
-
-	// Check for errors in the request
-	if err != nil {
-		log.Errorf("delete kong service request: %v", err)
-		return http.StatusInternalServerError, err
-	}
-
-	// Check the response status code
-	if resp.StatusCode() == http.StatusNoContent {
-		log.Infof("kong service %s deleted successfully", serviceName)
-	} else {
-		log.Debugf("kongServicesURL: %s", kongServicesURL)
-		log.Errorf("deleting Kong service, status code: %d", resp.StatusCode())
-		log.Errorf("response body: %s", resp.Body())
-	}
-	return resp.StatusCode(), nil
+	return http.StatusNoContent, nil
 }
