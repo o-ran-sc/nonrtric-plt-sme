@@ -9,3 +9,4 @@ sphinxcontrib-needs
 sphinx_bootstrap_theme
 lfdocs-conf
 urllib3~=1.26.15
+pillow==11.2.1
