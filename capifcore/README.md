@@ -4,7 +4,7 @@
 O-RAN-SC
 %%
 Copyright (C) 2022: Nordix Foundation. All rights reserved.
-Copyright (C) 2023 OpenInfra Foundation Europe. All rights reserved.
+Copyright (C) 2023-2025 OpenInfra Foundation Europe. All rights reserved.
 %%
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ limitations under the License.
 
 -->
 
-# O-RAN-SC Non-RealTime RIC CAPIF Core implementation
+# O-RAN-SC Non-RealTime RIC CAPIF Core implementation (Experimental O-RAN-SC Module)
+
+![Status: Not for Production](https://img.shields.io/badge/status-not--for--production-red)
+![Status: Experimental](https://img.shields.io/badge/CVE%20Support-none-lightgrey)
 
 This product is a Go implementation of the CAPIF Core function, which is based on the 3GPP "29.222 Common API Framework for 3GPP Northbound APIs (CAPIF)" interfaces, see https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3450.
 
