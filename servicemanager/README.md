@@ -3,7 +3,7 @@
 ========================LICENSE_START=================================
 O-RAN-SC
 %%
-Copyright (C) 2024 OpenInfra Foundation Europe. All rights reserved
+Copyright (C) 2024-2025 OpenInfra Foundation Europe. All rights reserved
 %%
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,13 @@ limitations under the License.
 
 -->
 
-# O-RAN-SC Non-RealTime RIC Service Manager
+# O-RAN-SC Non-RealTime RIC Service Manager (Experimental O-RAN-SC Module)
+
+![Status: Not for Production](https://img.shields.io/badge/status-not--for--production-red)
+![Status: Experimental](https://img.shields.io/badge/CVE%20Support-none-lightgrey)
+
+> [!WARNING]
+> This repository is pre-spec and not intended for production use. No CVE remediation or production guarantees apply.
 
 Service Manager is a Go implementation of a service that calls the CAPIF Core function. When publishing a service we create a Kong route and Kong service, https://konghq.com/. The InterfaceDescription that we return is updated to point to the Kong Data Plane. Therefore, the API interface that we return from Service Discovery has the Kong host and port, and not the original service's host and port. This allows the rApp's API call to be re-directed through Kong.
 
